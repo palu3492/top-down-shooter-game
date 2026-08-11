@@ -7,27 +7,55 @@ spend the cash the horde drops, and don't let them surround you.
 
 ## Requirements
 
-- Python 3.10 or newer
-- `pygame-ce` (installed by the steps below — **not** upstream `pygame`, see
-  [Why pygame-ce](#why-pygame-ce))
+- Python 3.10 or newer. Development targets **3.14**, pinned in `.python-version`.
+- `pygame-ce` — **not** upstream `pygame`, see [Why pygame-ce](#why-pygame-ce)
 
-## Install
+## Install (macOS)
+
+[uv](https://github.com/astral-sh/uv) manages the interpreter and the virtual
+environment together, so every contributor gets the same Python.
 
 ```bash
+brew install uv
 git clone https://github.com/palu3492/top-down-shooter-game.git
 cd top-down-shooter-game
+uv python install
+uv venv
+uv pip install -r requirements.txt
+```
+
+`uv python install` reads `.python-version` and fetches a standalone CPython
+build — it does not touch your system or Homebrew Python.
+
+Two things to avoid on macOS:
+
+- **Don't point the project at Homebrew's `python@3.x`.** It's a rolling
+  formula; a `brew upgrade` can bump or relink it and break existing virtual
+  environments. Use Homebrew to install `uv`, and nothing else Python-related.
+- **Never use `/usr/bin/python3`.** That interpreter belongs to the OS.
+
+## Install (other platforms, or without uv)
+
+`requirements.txt` is a plain pip file, so the standard flow works anywhere:
+
+```bash
 python -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-On Windows the last two lines are `py -m venv .venv` and
-`.venv\Scripts\pip install -r requirements.txt`.
+On Windows: `py -m venv .venv` and `.venv\Scripts\pip install -r requirements.txt`.
+Match the version in `.python-version` if you can.
 
 ## Run
 
 ```bash
 .venv/bin/python main.py
 ```
+
+`uv run python main.py` also works, but note it resolves dependencies from
+`pyproject.toml` (`pygame-ce>=2.5.5,<3`) rather than the exact pin in
+`requirements.txt`, so the two can drift once a newer pygame-ce ships. Adopting
+`uv.lock` as the single source of truth would remove that split — see AT2.1.
 
 > **Run from the repository root.** Assets are currently loaded through paths
 > relative to the working directory, so launching from anywhere else fails with
@@ -90,8 +118,8 @@ first.
 ## Development
 
 ```bash
-.venv/bin/pip install -r requirements-dev.txt   # adds ruff + pytest
-.venv/bin/pip install -e .                      # editable install
+uv pip install -r requirements-dev.txt   # adds ruff + pytest
+uv pip install -e .                      # editable install
 ```
 
 An editable install also provides a `shooter` console script, subject to the

@@ -73,6 +73,41 @@ README rather than silently shipped.
 
 ---
 
+## AT2.1 — Python toolchain and version pin — DONE
+
+**Short description:** Pin the interpreter and adopt `uv` so contributors and CI
+stop silently differing. Landed with AT2 rather than as its own PR — it edits
+the same README install section, and splitting it would have guaranteed a
+conflict for no review benefit.
+
+**Dependencies:** AT2
+
+**Goals**
+- [x] `.python-version` pinning `3.14` (patch-floating, so security updates apply)
+- [x] Un-ignore `.python-version` — the inherited pyenv-era `.gitignore` was silently swallowing it
+- [x] README install path for macOS built on `uv`, with the pip flow kept for other platforms
+- [x] Document why not Homebrew `python@3.x` and not `/usr/bin/python3`
+
+**Why uv:** it manages interpreter *and* environment as standalone builds, so
+nothing depends on Homebrew's rolling `python@3.x` formula — the usual cause of
+"my venv broke after `brew upgrade`". Verified: `uv python install` fetched
+CPython 3.14.7 in 2.3s (newer than the 3.14.4 Homebrew had), and the game ran a
+full 380-frame exercise on it.
+
+**Note on the version:** the 8-year-old code needed **no** changes to run on the
+newest Python — it byte-compiles warning-free and runs on 3.14. There is no
+interpreter upgrade ladder to climb. What was missing was the pin and the proof,
+not modernization. `requires-python = ">=3.10"` is still an untested claim;
+AT10's CI matrix is what makes it real.
+
+**Follow-up left open:** `requirements.txt` and `pyproject.toml` now both
+declare the dependency, and `uv run` resolves from `pyproject.toml` rather than
+the exact pin — so they can drift once a newer pygame-ce ships. Consolidating on
+`uv.lock` as the single source of truth and dropping `requirements.txt` is the
+clean end state, deliberately deferred to keep this change additive.
+
+---
+
 ## AT3 — Asset path resolution + loader cache — TODO
 
 **Short description:** Every asset path is a bare relative string like
