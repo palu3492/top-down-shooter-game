@@ -92,14 +92,14 @@ class gun_data:
         screen.blit(pygame.font.Font(None, 44).render(str(self.ammo_amount), True, (255, 255, 255)),(self.window[0] - 170, self.window[1] - 102))
         screen.blit(self.gun_type, (self.window[0]-125, self.window[1]-120))
 
-class grenade_data():
+class grenade_data:
     grenade_amount=5
     stun_grenade_amount=5
     def __init__(self):
         pass
 
 
-class Cash():
+class Cash:
     cash_amount = 0
 
     #Method used when zombie dies
@@ -126,7 +126,7 @@ class Shop_Gui(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.window_size=(1080, 720)
         self.image = load_image("Zombie Animations/zombie_idle/skeleton-idle_0.png")
-        self.image = pygame.transform.scale(self.image, (int(120.5), int(111)))
+        self.image = pygame.transform.scale(self.image, (int(120.5), 111))
         self.rect = self.image.get_rect()
 
 

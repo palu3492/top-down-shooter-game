@@ -19,7 +19,7 @@ class Shot(pygame.sprite.Sprite):
     bullet_speed=150
     continuous=bullet_speed/14
     kill_me=False
-    
+
     def __init__(self,startX,startY,x,y):
         pygame.sprite.Sprite.__init__(self)
         angle = math.atan2(y, x)  # find angle of shot

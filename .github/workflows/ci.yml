@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [master, dev]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv run --no-project --with ruff ruff check .
+
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    env:
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      PYGAME_HIDE_SUPPORT_PROMPT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python ${{ matrix.python-version }}
+      - run: uv pip install -r requirements.txt
+      - run: uv run --no-sync python -m compileall -q shooter main.py
+      - name: Import every module
+        run: |
+          uv run --no-sync python - <<'PY'
+          import pygame
+          pygame.init()
+          pygame.display.set_mode((1080, 720))
+          for name in [
+              "shooter.assets", "shooter.background", "shooter.game",
+              "shooter.entities.player", "shooter.entities.zombie",
+              "shooter.entities.projectiles", "shooter.entities.powerups",
+              "shooter.ui.hud", "shooter.ui.radar", "shooter.systems.waves",
+          ]:
+              __import__(name)
+          PY
+      - name: Every asset path the game builds resolves
+        run: |
+          uv run --no-sync python - <<'PY'
+          import itertools, os, sys
+          import pygame
+          pygame.init()
+          pygame.display.set_mode((1080, 720))
+          from shooter.assets import ASSETS_DIR
+          import shooter.entities.player as player
+          import shooter.entities.zombie as zombie
+
+          # Exact set membership, not os.path.exists -- the latter is
+          # case-insensitive on macOS and would miss a case regression.
+          on_disk = {
+              os.path.join(root, name)
+              for root, _, files in os.walk(ASSETS_DIR)
+              for name in files
+          }
+
+          animations = itertools.chain(
+              player.ANIMATIONS.values(), zombie.ANIMATIONS.values()
+          )
+          checked = 0
+          missing = []
+          for directory, prefix, count in animations:
+              for i in range(count):
+                  path = os.path.join(ASSETS_DIR, directory, f"{prefix}{i}.png")
+                  checked += 1
+                  if path not in on_disk:
+                      missing.append(path)
+
+          print(f"checked {checked} animation frames, {len(missing)} missing")
+          for path in missing:
+              print("  MISSING", path)
+          sys.exit(1 if missing else 0)
+          PY
+      - name: Run 600 frames
+        run: |
+          uv run --no-sync python - <<'PY'
+          import os, sys
+          import pygame
+
+          FRAMES = 600
+          frame = 0
+          real_flip = pygame.display.flip
+
+          def flip():
+              global frame
+              frame += 1
+              if frame >= FRAMES:
+                  print(f"ran {frame} frames clean")
+                  sys.stdout.flush()
+                  os._exit(0)
+              real_flip()
+
+          pygame.display.flip = flip
+          from shooter.game import game_loop
+          game_loop()
+          PY

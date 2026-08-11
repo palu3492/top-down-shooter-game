@@ -1,7 +1,8 @@
 # Aaron Tickets
 
 Modernization backlog for the Top-Down Shooter. One ticket ≈ one PR.
-Work top to bottom — later tickets assume earlier ones have landed.
+Work top to bottom, except where a ticket says otherwise — AT10 and AT11 were
+pulled ahead of AT4–AT9 so the risky refactors land with a net under them.
 
 Tickets are identified `AT<N>` ("Aaron Ticket"). Use that ID as the prefix in
 branch names, commit subjects, and PR titles — e.g. `AT2: dependency manifests`.
@@ -322,18 +323,40 @@ goes late — every earlier ticket would otherwise conflict with it.
 
 ---
 
-## AT10 — Lint, format, type-check, CI — TODO
+## AT10 — Lint and CI — DONE
 
-**Short description:** Automate the standards the previous tickets establish so
-they don't rot again.
+**Short description:** Get a gate in place *before* the large-diff refactors,
+not after. Reordered ahead of AT4–AT9 by agreement: we found two real bugs by
+hand (the `Human.png` crash, the Linux case mismatch) and both were trivially
+catchable, while AT7 rewires state on every class and AT9 renames across every
+file. Those should not land without a net.
 
-**Dependencies:** AT9
+**Dependencies:** AT2
 
 **Goals**
-- [ ] `ruff` config in `pyproject.toml`; repo passes `ruff check` and `ruff format --check`
-- [ ] Type hints on public methods; `mypy` (or `ty`) clean at a chosen strictness
-- [ ] `.github/workflows/ci.yml` running lint + tests on push and PR
-- [ ] Pre-commit hooks
+- [x] `ruff` config in `pyproject.toml`; repo passes `ruff check` clean
+- [x] `.github/workflows/ci.yml` running lint + smoke checks on push and PR
+- [x] CI matrix over Python 3.10–3.14, making `requires-python` enforced rather than asserted
+- [x] CI runs on `ubuntu-latest` — a genuinely case-sensitive filesystem
+
+**Deferred, with reasons:**
+- `ruff format` — reformatting every file would touch every line and make the
+  AT4–AT9 diffs unreviewable. Belongs with AT9, which is already a mass rename.
+- `mypy` / type hints — the annotations would collide with AT7's state rework
+  and AT9's renames. Cheaper once names stop moving.
+- Pre-commit hooks — CI is the gate that matters; hooks are convenience.
+
+**Rules deferred, not waived.** The `ignore` list in `pyproject.toml` names the
+ticket that owns each code, so the gate tightens as they land: naming and
+wildcard imports and line length are AT9; dead code and collapsible branches are
+AT8. 19 violations were auto-fixed here; everything else is either fixed or
+explicitly owned.
+
+**On the asset guard:** the first version used `os.path.exists`, which is
+case-insensitive on macOS and so would only have caught an AT3-style regression
+once it reached CI. Rewritten to compare against an exact set built from
+`os.walk`, so it fails on any platform. Verified both ways — passes on current
+code, exits 1 when fed the old uppercase paths.
 
 ---
 
