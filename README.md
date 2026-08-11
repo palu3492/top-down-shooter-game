@@ -3,7 +3,7 @@
 A top-down zombie wave shooter built with pygame. Survive escalating waves,
 spend the cash the horde drops, and don't let them surround you.
 
-![Gameplay](docs/screenshot.png)
+![Gameplay](docs/screenshot.jpg)
 
 ## Requirements
 
@@ -53,19 +53,39 @@ while you stay untouched.
 
 ## Why pygame-ce
 
-`pip install pygame` **fails on current Python versions** — upstream publishes
-no wheel for CPython 3.14 and the fallback source build errors out.
+**pygame is not deprecated.** [`pygame-ce`](https://pyga.me) is a *fork*, not an
+official successor — created by pygame's former core developers, in their words,
+"after impossible challenges prevented them from continuing development
+upstream." Both projects still exist. This is a choice between them, not a
+forced upgrade.
 
-[`pygame-ce`](https://pyga.me) ("community edition") is an API-compatible fork
-of pygame that ships wheels for new CPython releases much faster. It still
-imports as `pygame`, so **no source changes are required** — every `import
-pygame` in this repo works unmodified.
+The choice is made on maintenance, checked 2026-08-11:
 
-Verified here on CPython 3.14.4 with pygame-ce 2.5.8 (SDL 2.32.10).
+| | upstream `pygame` | `pygame-ce` |
+|---|---|---|
+| Latest release | 2.6.1, 2024-09-29 | 2.5.8, 2026-08-09 |
+| Time since release | ~23 months | ~2 days |
+| Highest CPython wheel | 3.13 | 3.14 |
+| Installs on CPython 3.14 | no | yes |
 
-Do not install both: they provide the same `pygame` import name and will
-shadow each other. If you have upstream pygame in your environment already,
-`pip uninstall pygame` before installing the requirements.
+`pip install pygame` fails outright on CPython 3.14 — no wheel exists for any
+released version, and the fallback source build errors out. Staying upstream
+would mean pinning this project to Python 3.13 or older on a package that has
+not shipped in nearly two years.
+
+**No source changes were required to adopt it.** pygame-ce installs under the
+`pygame` import name and is API-compatible, so every `import pygame` in this
+repo works untouched. This was verified by running the original, unmodified
+2017-era code against it — see AT1.
+
+One constraint worth keeping: pygame-ce is a *superset* of pygame. Treat the
+upstream pygame 2.6 API as the contract and avoid ce-only additions unless the
+tradeoff is deliberate. Hold that line and reverting is a one-line change to
+`requirements.txt`.
+
+Do not install both — they claim the same `pygame` import name and shadow each
+other. If upstream pygame is already in your environment, `pip uninstall pygame`
+first.
 
 ## Development
 
