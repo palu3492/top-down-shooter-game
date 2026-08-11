@@ -254,6 +254,7 @@ Each one changes how the game plays, so they land together and get called out.
 - [ ] `Shot.changeX/changeY` compute Y velocity from `smallChangeX`. Currently inert — only the commented-out `update()` reads them — so delete the dead fields rather than fixing them.
 - [ ] `pygame.sprite.collide_rect_ratio(.5)` in `is_zombie_attacking` builds a callable and discards it; the following line does a plain full-rect check. Decide which was intended.
 - [ ] `Cash.cash_add_remove` rejects any purchase when the balance is exactly 0 or would land on 0, and never checks that the balance actually covers the cost.
+- [ ] `Zombie.remove_health` guards the damage but not the payout, so a corpse pays $50 again on every further hit — reachable when two explosions overlap one zombie in a frame, since `game.py` keeps iterating explosions after `kill()`. Found in AT11 review; covered by a strict xfail.
 - [ ] Fullscreen toggle reads `key.get_pressed()`, so holding `\` flips the mode every frame. Move to a `KEYDOWN` event.
 
 ---
@@ -376,7 +377,7 @@ testable headlessly under `SDL_VIDEODRIVER=dummy`.
 - [x] Cover `Human` / `Zombie` damage, death, and regen
 - [x] A smoke test that constructs the game and steps N frames without raising
 
-**50 tests: 46 passing, 4 `xfail(strict=True)`.** CI now runs the suite across
+**63 tests: 57 passing, 6 `xfail(strict=True)`.** CI now runs the suite across
 Python 3.10–3.14 instead of the inline smoke scripts AT10 used as a placeholder.
 
 **Tests pin current behaviour, not intended behaviour.** That is the point — the
@@ -404,6 +405,20 @@ day it was written.
 instances do not share health, ammo, cash, or wave progress. Those currently
 pass by accident — `+=` on an int rebinds to the instance — and they are exactly
 the invariant AT7 must preserve when it moves that state into `__init__`.
+
+**Convention: one signal per known bug.** A bug is recorded *only* as a strict
+xfail describing the intended behaviour, never as a plain assertion of the
+broken outcome. Two tests for one bug means AT5 gets a clean XPASS on one and a
+confusing hard failure on the other. Review of this PR caught three departures
+from that rule, all now fixed.
+
+**Tests must not depend on bugs they do not own.** The power-up tests originally
+relied on `PowerUp_Selection` being hardcoded to `randint(2, 2)`. Simulating
+AT5's fix made them fail on 3 of 6 runs — the suite built to protect AT5 would
+have broken *on* AT5. Power-ups are now constructed through a `make_powerup`
+factory that pins the kind via a scoped `MonkeyPatch.context()`, and the
+lifetime, blink and pickup tests are parametrised over all four kinds, so AT5's
+fix is exercised before it lands.
 
 ---
 

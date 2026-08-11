@@ -1,23 +1,17 @@
 import pytest
 
-from conftest import WINDOW, FakeCash
 from shooter.entities.player import Human
 from shooter.entities.zombie import Zombie
 
 
 @pytest.fixture
-def human():
-    return Human(WINDOW)
+def human(window):
+    return Human(window)
 
 
 @pytest.fixture
-def cash():
-    return FakeCash()
-
-
-@pytest.fixture
-def zombie(cash):
-    return Zombie(WINDOW, cash)
+def zombie(window, cash):
+    return Zombie(window, cash)
 
 
 def test_human_starts_at_full_health(human):
@@ -54,10 +48,10 @@ def test_human_regen_stops_at_full(human):
     assert human.get_health() == 100
 
 
-def test_two_humans_have_separate_health(human):
+def test_two_humans_have_separate_health(human, window):
     human.remove_health(50)
 
-    assert Human(WINDOW).get_health() == 100
+    assert Human(window).get_health() == 100
 
 
 def test_zombie_survives_a_bullet(zombie):
@@ -69,16 +63,25 @@ def test_killing_a_zombie_pays_out(zombie, cash):
     assert cash.received == [50]
 
 
-def test_zombie_spawns_outside_the_play_area(zombie):
+@pytest.mark.xfail(strict=True, reason="a corpse pays out again on every further hit")
+def test_a_zombie_only_pays_out_once(zombie, cash):
+    zombie.remove_health(100)
+    zombie.remove_health(100)
+    zombie.remove_health(100)
+
+    assert cash.received == [50]
+
+
+def test_zombie_spawns_outside_the_play_area(zombie, window):
     x, y = zombie.get_posistion()
 
-    assert x < 0 or x > 1080 or y < 0 or y > 720
+    assert x < 0 or x > window[0] or y < 0 or y > window[1]
 
 
-def test_two_zombies_have_separate_health(zombie, cash):
+def test_two_zombies_have_separate_health(zombie, window, cash):
     zombie.remove_health(50)
 
-    assert Zombie(WINDOW, cash).zombie_health == 100
+    assert Zombie(window, cash).zombie_health == 100
 
 
 def test_stun_slows_the_zombie_then_wears_off(zombie):

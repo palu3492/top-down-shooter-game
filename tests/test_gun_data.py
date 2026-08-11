@@ -1,12 +1,11 @@
 import pytest
 
-from conftest import WINDOW
 from shooter.ui.hud import gun_data
 
 
 @pytest.fixture
-def gun():
-    return gun_data(WINDOW)
+def gun(window):
+    return gun_data(window)
 
 
 def test_starts_with_a_full_clip_and_two_spares(gun):
@@ -76,8 +75,8 @@ def test_reload_counts_down_then_clears(gun, display):
     assert gun.reload_time == 60
 
 
-def test_two_guns_do_not_share_ammo(gun):
-    other = gun_data(WINDOW)
+def test_two_guns_do_not_share_ammo(gun, window):
+    other = gun_data(window)
     gun.shooting_bullet()
 
     assert other.clip_size == 60

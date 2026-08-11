@@ -1,16 +1,34 @@
 import pygame
 import pytest
 
-from conftest import WINDOW, FakeCash
+import shooter.entities.powerups as powerups
 from shooter.entities.powerups import PowerUps
 from shooter.entities.zombie import Zombie
 
 LIFETIME = 1200
+INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH = 1, 2, 3, 4
+EVERY_KIND = [INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH]
 
 
 @pytest.fixture
-def powerup():
-    return PowerUps()
+def make_powerup():
+    """Build a power-up of a chosen kind.
+
+    PowerUp_Selection currently hardcodes randint(2, 2), so every power-up is a
+    Nuke. Tests must not rely on that -- AT5 restores the full 1..4 range.
+    """
+
+    def build(kind=NUKE):
+        with pytest.MonkeyPatch.context() as patch:
+            patch.setattr(powerups.random, "randint", lambda low, high: kind)
+            return PowerUps()
+
+    return build
+
+
+@pytest.fixture
+def powerup(make_powerup):
+    return make_powerup()
 
 
 @pytest.fixture
@@ -21,11 +39,20 @@ def far_away():
     return sprite
 
 
+def touching(powerup):
+    sprite = pygame.sprite.Sprite()
+    sprite.image = pygame.Surface((10, 10))
+    sprite.rect = powerup.rect.copy()
+    return sprite
+
+
 def is_transparent(surface):
     return surface.get_at((surface.get_width() // 2, surface.get_height() // 2)).a == 0
 
 
-def test_survives_its_whole_lifetime_then_expires(powerup, far_away, display):
+@pytest.mark.parametrize("kind", EVERY_KIND)
+def test_survives_its_whole_lifetime_then_expires(make_powerup, far_away, display, kind):
+    powerup = make_powerup(kind)
     group = pygame.sprite.Group()
 
     for frame in range(LIFETIME + 1):
@@ -36,7 +63,9 @@ def test_survives_its_whole_lifetime_then_expires(powerup, far_away, display):
     raise AssertionError("never expired")
 
 
-def test_blinks_before_expiring(powerup, far_away, display):
+@pytest.mark.parametrize("kind", EVERY_KIND)
+def test_blinks_before_expiring(make_powerup, far_away, display, kind):
+    powerup = make_powerup(kind)
     group = pygame.sprite.Group()
     transparent = visible = 0
 
@@ -53,25 +82,30 @@ def test_blinks_before_expiring(powerup, far_away, display):
     assert visible > 0
 
 
-def test_walking_into_it_consumes_it(powerup, display):
-    group = pygame.sprite.Group()
-    player = pygame.sprite.Sprite()
-    player.image = pygame.Surface((10, 10))
-    player.rect = powerup.rect.copy()
+@pytest.mark.parametrize("kind", EVERY_KIND)
+def test_walking_into_any_kind_consumes_it(make_powerup, display, kind):
+    powerup = make_powerup(kind)
 
-    assert powerup.update(player, group, display, 0, 0) is True
+    assert powerup.update(touching(powerup), pygame.sprite.Group(), display, 0, 0) is True
 
 
-def test_nuke_clears_the_horde(powerup, display):
-    cash = FakeCash()
-    group = pygame.sprite.Group(*[Zombie(WINDOW, cash) for _ in range(6)])
-    player = pygame.sprite.Sprite()
-    player.image = pygame.Surface((10, 10))
-    player.rect = powerup.rect.copy()
+def test_nuke_clears_the_horde(make_powerup, window, cash, display):
+    powerup = make_powerup(NUKE)
+    group = pygame.sprite.Group(*[Zombie(window, cash) for _ in range(6)])
 
-    powerup.update(player, group, display, 0, 0)
+    powerup.update(touching(powerup), group, display, 0, 0)
 
     assert len(group) == 0
+
+
+@pytest.mark.parametrize("kind", [INSTAKILL, MAX_AMMO, MAX_HEALTH])
+def test_other_kinds_leave_the_horde_alone(make_powerup, window, cash, display, kind):
+    powerup = make_powerup(kind)
+    group = pygame.sprite.Group(*[Zombie(window, cash) for _ in range(6)])
+
+    powerup.update(touching(powerup), group, display, 0, 0)
+
+    assert len(group) == 6
 
 
 def test_it_tracks_the_camera(powerup, far_away, display):
@@ -80,3 +114,10 @@ def test_it_tracks_the_camera(powerup, far_away, display):
     powerup.update(far_away, pygame.sprite.Group(), display, -10, 5)
 
     assert powerup.rect.topleft == (start[0] - 10, start[1] + 5)
+
+
+@pytest.mark.xfail(strict=True, reason="selection is hardcoded to randint(2, 2)")
+def test_every_kind_can_spawn():
+    kinds = {PowerUps().powerup_selected for _ in range(100)}
+
+    assert kinds == set(EVERY_KIND)

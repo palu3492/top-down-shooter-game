@@ -32,9 +32,8 @@ def test_affordable_purchase_succeeds(wallet):
     assert wallet.cash_amount == 60
 
 
-# The three below pin behaviour that is wrong but shipped. AT5 fixes them;
-# strict xfail means the suite fails if they start passing without being
-# rewritten as normal assertions.
+# Known bugs are recorded only as strict xfails, never as plain asserts of the
+# broken outcome -- one signal per bug, and it fires the moment AT5 fixes it.
 
 
 @pytest.mark.xfail(strict=True, reason="rejects any purchase from a zero balance")
@@ -56,10 +55,3 @@ def test_overspending_should_be_refused(wallet):
 
     assert wallet.cash_add_remove(-500) is False
     assert wallet.cash_amount == 100
-
-
-def test_overspending_currently_drives_the_balance_negative(wallet):
-    wallet.increase_cash(100)
-
-    assert wallet.cash_add_remove(-500) is True
-    assert wallet.cash_amount == -400
