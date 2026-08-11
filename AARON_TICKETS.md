@@ -174,23 +174,53 @@ fixes one crash and nothing else.
 
 ---
 
-## AT3 — Asset path resolution + loader cache — TODO
+## AT3 — Asset path resolution + loader cache — DONE
 
-**Short description:** Every asset path is a bare relative string like
-`"Assets/cursor.png"`, so the game only runs with the repo root as cwd. Worse,
-`Human.update_anim` and `Zombie.update_anim` hit the disk with
-`pygame.image.load` **every frame, per sprite** — the single largest performance
-problem in the codebase.
+**Short description:** Every asset path was a bare relative string like
+`"Assets/cursor.png"`, so the game only ran with the repo root as cwd, and
+`Human.update_anim` re-read and re-scaled a PNG from disk every frame.
 
 **Dependencies:** AT1
 
 **Goals**
-- [ ] `shooter/assets.py` resolving paths relative to the package, not cwd
-- [ ] Memoized `load_image` / `load_sound` so each file is decoded once
-- [ ] Preload animation frames into lists at construction time; per-frame code indexes a list
-- [ ] All 20+ hardcoded `"Assets/..."` strings routed through the resolver
-- [ ] Game launches correctly from an arbitrary working directory
-- [ ] Measure FPS before/after and record the delta in the PR
+- [x] `shooter/assets.py` resolving paths relative to the package, not cwd
+- [x] Memoized `load_image` / `load_sound` so each file is decoded once
+- [x] Preload animation frames into tuples; per-frame code indexes a list
+- [x] All 28 hardcoded `"Assets/..."` strings routed through the resolver
+- [x] Game launches correctly from an arbitrary working directory
+- [x] Measure FPS before/after and record the delta in the PR
+
+**Results:** uncapped throughput 297 → 360 FPS (+21%), steady-state image loads
+1.00 → 0.00 per frame. Verified running from `/`, from `$HOME`, and via the
+`shooter` console script from `/` — all of which previously died on
+`FileNotFoundError`.
+
+**Correction to this ticket's original claim:** it said both `update_anim`
+methods hit the disk "every frame, per sprite". Only the player's did —
+`Zombie.update_anim` is commented out in the main loop (AT5 re-enables it), so
+the measured baseline was exactly 1.00 loads/frame regardless of zombie count.
+The caching matters more once AT5 lands, since it removes the cliff entirely
+rather than turning 1 load/frame into N.
+
+**Bug found and fixed here — the game could not run on Linux.** `Human` and
+`Zombie` built animation paths by concatenating the uppercase state name:
+`"Assets/Player Animations/" + type + "/survivor-" + type + "_rifle_0.png"`
+with `type` in `IDLE`/`MOVE`/`SHOOT`. On disk the directories are `Idle`,
+`Move`, `Shoot` and the files are lowercase. **Zero of the constructed paths
+matched exactly** — they resolved only because macOS APFS is case-insensitive.
+On any case-sensitive filesystem the player animation raised `FileNotFoundError`
+on frame one, which would also have failed AT10's CI on `ubuntu-latest`. The
+frame tables now use the real on-disk names: 86/86 paths match exactly.
+
+**Behaviour deliberately preserved:** the idle animation still shows frame 0
+forever. `update_anim` increments `current_idle` but the original always
+substituted `"0"` into the path, so idle has never animated. Left as-is here and
+belongs with the other animation bugs in AT5.
+
+**One dead-code fix:** `Zombie.update_anim` indexed its path off the `type`
+parameter rather than `self.type`, so calling it with `"Null"` — its documented
+no-op — would have built a `zombie_Null/` path. Unreachable today since the
+method is never called, but it would have broken the moment AT5 enabled it.
 
 ---
 
