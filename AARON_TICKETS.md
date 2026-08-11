@@ -360,21 +360,50 @@ code, exits 1 when fed the old uppercase paths.
 
 ---
 
-## AT11 — Tests for game logic — TODO
+## AT11 — Tests for game logic — DONE
 
-**Short description:** There are zero tests. The ammo/reload state machine, cash,
-wave scaling, and damage math are pure logic and testable headlessly with
-`SDL_VIDEODRIVER=dummy`.
+**Short description:** There were zero tests. The ammo/reload state machine,
+cash, wave scaling, damage math, and the power-up lifetime are pure logic and
+testable headlessly under `SDL_VIDEODRIVER=dummy`.
 
 **Dependencies:** AT10
 
 **Goals**
-- [ ] `pytest` + a conftest that forces the dummy SDL video/audio drivers
-- [ ] Cover `gun_data` reload transitions (empty clip, partial clip, no reserve, manual reload)
-- [ ] Cover `Cash` add/remove including the boundary cases AT5 fixes
-- [ ] Cover `Wave_System` spawn counts and `5 + wave²` scaling
-- [ ] Cover `Human` / `Zombie` damage, death, and regen
-- [ ] A smoke test that constructs the game and steps N frames without raising
+- [x] `pytest` + a conftest that forces the dummy SDL video/audio drivers
+- [x] Cover `gun_data` reload transitions (empty clip, partial clip, no reserve, manual reload)
+- [x] Cover `Cash` add/remove including the boundary cases AT5 fixes
+- [x] Cover `Wave_System` spawn counts and `5 + wave²` scaling
+- [x] Cover `Human` / `Zombie` damage, death, and regen
+- [x] A smoke test that constructs the game and steps N frames without raising
+
+**50 tests: 46 passing, 4 `xfail(strict=True)`.** CI now runs the suite across
+Python 3.10–3.14 instead of the inline smoke scripts AT10 used as a placeholder.
+
+**Tests pin current behaviour, not intended behaviour.** That is the point — the
+suite exists to stop AT4–AT9 from changing semantics by accident. Known bugs are
+recorded as strict xfails instead, so when AT5 fixes them the suite fails until
+the tests are rewritten as ordinary assertions. Four are marked: `Cash` refusing
+a zero-balance transaction, refusing to spend the balance exactly, allowing an
+overspend into negative, and the idle animation being pinned to frame 0.
+
+**Mutation-tested rather than assumed.** A suite that cannot fail is worthless,
+so each landed fix was reverted in turn to confirm something goes red:
+
+| reverted | caught by |
+|---|---|
+| AT2.2 `Human.png` blink | 2 power-up tests |
+| AT3 uppercase animation paths | case-sensitivity test |
+| reload arithmetic (`-= 60` → `-= 30`) | 2 gun tests |
+| wave scaling (`5 + n²` → `5 + n`) | 4 wave tests |
+
+The `Human.png` case matters most: that crash shipped for seven years, and a
+test stepping a power-up through its 1200-frame life would have caught it the
+day it was written.
+
+**Class-attribute state is covered deliberately.** Several tests assert that two
+instances do not share health, ammo, cash, or wave progress. Those currently
+pass by accident — `+=` on an int rebinds to the instance — and they are exactly
+the invariant AT7 must preserve when it moves that state into `__init__`.
 
 ---
 
