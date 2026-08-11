@@ -138,11 +138,18 @@ clean end state, deliberately deferred to keep this change additive.
 
 ## AT2.2 — Fix the `Human.png` crash — DONE
 
-**Short description:** `PowerUps.Timer` loads `"Human.png"`, a file that has
-never existed in this repo, so any power-up left on the field for ~400 frames
-(~7s) takes the whole process down. Pulled out of AT4 and moved ahead of AT3
-because it caps every QA session at seven seconds and blocks meaningful review
-of the PRs that follow.
+**Short description:** `PowerUps.Timer` loads `"Human.png"`, which is not in the
+tree, so any power-up left on the field for ~400 frames (~7s) takes the whole
+process down. Pulled out of AT4 and moved ahead of AT3 because it caps every QA
+session at seven seconds and blocks meaningful review of the PRs that follow.
+
+**Origin — dead on arrival since 2019-01-07.** `Human.png` was committed at the
+repo root in `c8a5077` ("Initial"). Later the same day, `d5d1ac0` ("Updates")
+reorganized every loose asset into `Assets/` subdirectories — `menu_1.jpg =>
+Assets/Backgrounds/menu_1.jpg` and so on. In that single commit `Human.png` was
+**deleted rather than moved**, and `PowerUps.py` was **added** carrying the line
+that loads it. The code and the file's removal landed together, so this blink
+has never worked, not once.
 
 **Dependencies:** AT2
 
@@ -152,10 +159,14 @@ of the PRs that follow.
 - [x] Verify a power-up survives its full 1200-frame lifetime and expires cleanly
 - [x] Verify picking one up still works
 
-**Fix:** the blink swapped in a 10%-scaled `Human.png` — a file that has never
-existed here, and a nonsensical thing to blink to even if it had. Replaced with
+**Fix:** the blink swapped in a 10%-scaled `Human.png` — missing from the tree,
+and a strange thing to blink a pickup to even if it were present. Replaced with
 a transparent `Surface` of the same size, built once when the timer starts, so
-the pickup visibly flashes out and back as intended. Net −3 lines.
+the pickup visibly flashes out and back as intended. Net −2 lines.
+
+**Not related to pygame-ce.** A missing file raises `FileNotFoundError` from
+`pygame.image.load` on every pygame version ever released. This would have
+crashed identically on the pygame 1.9 the game was written against.
 
 **Non-goals:** everything else in AT4, the import-time asset loads in
 `powerups.py`, and the `randint(2, 2)` power-up selection bug in AT5. This PR
