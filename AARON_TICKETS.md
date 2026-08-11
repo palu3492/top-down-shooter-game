@@ -101,7 +101,7 @@ problem in the codebase.
 
 **Goals**
 - [ ] `PowerUps.Timer` loads `"Human.png"` — **the file does not exist**. Any power-up that survives ~400 ticks (~7s) takes the process down. Fix or remove the blink effect.
-- [ ] `loadBackground.image_at`: `if colorkey is -1` is an identity check against a literal (SyntaxWarning since 3.8, slated to become an error). Use `==`.
+- [ ] `loadBackground.image_at`: `if colorkey is -1` should be `==`. Correction to an earlier draft of this ticket — verified on 3.14 that this form emits **no** SyntaxWarning (CPython only warns on bare literals, and `-1` parses as a unary op). It happens to work because -1 falls in CPython's small-int cache, so it is latent fragility rather than a live bug. Note the whole `colorkey` branch is currently unreachable: the only caller passes no colorkey.
 - [ ] Replace `pygame.quit(); quit()` with `sys.exit()` — `quit()` is a `site` builtin and is absent under `python -S` or when frozen
 - [ ] Move `pygame.mixer.init()` and the module-level `Sound(...)` loads out of `Projectiles.py` import time into explicit init
 - [ ] Move `PowerUps.og_image = pygame.image.load(...)` off the class body (runs at import)
