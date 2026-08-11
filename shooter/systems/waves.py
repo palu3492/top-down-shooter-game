@@ -1,5 +1,5 @@
-from Zombie import *
-from Data import *
+from shooter.entities.zombie import *
+from shooter.ui.hud import *
 import pygame
 
 class Wave_System:
