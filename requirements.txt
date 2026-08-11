@@ -1,2 +1,2 @@
-# pygame-ce, not upstream pygame -- see README "Why pygame-ce".
+# pygame-ce, not upstream pygame -- rationale in AARON_TICKETS.md, AT2.
 pygame-ce==2.5.8

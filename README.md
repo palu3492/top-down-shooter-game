@@ -8,7 +8,8 @@ spend the cash the horde drops, and don't let them surround you.
 ## Requirements
 
 - Python 3.10 or newer. Development targets **3.14**, pinned in `.python-version`.
-- `pygame-ce` — **not** upstream `pygame`, see [Why pygame-ce](#why-pygame-ce)
+- `pygame-ce` — **not** upstream `pygame`. Don't install both; they claim the
+  same `pygame` import name and shadow each other.
 
 ## Install (macOS)
 
@@ -54,13 +55,11 @@ Match the version in `.python-version` if you can.
 
 `uv run python main.py` also works, but note it resolves dependencies from
 `pyproject.toml` (`pygame-ce>=2.5.5,<3`) rather than the exact pin in
-`requirements.txt`, so the two can drift once a newer pygame-ce ships. Adopting
-`uv.lock` as the single source of truth would remove that split — see AT2.1.
+`requirements.txt`, so the two can drift once a newer pygame-ce ships.
 
 > **Run from the repository root.** Assets are currently loaded through paths
 > relative to the working directory, so launching from anywhere else fails with
-> a `FileNotFoundError`. AT3 makes asset paths package-relative and removes this
-> restriction.
+> a `FileNotFoundError`.
 
 ## Controls
 
@@ -79,42 +78,6 @@ Match the version in `.python-version` if you can.
 Each wave spawns `5 + wave²` zombies. Kills pay $50. Health regenerates slowly
 while you stay untouched.
 
-## Why pygame-ce
-
-**pygame is not deprecated.** [`pygame-ce`](https://pyga.me) is a *fork*, not an
-official successor — created by pygame's former core developers, in their words,
-"after impossible challenges prevented them from continuing development
-upstream." Both projects still exist. This is a choice between them, not a
-forced upgrade.
-
-The choice is made on maintenance, checked 2026-08-11:
-
-| | upstream `pygame` | `pygame-ce` |
-|---|---|---|
-| Latest release | 2.6.1, 2024-09-29 | 2.5.8, 2026-08-09 |
-| Time since release | ~23 months | ~2 days |
-| Highest CPython wheel | 3.13 | 3.14 |
-| Installs on CPython 3.14 | no | yes |
-
-`pip install pygame` fails outright on CPython 3.14 — no wheel exists for any
-released version, and the fallback source build errors out. Staying upstream
-would mean pinning this project to Python 3.13 or older on a package that has
-not shipped in nearly two years.
-
-**No source changes were required to adopt it.** pygame-ce installs under the
-`pygame` import name and is API-compatible, so every `import pygame` in this
-repo works untouched. This was verified by running the original, unmodified
-2017-era code against it — see AT1.
-
-One constraint worth keeping: pygame-ce is a *superset* of pygame. Treat the
-upstream pygame 2.6 API as the contract and avoid ce-only additions unless the
-tradeoff is deliberate. Hold that line and reverting is a one-line change to
-`requirements.txt`.
-
-Do not install both — they claim the same `pygame` import name and shadow each
-other. If upstream pygame is already in your environment, `pip uninstall pygame`
-first.
-
 ## Development
 
 ```bash
@@ -125,8 +88,7 @@ uv pip install -e .                      # editable install
 An editable install also provides a `shooter` console script, subject to the
 same run-from-the-repo-root caveat above.
 
-Lint, formatting, type-checking, CI, and the test suite are not wired up yet —
-they land in AT10 and AT11.
+Lint, formatting, type-checking, CI, and the test suite are not wired up yet.
 
 ## Project layout
 
@@ -147,13 +109,3 @@ shooter/
     waves.py                 wave timing and scaling
 Assets/                      images and sounds
 ```
-
-## Modernization backlog
-
-This is an eight-year-old codebase being brought forward in reviewable slices.
-See [AARON_TICKETS.md](AARON_TICKETS.md) for the plan — tickets are identified
-`AT<N>` and each one is a single PR against `dev`.
-
-There are known bugs still in the backlog, including a crash: a power-up left
-on the field for ~7 seconds loads a missing `Human.png` and takes the process
-down (AT4).

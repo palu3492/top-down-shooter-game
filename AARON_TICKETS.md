@@ -58,12 +58,35 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 - [x] README: install + run instructions, controls table, screenshot, project layout
 - [x] Verify a clean `python -m venv` install runs the game end to end
 
-**Resolution — pygame vs pygame-ce:** confirmed on CPython 3.14.4 that
-`pip install pygame` **fails** — upstream ships no 3.14 wheel and the source
-build errors out. `pygame-ce` 2.5.8 (SDL 2.32.10) installs, is an
-API-compatible fork that still imports as `pygame`, and runs the game with no
-source changes. Pinned exactly in `requirements.txt`; `pyproject.toml` carries
-the looser `>=2.5.5,<3`. Reasoning recorded in the README.
+**Resolution — pygame vs pygame-ce:** pygame is **not** deprecated. `pygame-ce`
+is a *fork* by pygame's former core developers, not an official successor — both
+projects still exist. This was a choice between them, decided on maintenance
+(checked 2026-08-11):
+
+| | upstream `pygame` | `pygame-ce` |
+|---|---|---|
+| Latest release | 2.6.1, 2024-09-29 (~23 months) | 2.5.8, 2026-08-09 |
+| Commits, last 12 months | 14 (0 in last 3 months) | 557 |
+| Distinct authors, last 12 months | 3 | 35 |
+| Highest CPython wheel | 3.13 | 3.14 |
+| Installs on CPython 3.14 | no | yes |
+
+`pip install pygame` fails outright on 3.14 — no wheel for any released version
+and the source build errors. Staying upstream would have meant pinning to Python
+3.13 or older on a package dormant since 2024.
+
+Adopting it required **no source changes**: pygame-ce installs under the
+`pygame` import name and is API-compatible, verified by running the original
+unmodified 2017-era code against it in AT1. Ecosystem is following it too —
+`pygame-gui` now requires `pygame-ce>=2.5.3` outright and `pytmx` ships a
+`pygame-ce` extra.
+
+Pinned exactly in `requirements.txt`; `pyproject.toml` carries the looser
+`>=2.5.5,<3`.
+
+**Constraint to hold:** pygame-ce is a *superset*. Treat the upstream pygame 2.6
+API as the contract and avoid ce-only additions unless deliberate — hold that
+line and reverting is a one-line change.
 
 **Known limitation left for AT3:** the `shooter` console script and `main.py`
 both still require the repo root as cwd, because assets resolve relative to the
