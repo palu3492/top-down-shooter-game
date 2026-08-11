@@ -71,6 +71,11 @@ working directory. Verified: launching from `/` dies on
 `FileNotFoundError: No file 'Assets/Sounds/gunAudio.wav'`. Documented in the
 README rather than silently shipped.
 
+**Non-goals:** any change to game code. AT2 and AT2.1 touch only manifests,
+README, and this file. QA confirmed the game still crashes on `Human.png` after
+~7s exactly as it does on `master` — that is the correct outcome here, and it is
+fixed in AT2.2.
+
 ---
 
 ## AT2.1 — Python toolchain and version pin — DONE
@@ -108,6 +113,28 @@ clean end state, deliberately deferred to keep this change additive.
 
 ---
 
+## AT2.2 — Fix the `Human.png` crash — TODO
+
+**Short description:** `PowerUps.Timer` loads `"Human.png"`, a file that has
+never existed in this repo, so any power-up left on the field for ~400 frames
+(~7s) takes the whole process down. Pulled out of AT4 and moved ahead of AT3
+because it caps every QA session at seven seconds and blocks meaningful review
+of the PRs that follow.
+
+**Dependencies:** AT2
+
+**Goals**
+- [ ] Remove the crash — the blink-before-expiry effect should not load a nonexistent file
+- [ ] Preserve the evident intent (flash the pickup as it nears expiry) rather than deleting the behaviour outright
+- [ ] Verify a power-up survives its full 1200-frame lifetime and expires cleanly
+- [ ] Verify picking one up still works
+
+**Non-goals:** everything else in AT4, the import-time asset loads in
+`powerups.py`, and the `randint(2, 2)` power-up selection bug in AT5. This PR
+fixes one crash and nothing else.
+
+---
+
 ## AT3 — Asset path resolution + loader cache — TODO
 
 **Short description:** Every asset path is a bare relative string like
@@ -135,7 +162,7 @@ problem in the codebase.
 **Dependencies:** AT3
 
 **Goals**
-- [ ] `PowerUps.Timer` loads `"Human.png"` — **the file does not exist**. Any power-up that survives ~400 ticks (~7s) takes the process down. Fix or remove the blink effect.
+- [x] ~~`PowerUps.Timer` loads `"Human.png"`~~ — moved to AT2.2 and pulled ahead of AT3; it was capping QA sessions at 7 seconds
 - [ ] `loadBackground.image_at`: `if colorkey is -1` should be `==`. Correction to an earlier draft of this ticket — verified on 3.14 that this form emits **no** SyntaxWarning (CPython only warns on bare literals, and `-1` parses as a unary op). It happens to work because -1 falls in CPython's small-int cache, so it is latent fragility rather than a live bug. Note the whole `colorkey` branch is currently unreachable: the only caller passes no colorkey.
 - [ ] Replace `pygame.quit(); quit()` with `sys.exit()` — `quit()` is a `site` builtin and is absent under `python -S` or when frozen
 - [ ] Move `pygame.mixer.init()` and the module-level `Sound(...)` loads out of `Projectiles.py` import time into explicit init
