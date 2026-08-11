@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "top-down-shooter"
+version = "0.1.0"
+description = "A top-down zombie wave shooter built with pygame"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # Lower bound is the first release with CPython 3.13+ wheels; upper bound
+    # guards against the 3.x major. requirements.txt pins the exact version.
+    "pygame-ce>=2.5.5,<3",
+]
+
+[project.scripts]
+# NOTE: assets are still resolved relative to the current working directory,
+# so this entry point only works when launched from the repository root.
+# AT3 makes asset paths package-relative and lifts that restriction.
+shooter = "shooter.game:game_loop"
+
+[tool.setuptools.packages.find]
+include = ["shooter*"]

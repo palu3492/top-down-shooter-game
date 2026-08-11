@@ -1,0 +1,10 @@
+# Development dependencies: everything in requirements.txt plus tooling.
+#
+#   .venv/bin/pip install -r requirements-dev.txt
+#
+# The tools are installed here; their configuration and the CI that runs
+# them land in AT10 (lint/format/type-check/CI) and AT11 (tests).
+-r requirements.txt
+
+ruff==0.16.2
+pytest==9.1.1

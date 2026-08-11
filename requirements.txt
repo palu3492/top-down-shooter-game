@@ -1,0 +1,9 @@
+# Runtime dependencies.
+#
+#   python -m venv .venv
+#   .venv/bin/pip install -r requirements.txt
+#
+# pygame-ce rather than pygame -- see "Why pygame-ce" in the README.
+# Pinned exactly: this is an application, so reproducible installs beat
+# floating versions. pyproject.toml carries the looser range.
+pygame-ce==2.5.8

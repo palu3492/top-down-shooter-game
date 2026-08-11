@@ -44,7 +44,7 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 
 ---
 
-## AT2 — Dependency + project manifests — TODO
+## AT2 — Dependency + project manifests — DONE
 
 **Short description:** Declare what the game needs to run so a fresh clone is one
 `pip install` away instead of guesswork.
@@ -52,18 +52,24 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 **Dependencies:** AT1
 
 **Goals**
-- [ ] `requirements.txt` with a pinned, working pygame (see note below)
-- [ ] `requirements-dev.txt` for lint/test tooling
-- [ ] `pyproject.toml` declaring the `shooter` package, `requires-python`, and a `shooter` console script
-- [ ] README: install + run instructions, controls table, screenshot
-- [ ] Verify a clean `python -m venv` install runs the game end to end
+- [x] `requirements.txt` pinning `pygame-ce==2.5.8` (see resolution below)
+- [x] `requirements-dev.txt` adding `ruff` + `pytest`; their config lands in AT10/AT11
+- [x] `pyproject.toml` declaring the `shooter` package, `requires-python = ">=3.10"`, and a `shooter` console script
+- [x] README: install + run instructions, controls table, screenshot, project layout
+- [x] Verify a clean `python -m venv` install runs the game end to end
 
-**Note — already investigated during AT1:** on this box (CPython 3.14.4),
+**Resolution — pygame vs pygame-ce:** confirmed on CPython 3.14.4 that
 `pip install pygame` **fails** — upstream ships no 3.14 wheel and the source
-build errors out. `pip install pygame-ce` succeeds (2.5.8, SDL 2.32.10) and runs
-the game unmodified; it is an API-compatible fork that still imports as
-`pygame`, so no source changes are needed. Recommendation: pin `pygame-ce`.
-Record the reasoning in the README.
+build errors out. `pygame-ce` 2.5.8 (SDL 2.32.10) installs, is an
+API-compatible fork that still imports as `pygame`, and runs the game with no
+source changes. Pinned exactly in `requirements.txt`; `pyproject.toml` carries
+the looser `>=2.5.5,<3`. Reasoning recorded in the README.
+
+**Known limitation left for AT3:** the `shooter` console script and `main.py`
+both still require the repo root as cwd, because assets resolve relative to the
+working directory. Verified: launching from `/` dies on
+`FileNotFoundError: No file 'Assets/Sounds/gunAudio.wav'`. Documented in the
+README rather than silently shipped.
 
 ---
 
