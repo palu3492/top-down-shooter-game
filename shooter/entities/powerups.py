@@ -1,5 +1,7 @@
 import pygame
 import random
+
+from shooter.assets import load_image
 class PowerUps(pygame.sprite.Sprite):
 
     # 0 == Null
@@ -9,7 +11,7 @@ class PowerUps(pygame.sprite.Sprite):
     # 4 == MaxHealth
     powerup_selected = 0
 
-    og_image = pygame.image.load("Assets/Power Ups/MaxHealth.png")
+    og_image = load_image("Power Ups/MaxHealth.png")
 
     timer_count = 0
 
@@ -22,22 +24,22 @@ class PowerUps(pygame.sprite.Sprite):
         self.rect.x = self.rect.x + X
 
     def InstaKill(self):
-        self.image = pygame.image.load("Assets/Power Ups/instakill.png")
+        self.image = load_image("Power Ups/instakill.png")
         self.rect = self.image.get_rect()
         self.Spawning_Location()
 
     def Nuke(self):
-        self.image = pygame.image.load("Assets/Power Ups/Nuke.png")
+        self.image = load_image("Power Ups/Nuke.png")
         self.rect = self.image.get_rect()
         self.Spawning_Location()
 
     def MaxAmmo(self):
-        self.image = pygame.image.load("Assets/Power Ups/MaxAmmo.png")
+        self.image = load_image("Power Ups/MaxAmmo.png")
         self.rect = self.image.get_rect()
         self.Spawning_Location()
 
     def MaxHealth(self):
-        self.image = pygame.image.load("Assets/Power Ups/MaxHealth.png")
+        self.image = load_image("Power Ups/MaxHealth.png")
         self.rect = self.image.get_rect()
         self.Spawning_Location()
 

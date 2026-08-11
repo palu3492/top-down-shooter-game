@@ -1,5 +1,13 @@
 import pygame
 
+from shooter.assets import load_animation
+
+ANIMATIONS = {
+    "IDLE": ("Player Animations/Idle", "survivor-idle_rifle_", 20),
+    "MOVE": ("Player Animations/Move", "survivor-move_rifle_", 20),
+    "SHOOT": ("Player Animations/Shoot", "survivor-shoot_rifle_", 3),
+}
+
 class Human(pygame.sprite.Sprite):
 
     type = "IDLE"
@@ -11,12 +19,13 @@ class Human(pygame.sprite.Sprite):
 
     health = 100.00
 
-    player = "Assets/Player Animations/" + type + "/survivor-" + type + "_rifle_" + str(0) + ".png"
-
     def __init__(self, window_size):
        pygame.sprite.Sprite.__init__(self)
-       self.image = pygame.image.load("Assets/Player Animations/Idle/survivor-idle_rifle_0.png")
-       self.image = pygame.transform.scale(self.image, (int(self.image.get_rect().size[0] * .5),int(self.image.get_rect().size[1] * .5)))
+       self.frames = {
+           name: load_animation(directory, prefix, count, .5)
+           for name, (directory, prefix, count) in ANIMATIONS.items()
+       }
+       self.image = self.frames["IDLE"][0]
        self.rect = self.image.get_rect()
        self.rect.x = (window_size[0] / 2.0) - (self.rect.size[0] / 2.0)
        self.rect.y = (window_size[1]/2.0)-(self.rect.size[1]/2.0)
@@ -36,27 +45,26 @@ class Human(pygame.sprite.Sprite):
 
     def update_anim(self, type,):
         self.type = type
+        frame = 0
         if self.type == "IDLE":
             if self.current_idle < 19:
                 self.current_idle+=1
             else:
                 self.current_idle = 0
-            self.player = "Assets/Player Animations/" + type + "/survivor-" + type + "_rifle_" + "0" + ".png"
         elif type == "MOVE":
             if self.current_move < 19:
                 self.current_move += 1
             else:
                 self.current_move = 0
-            self.player = "Assets/Player Animations/" + type + "/survivor-" + type + "_rifle_" + str(self.current_move) + ".png"
+            frame = self.current_move
         elif type == "SHOOT":
             if self.current_shoot < 2:
                 self.current_shoot += 1
             else:
                 self.current_shoot = 0
-            self.player = "Assets/Player Animations/" + type + "/survivor-" + type + "_rifle_" + str(self.current_shoot) + ".png"
+            frame = self.current_shoot
 
-        self.image = pygame.image.load(self.player)
-        self.image = pygame.transform.scale(self.image, (int(self.image.get_rect().size[0] * .5),int(self.image.get_rect().size[1] * .5)))
+        self.image = self.frames[type][frame]
         self.health_regen()
 
     def remove_health(self, damage):

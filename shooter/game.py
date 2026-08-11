@@ -1,5 +1,7 @@
 import pygame
 import math
+
+from shooter.assets import asset_path, load_image
 from shooter.entities.player import Human
 from shooter.systems.waves import  Wave_System
 #from CarePackage import PackageSystem
@@ -39,12 +41,12 @@ def game_loop():
     game_is_running = True
     fullscreen_flag = True
 
-    cursor = pygame.image.load('Assets/cursor.png')
+    cursor = load_image('cursor.png')
     pygame.mouse.set_visible(False)
 
     cameraX, cameraY = 0,0
 
-    bck = loadBackground("Assets/Backgrounds/background_0.jpg")
+    bck = loadBackground(asset_path("Backgrounds/background_0.jpg"))
 
     heads_up_display=HUD(window)
     human = Human(window)

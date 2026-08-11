@@ -1,7 +1,14 @@
 import pygame
 import random
 import math
+from shooter.assets import load_animation, load_sized
 from shooter.ui.hud import *
+
+ANIMATIONS = {
+    "IDLE": ("Zombie Animations/zombie_idle", "skeleton-idle_", 17),
+    "MOVE": ("Zombie Animations/zombie_move", "skeleton-move_", 17),
+    "ATTACK": ("Zombie Animations/zombie_attack", "skeleton-attack_", 9),
+}
 
 class Zombie(pygame.sprite.Sprite):
     zombieX = zombieY = 0
@@ -10,15 +17,17 @@ class Zombie(pygame.sprite.Sprite):
     zombie_speed=6
     stun_timer=0
 
-    player = "Assets/Zombie Animations/" + "zombie_" + type + "/skeleton-" + type + "_" + str(0) + ".png"
     zombie_health = 100.00
 
     def __init__(self, window_size, cash):
         self.player_cash = cash
         pygame.sprite.Sprite.__init__(self)
         self.window_size=window_size
-        self.image = pygame.image.load("Assets/Zombie Animations/zombie_idle/skeleton-idle_0.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image, (int(120.5), int(111)))
+        self.frames = {
+            name: load_animation(directory, prefix, count, .5, True)
+            for name, (directory, prefix, count) in ANIMATIONS.items()
+        }
+        self.image = load_sized("Zombie Animations/zombie_idle/skeleton-idle_0.png", 120, 111, True)
         self.rect = self.image.get_rect()
         self.spawn_zombie() #calls function that controls Zombie Spawning
 
@@ -44,27 +53,27 @@ class Zombie(pygame.sprite.Sprite):
         else:
             self.type = type
 
+        frame = 0
         if self.type == "IDLE":
             if self.current_idle < 16:
                 self.current_idle+=1
             else:
                 self.current_idle = 0
-            self.player = "Assets/Zombie Animations/" + "zombie_" + type + "/skeleton-" + type + "_" + str(self.current_idle) + ".png"
-        elif type == "MOVE":
+            frame = self.current_idle
+        elif self.type == "MOVE":
             if self.current_move < 16:
                 self.current_move += 1
             else:
                 self.current_move = 0
-            self.player = "Assets/Zombie Animations/" + "zombie_" + type + "/skeleton-" + type + "_" + str(self.current_move) + ".png"
-        elif type == "ATTACK":
+            frame = self.current_move
+        elif self.type == "ATTACK":
             if self.current_attack < 8:
                 self.current_attack += 1
             else:
                 self.current_attack = 0
-            self.player = "Assets/Zombie Animations/" + "zombie_" + type + "/skeleton-" + type + "_" + str(self.current_attack) + ".png"
+            frame = self.current_attack
 
-        self.image = pygame.image.load(self.player).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (int(self.image.get_rect().size[0] * .5),int(self.image.get_rect().size[1] * .5)))
+        self.image = self.frames[self.type][frame]
 
     def get_posistion(self):
         return (self.zombieX, self.zombieY)
