@@ -1,7 +1,7 @@
 import pygame
 import random
 import math
-from Data import *
+from shooter.ui.hud import *
 
 class Zombie(pygame.sprite.Sprite):
     zombieX = zombieY = 0

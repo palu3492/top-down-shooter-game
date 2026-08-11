@@ -1,13 +1,14 @@
 import pygame
 import math
-from Human import Human
-from waveSystem import  Wave_System
+from shooter.entities.player import Human
+from shooter.systems.waves import  Wave_System
 #from CarePackage import PackageSystem
-from Data import *
-from Zombie import Zombie
-from loadBackground import loadBackground
-from Projectiles import *
-from PowerUps import PowerUps
+from shooter.ui.hud import *
+from shooter.ui.radar import *
+from shooter.entities.zombie import Zombie
+from shooter.background import loadBackground
+from shooter.entities.projectiles import *
+from shooter.entities.powerups import PowerUps
 
 def reset_zombie_pos(zombie):
     zombie.reset_posistion()
@@ -239,5 +240,3 @@ def game_loop():
         screen.blit(pygame.font.Font(None, 20).render(str(clock.get_fps()), True, (255, 255, 255)), (0, 0))
         pygame.display.flip()
         clock.tick(60)
-
-game_loop()
