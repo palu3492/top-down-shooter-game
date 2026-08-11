@@ -136,7 +136,7 @@ clean end state, deliberately deferred to keep this change additive.
 
 ---
 
-## AT2.2 — Fix the `Human.png` crash — TODO
+## AT2.2 — Fix the `Human.png` crash — DONE
 
 **Short description:** `PowerUps.Timer` loads `"Human.png"`, a file that has
 never existed in this repo, so any power-up left on the field for ~400 frames
@@ -147,10 +147,15 @@ of the PRs that follow.
 **Dependencies:** AT2
 
 **Goals**
-- [ ] Remove the crash — the blink-before-expiry effect should not load a nonexistent file
-- [ ] Preserve the evident intent (flash the pickup as it nears expiry) rather than deleting the behaviour outright
-- [ ] Verify a power-up survives its full 1200-frame lifetime and expires cleanly
-- [ ] Verify picking one up still works
+- [x] Remove the crash — the blink-before-expiry effect should not load a nonexistent file
+- [x] Preserve the evident intent (flash the pickup as it nears expiry) rather than deleting the behaviour outright
+- [x] Verify a power-up survives its full 1200-frame lifetime and expires cleanly
+- [x] Verify picking one up still works
+
+**Fix:** the blink swapped in a 10%-scaled `Human.png` — a file that has never
+existed here, and a nonsensical thing to blink to even if it had. Replaced with
+a transparent `Surface` of the same size, built once when the timer starts, so
+the pickup visibly flashes out and back as intended. Net −3 lines.
 
 **Non-goals:** everything else in AT4, the import-time asset loads in
 `powerups.py`, and the `randint(2, 2)` power-up selection bug in AT5. This PR
