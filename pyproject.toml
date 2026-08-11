@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "top-down-shooter"
+version = "0.1.0"
+description = "A top-down zombie wave shooter built with pygame"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["pygame-ce>=2.5.5,<3"]
+
+[project.scripts]
+# Requires the repo root as cwd until AT3 makes asset paths package-relative.
+shooter = "shooter.game:game_loop"
+
+[tool.setuptools.packages.find]
+include = ["shooter*"]

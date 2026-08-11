@@ -44,7 +44,7 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 
 ---
 
-## AT2 — Dependency + project manifests — TODO
+## AT2 — Dependency + project manifests — DONE
 
 **Short description:** Declare what the game needs to run so a fresh clone is one
 `pip install` away instead of guesswork.
@@ -52,18 +52,109 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 **Dependencies:** AT1
 
 **Goals**
-- [ ] `requirements.txt` with a pinned, working pygame (see note below)
-- [ ] `requirements-dev.txt` for lint/test tooling
-- [ ] `pyproject.toml` declaring the `shooter` package, `requires-python`, and a `shooter` console script
-- [ ] README: install + run instructions, controls table, screenshot
-- [ ] Verify a clean `python -m venv` install runs the game end to end
+- [x] `requirements.txt` pinning `pygame-ce==2.5.8` (see resolution below)
+- [x] `requirements-dev.txt` adding `ruff` + `pytest`; their config lands in AT10/AT11
+- [x] `pyproject.toml` declaring the `shooter` package, `requires-python = ">=3.10"`, and a `shooter` console script
+- [x] README: install + run instructions, controls table, screenshot, project layout
+- [x] Verify a clean `python -m venv` install runs the game end to end
 
-**Note — already investigated during AT1:** on this box (CPython 3.14.4),
-`pip install pygame` **fails** — upstream ships no 3.14 wheel and the source
-build errors out. `pip install pygame-ce` succeeds (2.5.8, SDL 2.32.10) and runs
-the game unmodified; it is an API-compatible fork that still imports as
-`pygame`, so no source changes are needed. Recommendation: pin `pygame-ce`.
-Record the reasoning in the README.
+**Resolution — pygame vs pygame-ce:** pygame is **not** deprecated. `pygame-ce`
+is a *fork* by pygame's former core developers, not an official successor — both
+projects still exist. This was a choice between them, decided on maintenance
+(checked 2026-08-11):
+
+| | upstream `pygame` | `pygame-ce` |
+|---|---|---|
+| Latest release | 2.6.1, 2024-09-29 (~23 months) | 2.5.8, 2026-08-09 |
+| Commits, last 12 months | 14 (0 in last 3 months) | 557 |
+| Distinct authors, last 12 months | 3 | 35 |
+| Highest CPython wheel | 3.13 | 3.14 |
+| Installs on CPython 3.14 | no | yes |
+
+`pip install pygame` fails outright on 3.14 — no wheel for any released version
+and the source build errors. Staying upstream would have meant pinning to Python
+3.13 or older on a package dormant since 2024.
+
+Adopting it required **no source changes**: pygame-ce installs under the
+`pygame` import name and is API-compatible, verified by running the original
+unmodified 2017-era code against it in AT1. Ecosystem is following it too —
+`pygame-gui` now requires `pygame-ce>=2.5.3` outright and `pytmx` ships a
+`pygame-ce` extra.
+
+Pinned exactly in `requirements.txt`; `pyproject.toml` carries the looser
+`>=2.5.5,<3`.
+
+**Constraint to hold:** pygame-ce is a *superset*. Treat the upstream pygame 2.6
+API as the contract and avoid ce-only additions unless deliberate — hold that
+line and reverting is a one-line change.
+
+**Known limitation left for AT3:** the `shooter` console script and `main.py`
+both still require the repo root as cwd, because assets resolve relative to the
+working directory. Verified: launching from `/` dies on
+`FileNotFoundError: No file 'Assets/Sounds/gunAudio.wav'`. Documented in the
+README rather than silently shipped.
+
+**Non-goals:** any change to game code. AT2 and AT2.1 touch only manifests,
+README, and this file. QA confirmed the game still crashes on `Human.png` after
+~7s exactly as it does on `master` — that is the correct outcome here, and it is
+fixed in AT2.2.
+
+---
+
+## AT2.1 — Python toolchain and version pin — DONE
+
+**Short description:** Pin the interpreter and adopt `uv` so contributors and CI
+stop silently differing. Landed with AT2 rather than as its own PR — it edits
+the same README install section, and splitting it would have guaranteed a
+conflict for no review benefit.
+
+**Dependencies:** AT2
+
+**Goals**
+- [x] `.python-version` pinning `3.14` (patch-floating, so security updates apply)
+- [x] Un-ignore `.python-version` — the inherited pyenv-era `.gitignore` was silently swallowing it
+- [x] README install path for macOS built on `uv`, with the pip flow kept for other platforms
+- [x] Document why not Homebrew `python@3.x` and not `/usr/bin/python3`
+
+**Why uv:** it manages interpreter *and* environment as standalone builds, so
+nothing depends on Homebrew's rolling `python@3.x` formula — the usual cause of
+"my venv broke after `brew upgrade`". Verified: `uv python install` fetched
+CPython 3.14.7 in 2.3s (newer than the 3.14.4 Homebrew had), and the game ran a
+full 380-frame exercise on it.
+
+**Note on the version:** the 8-year-old code needed **no** changes to run on the
+newest Python — it byte-compiles warning-free and runs on 3.14. There is no
+interpreter upgrade ladder to climb. What was missing was the pin and the proof,
+not modernization. `requires-python = ">=3.10"` is still an untested claim;
+AT10's CI matrix is what makes it real.
+
+**Follow-up left open:** `requirements.txt` and `pyproject.toml` now both
+declare the dependency, and `uv run` resolves from `pyproject.toml` rather than
+the exact pin — so they can drift once a newer pygame-ce ships. Consolidating on
+`uv.lock` as the single source of truth and dropping `requirements.txt` is the
+clean end state, deliberately deferred to keep this change additive.
+
+---
+
+## AT2.2 — Fix the `Human.png` crash — TODO
+
+**Short description:** `PowerUps.Timer` loads `"Human.png"`, a file that has
+never existed in this repo, so any power-up left on the field for ~400 frames
+(~7s) takes the whole process down. Pulled out of AT4 and moved ahead of AT3
+because it caps every QA session at seven seconds and blocks meaningful review
+of the PRs that follow.
+
+**Dependencies:** AT2
+
+**Goals**
+- [ ] Remove the crash — the blink-before-expiry effect should not load a nonexistent file
+- [ ] Preserve the evident intent (flash the pickup as it nears expiry) rather than deleting the behaviour outright
+- [ ] Verify a power-up survives its full 1200-frame lifetime and expires cleanly
+- [ ] Verify picking one up still works
+
+**Non-goals:** everything else in AT4, the import-time asset loads in
+`powerups.py`, and the `randint(2, 2)` power-up selection bug in AT5. This PR
+fixes one crash and nothing else.
 
 ---
 
@@ -94,8 +185,8 @@ problem in the codebase.
 **Dependencies:** AT3
 
 **Goals**
-- [ ] `PowerUps.Timer` loads `"Human.png"` — **the file does not exist**. Any power-up that survives ~400 ticks (~7s) takes the process down. Fix or remove the blink effect.
-- [ ] `loadBackground.image_at`: `if colorkey is -1` is an identity check against a literal (SyntaxWarning since 3.8, slated to become an error). Use `==`.
+- [x] ~~`PowerUps.Timer` loads `"Human.png"`~~ — moved to AT2.2 and pulled ahead of AT3; it was capping QA sessions at 7 seconds
+- [ ] `loadBackground.image_at`: `if colorkey is -1` should be `==`. Correction to an earlier draft of this ticket — verified on 3.14 that this form emits **no** SyntaxWarning (CPython only warns on bare literals, and `-1` parses as a unary op). It happens to work because -1 falls in CPython's small-int cache, so it is latent fragility rather than a live bug. Note the whole `colorkey` branch is currently unreachable: the only caller passes no colorkey.
 - [ ] Replace `pygame.quit(); quit()` with `sys.exit()` — `quit()` is a `site` builtin and is absent under `python -S` or when frozen
 - [ ] Move `pygame.mixer.init()` and the module-level `Sound(...)` loads out of `Projectiles.py` import time into explicit init
 - [ ] Move `PowerUps.og_image = pygame.image.load(...)` off the class body (runs at import)
