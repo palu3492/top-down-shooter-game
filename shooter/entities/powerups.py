@@ -55,6 +55,7 @@ class PowerUps(pygame.sprite.Sprite):
     def Timer(self, screen):
         if self.timer_count == 0:
             self.og_image = self.image
+            self.blank_image = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
         if self.timer_count >= 400:
             if (self.timer_count >= 400 and self.timer_count <= 500) or\
                     (self.timer_count >= 600 and self.timer_count <= 650) or\
@@ -62,9 +63,7 @@ class PowerUps(pygame.sprite.Sprite):
                     (self.timer_count >= 1000 and self.timer_count <= 1050) or\
                     (self.timer_count >= 1100 and self.timer_count <= 1125) or\
                     (self.timer_count >= 1150 and self.timer_count <= 1175):
-                self.image = pygame.image.load("Human.png")
-                self.image = pygame.transform.scale\
-                    (self.image, (int(self.image.get_rect().size[0] * .1), int(self.image.get_rect().size[1] * .1)))
+                self.image = self.blank_image
             else:
                 self.image = self.og_image
         if self.timer_count >= 1200:
