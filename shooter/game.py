@@ -7,7 +7,6 @@ from shooter.systems.waves import  Wave_System
 #from CarePackage import PackageSystem
 from shooter.ui.hud import *
 from shooter.ui.radar import *
-from shooter.entities.zombie import Zombie
 from shooter.background import loadBackground
 from shooter.entities.projectiles import *
 from shooter.entities.powerups import PowerUps
@@ -69,7 +68,7 @@ def game_loop():
     mouseX = pygame.mouse.get_pos()[0]
     mouseY = pygame.mouse.get_pos()[1]
     centerX = int(mouseX - (window[0] / 2.0))
-    centerY = -int((mouseY - (window[1] / 2.0)))
+    centerY = -int(mouseY - (window[1] / 2.0))
 
     ammo_class=gun_data(window)
     ammoCount=""
@@ -182,7 +181,7 @@ def game_loop():
         mouseX = pygame.mouse.get_pos()[0]
         mouseY = pygame.mouse.get_pos()[1]
         centerX = int(mouseX - (window[0] / 2))
-        centerY = -int((mouseY - (window[1] / 2)))
+        centerY = -int(mouseY - (window[1] / 2))
         rotationAngle = math.degrees(math.atan2(centerY, centerX))
         human.rot_center(rotationAngle)
 
