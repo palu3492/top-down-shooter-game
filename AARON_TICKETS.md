@@ -1,16 +1,20 @@
-# Tickets
+# Aaron Tickets
 
 Modernization backlog for the Top-Down Shooter. One ticket ≈ one PR.
 Work top to bottom — later tickets assume earlier ones have landed.
 
+Tickets are identified `AT<N>` ("Aaron Ticket"). Use that ID as the prefix in
+branch names, commit subjects, and PR titles — e.g. `AT2: dependency manifests`.
+PRs target `dev`, not `master`.
+
 **Template**
 
 ```
-## T<N> — <Title>
+## AT<N> — <Title>
 
 **Short description:** one or two sentences.
 
-**Dependencies:** T<N>, T<N> — or `none`.
+**Dependencies:** AT<N>, AT<N> — or `none`.
 
 **Goals**
 - [ ] concrete, checkable outcome
@@ -20,7 +24,7 @@ Status legend: `TODO` · `IN PROGRESS` · `DONE`
 
 ---
 
-## T1 — Move source into a `shooter/` package — DONE
+## AT1 — Move source into a `shooter/` package — DONE
 
 **Short description:** Verbatim relocation of the eight root-level modules into a
 proper package with snake_case names. No logic changes, no new dependencies, no
@@ -32,7 +36,7 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 - [x] `git mv` each module so history follows the file
 - [x] Layout: `shooter/{game,background}.py`, `shooter/entities/`, `shooter/ui/`, `shooter/systems/`
 - [x] `__init__.py` in every package directory
-- [x] Update import statements to the new paths (wildcard imports preserved as-is — T9 removes them)
+- [x] Update import statements to the new paths (wildcard imports preserved as-is — AT9 removes them)
 - [x] Add root `main.py` entry point; drop the bare `game_loop()` call from the bottom of `game.py`
 - [x] `python main.py` from the repo root behaves exactly as `python ShooterGame.py` did
 
@@ -40,12 +44,12 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 
 ---
 
-## T2 — Dependency + project manifests — TODO
+## AT2 — Dependency + project manifests — TODO
 
 **Short description:** Declare what the game needs to run so a fresh clone is one
 `pip install` away instead of guesswork.
 
-**Dependencies:** T1
+**Dependencies:** AT1
 
 **Goals**
 - [ ] `requirements.txt` with a pinned, working pygame (see note below)
@@ -54,7 +58,7 @@ cleanup — imports and the entry point only, so the diff is reviewable as a pur
 - [ ] README: install + run instructions, controls table, screenshot
 - [ ] Verify a clean `python -m venv` install runs the game end to end
 
-**Note — already investigated during T1:** on this box (CPython 3.14.4),
+**Note — already investigated during AT1:** on this box (CPython 3.14.4),
 `pip install pygame` **fails** — upstream ships no 3.14 wheel and the source
 build errors out. `pip install pygame-ce` succeeds (2.5.8, SDL 2.32.10) and runs
 the game unmodified; it is an API-compatible fork that still imports as
@@ -63,7 +67,7 @@ Record the reasoning in the README.
 
 ---
 
-## T3 — Asset path resolution + loader cache — TODO
+## AT3 — Asset path resolution + loader cache — TODO
 
 **Short description:** Every asset path is a bare relative string like
 `"Assets/cursor.png"`, so the game only runs with the repo root as cwd. Worse,
@@ -71,7 +75,7 @@ Record the reasoning in the README.
 `pygame.image.load` **every frame, per sprite** — the single largest performance
 problem in the codebase.
 
-**Dependencies:** T1
+**Dependencies:** AT1
 
 **Goals**
 - [ ] `shooter/assets.py` resolving paths relative to the package, not cwd
@@ -83,11 +87,11 @@ problem in the codebase.
 
 ---
 
-## T4 — Fix crashes and unsafe-shutdown paths — TODO
+## AT4 — Fix crashes and unsafe-shutdown paths — TODO
 
 **Short description:** Live crash bugs and exit paths that only work by accident.
 
-**Dependencies:** T3
+**Dependencies:** AT3
 
 **Goals**
 - [ ] `PowerUps.Timer` loads `"Human.png"` — **the file does not exist**. Any power-up that survives ~400 ticks (~7s) takes the process down. Fix or remove the blink effect.
@@ -98,12 +102,12 @@ problem in the codebase.
 
 ---
 
-## T5 — Fix gameplay bugs — TODO
+## AT5 — Fix gameplay bugs — TODO
 
 **Short description:** Behaviour that is plainly wrong rather than merely stylistic.
 Each one changes how the game plays, so they land together and get called out.
 
-**Dependencies:** T4
+**Dependencies:** AT4
 
 **Goals**
 - [ ] Zombies never animate — `zombie.update_anim("MOVE")` is commented out in the main loop, so they slide toward the player in a fixed pose. Same for the `"ATTACK"` pose in `is_zombie_attacking`.
@@ -116,12 +120,12 @@ Each one changes how the game plays, so they land together and get called out.
 
 ---
 
-## T6 — Coordinate system and magic numbers — TODO
+## AT6 — Coordinate system and magic numbers — TODO
 
 **Short description:** The window is 1080×720, but the code is littered with
 constants from a 1920×1080 build that was never fully migrated.
 
-**Dependencies:** T5
+**Dependencies:** AT5
 
 **Goals**
 - [ ] `Zombie.spawn_zombie` spawns against a 1920×1080 frame (`1081`, `1921`, `randint(1,192)*10`) — zombies appear at the wrong offsets
@@ -133,14 +137,14 @@ constants from a 1920×1080 build that was never fully migrated.
 
 ---
 
-## T7 — Class attributes used as mutable instance state — TODO
+## AT7 — Class attributes used as mutable instance state — TODO
 
 **Short description:** Nearly every class declares its mutable state on the class
 body (`health = 100.00`, `cash_amount = 0`, `zombie_speed = 6`). It works only
 because `+=` on an int rebinds to the instance — a genuine landmine the moment
 anyone introduces a list, dict, or a second instance that reads before writing.
 
-**Dependencies:** T6
+**Dependencies:** AT6
 
 **Goals**
 - [ ] Move all mutable state into `__init__` across `Human`, `Zombie`, `gun_data`, `Cash`, `grenade_data`, `PowerUps`, `Wave_System`, `Shot`, `Grenade`, `stunGrenade`, and both detonate classes
@@ -149,11 +153,11 @@ anyone introduces a list, dict, or a second instance that reads before writing.
 
 ---
 
-## T8 — Delete dead code — TODO
+## AT8 — Delete dead code — TODO
 
 **Short description:** Eight years of commented-out experiments.
 
-**Dependencies:** T7
+**Dependencies:** AT7
 
 **Goals**
 - [ ] `Shop_Gui` (never instantiated), commented-out `Zombies_Killed`, the `Clock` docstring stub
@@ -165,12 +169,12 @@ anyone introduces a list, dict, or a second instance that reads before writing.
 
 ---
 
-## T9 — PEP 8 naming and import hygiene — TODO
+## AT9 — PEP 8 naming and import hygiene — TODO
 
 **Short description:** Mechanical rename pass. Large diff, near-zero risk, so it
 goes late — every earlier ticket would otherwise conflict with it.
 
-**Dependencies:** T8
+**Dependencies:** AT8
 
 **Goals**
 - [ ] Classes to PascalCase: `gun_data` → `GunData`, `grenade_data` → `GrenadeData`, `Wave_System` → `WaveSystem`, `loadBackground` → `BackgroundSheet`, `grenadeDetonate` → `GrenadeDetonate`, `stunGrenade` → `StunGrenade`, `stunDetonate` → `StunDetonate`, `RadarScrn` → `RadarScreen`
@@ -181,12 +185,12 @@ goes late — every earlier ticket would otherwise conflict with it.
 
 ---
 
-## T10 — Lint, format, type-check, CI — TODO
+## AT10 — Lint, format, type-check, CI — TODO
 
 **Short description:** Automate the standards the previous tickets establish so
 they don't rot again.
 
-**Dependencies:** T9
+**Dependencies:** AT9
 
 **Goals**
 - [ ] `ruff` config in `pyproject.toml`; repo passes `ruff check` and `ruff format --check`
@@ -196,31 +200,31 @@ they don't rot again.
 
 ---
 
-## T11 — Tests for game logic — TODO
+## AT11 — Tests for game logic — TODO
 
 **Short description:** There are zero tests. The ammo/reload state machine, cash,
 wave scaling, and damage math are pure logic and testable headlessly with
 `SDL_VIDEODRIVER=dummy`.
 
-**Dependencies:** T10
+**Dependencies:** AT10
 
 **Goals**
 - [ ] `pytest` + a conftest that forces the dummy SDL video/audio drivers
 - [ ] Cover `gun_data` reload transitions (empty clip, partial clip, no reserve, manual reload)
-- [ ] Cover `Cash` add/remove including the boundary cases T5 fixes
+- [ ] Cover `Cash` add/remove including the boundary cases AT5 fixes
 - [ ] Cover `Wave_System` spawn counts and `5 + wave²` scaling
 - [ ] Cover `Human` / `Zombie` damage, death, and regen
 - [ ] A smoke test that constructs the game and steps N frames without raising
 
 ---
 
-## T12 — Frame-rate independence — TODO
+## AT12 — Frame-rate independence — TODO
 
 **Short description:** All movement, animation, timers, and cooldowns are counted
 in frames and assume a locked 60 FPS. Anything that drops frames plays in slow
 motion.
 
-**Dependencies:** T11
+**Dependencies:** AT11
 
 **Goals**
 - [ ] Thread `dt` from `clock.tick(60)` through entity updates
