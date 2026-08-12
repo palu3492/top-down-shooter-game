@@ -5,14 +5,36 @@ import pygame
 from shooter.assets import asset_path, load_image
 from shooter.background import BackgroundSheet
 from shooter.entities.player import Human
+from shooter.entities import powerups as powerup_kinds
 from shooter.entities.powerups import PowerUps
-from shooter.entities.projectiles import Grenade, Shot, StunGrenade
+from shooter.entities.projectiles import (
+    BULLET_DAMAGE,
+    LETHAL,
+    Grenade,
+    Shot,
+    StunGrenade,
+)
 from shooter.systems.waves import WaveSystem
 from shooter.ui import pause
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
 from shooter.ui.radar import RadarScreen
 
 PLAYING, PAUSED = "PLAYING", "PAUSED"
+
+INSTAKILL_FRAMES = 30 * 60  # 30 seconds at the locked 60 FPS; AT12 makes this seconds
+
+
+def collect_powerup(kind, human, zombie_group, gun):
+    """Apply a collected power-up. Returns instakill frames to add, if any."""
+    if kind == powerup_kinds.NUKE:
+        zombie_group.empty()
+    elif kind == powerup_kinds.MAX_HEALTH:
+        human.restore_health()
+    elif kind == powerup_kinds.MAX_AMMO:
+        gun.refill()
+    elif kind == powerup_kinds.INSTAKILL:
+        return INSTAKILL_FRAMES
+    return 0
 
 
 def reset_zombie_pos(zombie):
@@ -52,6 +74,7 @@ def game_loop():
     fullscreen_flag = True
     state = PLAYING
     paused_frame = None
+    instakill_frames = 0
 
     cursor = load_image("cursor.png")
     pygame.mouse.set_visible(False)
@@ -131,6 +154,7 @@ def game_loop():
                     (window[1] / 2.0) - camera_y,
                     center_x,
                     center_y,
+                    damage=LETHAL if instakill_frames else BULLET_DAMAGE,
                 )
                 bullets.add(bullet)
                 ammo_count = ammo_class.shooting_bullet()
@@ -222,8 +246,14 @@ def game_loop():
         #
         ###################################
         for powerup in powerups_group:
-            if powerup.update(human, zombie_group, screen, change_x, change_y):
-                powerup.kill()
+            collected = powerup.update(human, change_x, change_y)
+            if collected is None:
+                continue
+            if collected != powerup_kinds.EXPIRED:
+                instakill_frames += collect_powerup(
+                    collected, human, zombie_group, ammo_class
+                )
+            powerup.kill()
         powerups_group.draw(screen)
 
         # Loads in Human and Zombie
@@ -254,6 +284,16 @@ def game_loop():
         radar.draw(screen, -camera_x + 960, -camera_y + 540)
         for zombie in zombie_group:
             radar.update_zom(screen, zombie)
+
+        if instakill_frames:
+            instakill_frames -= 1
+            seconds = instakill_frames // 60 + 1
+            screen.blit(
+                pygame.font.Font(None, 34).render(
+                    f"INSTAKILL {seconds}s", True, (255, 80, 80)
+                ),
+                (window[0] / 2.0 - 70, 40),
+            )
 
         heads_up_display.update(screen, window)
         # Updates Health Bar

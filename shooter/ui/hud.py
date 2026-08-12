@@ -34,8 +34,11 @@ class HUD:
 
 
 class GunData:
-    clip_size = 60
-    ammo_amount = 120
+    CLIP = 60
+    RESERVE = 120
+
+    clip_size = CLIP
+    ammo_amount = RESERVE
     reload_time = 60
 
     def __init__(self, window):
@@ -70,6 +73,9 @@ class GunData:
             self.clip_size += self.ammo_amount
             self.ammo_amount = 0
         return "reload"
+
+    def refill(self):
+        self.ammo_amount = self.RESERVE
 
     def manual_reload(self):
         if self.ammo_amount > 0:

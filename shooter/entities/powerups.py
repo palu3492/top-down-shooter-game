@@ -1,15 +1,15 @@
-import pygame
 import random
+
+import pygame
 
 from shooter.assets import load_image
 
+INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH = 1, 2, 3, 4
+EXPIRED = "EXPIRED"
+LIFETIME = 1200
+
 
 class PowerUps(pygame.sprite.Sprite):
-    # 0 == Null
-    # 1 == instakill
-    # 2 == nuke
-    # 3 == max_ammo
-    # 4 == max_health
     powerup_selected = 0
 
     timer_count = 0
@@ -43,7 +43,7 @@ class PowerUps(pygame.sprite.Sprite):
         self.spawning_location()
 
     def select_powerup(self):
-        self.powerup_selected = random.randint(2, 2)
+        self.powerup_selected = random.randint(INSTAKILL, MAX_HEALTH)
         if self.powerup_selected == 1:
             self.instakill()
         elif self.powerup_selected == 2:
@@ -53,7 +53,7 @@ class PowerUps(pygame.sprite.Sprite):
         elif self.powerup_selected == 4:
             self.max_health()
 
-    def tick(self, screen):
+    def tick(self):
         if self.timer_count == 0:
             self.og_image = self.image
             self.blank_image = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
@@ -69,22 +69,21 @@ class PowerUps(pygame.sprite.Sprite):
                 self.image = self.blank_image
             else:
                 self.image = self.og_image
-        if self.timer_count >= 1200:
-            return True
-        else:
-            self.timer_count += 1
-            return False
+        if self.timer_count >= LIFETIME:
+            return EXPIRED
+        self.timer_count += 1
+        return None
 
-    def update(self, human, zombie_group, screen, change_x, change_y):
+    def update(self, human, change_x, change_y):
+        """Return the kind collected, EXPIRED, or None if still on the field.
+
+        Applying the effect is the caller's job -- a pickup that reached into
+        the zombie group, the gun and the player would know about everything.
+        """
         self.move_with_camera(change_x, change_y)
         if pygame.sprite.collide_rect(human, self):
-            if self.powerup_selected == 2:
-                zombie_group.empty()
-            elif self.powerup_selected == 1:
-                pass
-            return True
-        else:
-            return self.tick(screen)
+            return self.powerup_selected
+        return self.tick()
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)

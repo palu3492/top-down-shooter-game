@@ -326,28 +326,44 @@ choice and not a bug fix. One line to switch if the tighter box is wanted.
 
 ---
 
-## AT5.1 — Power-up selection and handlers — TODO
+## AT5.1 — Power-up selection and handlers — DONE
 
-**Short description:** `PowerUp_Selection` calls `random.randint(2, 2)`, a debug
-leftover pinning every spawn to Nuke. Restoring the full `1..4` range is one
-character; the reason it is a separate ticket is that three of the four
-handlers do nothing, so restoring the range without implementing them just
-spawns pickups that are cosmetic.
+**Short description:** `select_powerup` was pinned to Nuke by `randint(2, 2)`.
+Restoring the full range needed the three empty handlers implemented first.
 
 **Dependencies:** AT5
 
 **Goals**
-- [ ] `random.randint(2, 2)` → `random.randint(1, 4)`
-- [ ] `MaxAmmo` — refill the reserve; needs the gun passed into `PowerUps.update`, which currently only receives the human
-- [ ] `MaxHealth` — restore the player to full
-- [ ] `InstaKill` — design needed: a timed damage buff implies new state and a countdown, which AT7 reworks and AT12 converts to seconds
-- [ ] Flip the last strict xfail, `test_every_kind_can_spawn`
+- [x] `random.randint(2, 2)` → the full `1..4` range
+- [x] `MaxAmmo` — refill the reserve
+- [x] `MaxHealth` — restore the player to full
+- [x] `InstaKill` — 30 seconds of one-shot kills
+- [x] Flip the last strict xfail, `test_every_kind_can_spawn`
 
-**Why split from AT5:** the other seven items are unambiguous defects. This one
-requires deciding what two power-ups *should* do, which is design, not repair.
-AT11's power-up tests already build every kind through a `make_powerup` factory
-so they do not depend on the bug, and they are parametrised over all four —
-so the coverage is waiting for the implementation.
+**The suite now has no xfails left.** All six known bugs recorded during AT11
+have been fixed and their tests rewritten as ordinary assertions.
+
+**Pickups report, the game loop applies.** `update()` used to reach into
+`zombie_group` to fire the Nuke itself. Adding MaxAmmo would have meant handing
+it the gun, and InstaKill the buff timer — a pickup that knows every subsystem.
+It now returns the kind collected, `EXPIRED`, or `None`, and `collect_powerup`
+in `game.py` applies the effect. That also let `update()` drop its
+`zombie_group` and `screen` parameters.
+
+**InstaKill buffs the weapon rather than nerfing the zombies.** Aaron's call,
+and the right one twice over: zombie health bars stay meaningful, and once kills
+are worth points, zeroing health would silently change whatever that scoring is
+based on. `Shot` now carries its own `damage`, set when it is fired, so bullets
+already in flight keep the damage they were fired with. Grenades are deliberately
+untouched — they already deal 75 and making area damage lethal on top of a 30
+second buff is a balance decision, not a bug fix.
+
+**30 seconds is 1800 frames** at the locked 60 FPS, named `INSTAKILL_FRAMES`.
+AT12 converts it to seconds along with every other timer.
+
+**A HUD indicator was not in the ticket but the feature is unusable without
+one** — a timed buff with no feedback leaves the player guessing. Red
+`INSTAKILL 27s` under the top HUD, counting down.
 
 ---
 
@@ -360,8 +376,8 @@ constants from a 1920×1080 build that was never fully migrated.
 
 **Goals**
 - [ ] `Zombie.spawn_zombie` spawns against a 1920×1080 frame (`1081`, `1921`, `randint(1,192)*10`) — zombies appear at the wrong offsets
-- [ ] `RadarScrn.draw` is called with `-cameraX+960, -cameraY+540` — hardcoded 1920/2, 1080/2
-- [ ] `Data.width = 1920` / `height = 50` are module globals nothing reads
+- [ ] `RadarScreen.draw` is called with `-camera_x+960, -camera_y+540` — hardcoded 1920/2, 1080/2
+- [ ] ~~`Data.width` / `height` globals~~ — already deleted in AT8
 - [ ] World bounds `-5000+window[…]` are inlined in the camera clamp
 - [ ] Centralize in `shooter/config.py`: window size, world size, speeds, damage, costs, wave scaling, colors
 - [ ] Radar scale derives from world size instead of a hardcoded `/50`
@@ -378,8 +394,8 @@ anyone introduces a list, dict, or a second instance that reads before writing.
 **Dependencies:** AT6
 
 **Goals**
-- [ ] Move all mutable state into `__init__` across `Human`, `Zombie`, `gun_data`, `Cash`, `grenade_data`, `PowerUps`, `Wave_System`, `Shot`, `Grenade`, `stunGrenade`, and both detonate classes
-- [ ] Drop `Human.player` / `Zombie.player`, computed at class-definition time from class attrs
+- [ ] Move all mutable state into `__init__` across `Human`, `Zombie`, `GunData`, `Cash`, `GrenadeData`, `PowerUps`, `WaveSystem`, `Shot`, `Grenade`, `StunGrenade`, and both detonation classes
+- [ ] ~~Drop `Human.player` / `Zombie.player`~~ — already removed in AT3
 - [ ] `Zombie.zombie_speed` reset in `zombie_speed_timer` re-reads a class constant — make it an instance default
 
 ---
@@ -607,7 +623,7 @@ from `/`.
 
 ---
 
-## AT14 — Pause, and the seam for a screen system — TODO
+## AT14 — Pause, and the seam for a screen system — DONE
 
 **Short description:** `Escape` pauses and resumes. Deliberately small, but
 shaped so the eventual splash → menu → game → pause-menu flow grows out of it
@@ -616,10 +632,10 @@ instead of replacing it.
 **Dependencies:** AT5
 
 **Goals**
-- [ ] `Escape` toggles pause; the world stops, the frame stays on screen behind an overlay
-- [ ] Movement, zombies, projectiles, and every timer freeze while paused
-- [ ] `Escape` resumes
-- [ ] Rebind quit off `P`
+- [x] `Escape` toggles pause; the world stops, the frame stays on screen behind an overlay
+- [x] Movement, zombies, projectiles, and every timer freeze while paused
+- [x] `Escape` resumes
+- [x] Rebind quit off `P`
 
 **Where this is going.** The intended end state is: animated splash → main menu
 (*start game*) → playing → pause menu (*resume*, *settings*, *end game*) → back
@@ -670,5 +686,5 @@ motion.
 
 **Goals**
 - [ ] Thread `dt` from `clock.tick(60)` through entity updates
-- [ ] Convert speeds to px/second and timers to seconds (`stun_timer`, `reload_time`, `Wave_Timer`, `PowerUps.timer_count`, animation frame advance)
+- [ ] Convert speeds to px/second and timers to seconds (`stun_timer`, `reload_time`, `wave_timer`, `PowerUps.timer_count`, `INSTAKILL_FRAMES`, animation frame advance)
 - [ ] Behaviour verified unchanged at 60 FPS, correct at 30 and 144
