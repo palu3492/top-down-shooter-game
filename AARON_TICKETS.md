@@ -392,6 +392,73 @@ corner, and an arbitrary point.
 
 ---
 
+## AT25 — Changing resolution without restarting — DONE
+
+**Short description:** Make `WINDOW` a live setting. Recreate the display and
+re-lay-out against the new size, without touching game state.
+
+**Dependencies:** AT24
+
+**Goals**
+- [x] One value for the render size, not a copy captured in twenty places
+- [x] Changing the resolution setting takes effect immediately
+- [x] No game state is disturbed: health, ammo, wave, and every world position survive
+- [x] `WINDOW` reclassified from boot-only to live
+- [x] The player stays centred and zombies keep walking at them
+
+**Proved while paused.** The integration test pauses before changing resolution,
+so the simulation is frozen and world positions can be compared for exact
+equality. Resizing while the game runs would leave zombies legitimately walking,
+and the assertion would have had to be a tolerance -- which would also have
+passed if the resize had nudged something.
+
+**Why there is nothing to save.** A zombie sits at `(2100, 3400)` in a 5000x5000
+world; its health is a number and the wave counter is a number. None of that is
+measured in pixels, so a resolution change cannot invalidate any of it. There is
+no snapshot to take and no state to serialise -- the world stays in memory and
+only the surface, the camera viewport and the layout are rebuilt. This is what
+every modern engine does; the restart convention is a hangover from older
+graphics APIs where recreating the device was genuinely painful.
+
+**Why ours needs a restart today.** `window = config.WINDOW` is read once in
+`game_loop` and then captured in about twenty places -- the screen stack, the
+HUD, the player, the health bar, the gun, the camera clamps, the aim maths and
+the background blit. Changing `config.WINDOW` afterwards reaches none of them.
+It is the AT23 import-binding problem one level down: a local instead of a
+module global.
+
+**A shared viewport, not twenty resize methods.** Most of the readers already
+ask for the size when they need it: `HealthBar`, `GunData` and `Zombie` all
+index it at draw or step time. They are only stale because each holds its own
+copy of a tuple. Passing one mutable `Viewport` instead makes them live for free
+and leaves exactly two things to fix by hand.
+
+**The two that genuinely compute once.** `Human` places its rect at the screen
+centre in `__init__`, so it has to be re-centred. `HUD` bakes its piece
+positions into `__init__` even though `update()` already receives the window,
+so the arithmetic moves into `update()` and stops being a snapshot at all.
+
+**Existing zombies are not cosmetic.** `move_toward_center` uses half the window
+as the player's screen position, so a zombie holding a stale size walks toward a
+point the player is no longer standing on. This is simulation behaviour, which
+is why the shared viewport matters more than the HUD does.
+
+**The loop reconciles rather than being told.** Settings writes `config.WINDOW`
+on save, and the loop notices the display no longer matches and rebuilds. No
+callback plumbing, and a change from anywhere is honoured.
+
+**`VSYNC` stays boot-only.** It rides on the same `set_mode` call, so it looks
+free -- but whether a driver honours a vsync change on an existing window varies
+by platform, and that cannot be verified against the dummy driver used here.
+Claiming it works live without testing it on real hardware would be a lie in a
+settings screen.
+
+**AT18 is not a prerequisite.** That ticket makes the HUD look right at any
+aspect ratio; this one makes a resolution change work at all. They compose, and
+neither blocks the other.
+
+---
+
 ## AT15 — Zombies spawn around the world origin, not the player — TODO
 
 **Short description:** `spawn_zombie` places zombies on a ring anchored at world

@@ -185,16 +185,16 @@ def test_applying_writes_live_settings_through(store, spare):
 
 def test_applying_holds_boot_settings_back_and_names_them(store, spare):
     store.apply_at_startup(spare)
-    store.set("WINDOW", (1920, 1080))
+    store.set("VSYNC", not config.VSYNC)
 
-    assert store.apply(spare) == ("WINDOW",)
-    assert spare.WINDOW == config.WINDOW
+    assert store.apply(spare) == ("VSYNC",)
+    assert spare.VSYNC == config.VSYNC
 
 
 def test_a_boot_setting_put_back_stops_being_pending(store, spare):
     store.apply_at_startup(spare)
-    store.set("WINDOW", (1920, 1080))
-    store.set("WINDOW", config.WINDOW)
+    store.set("VSYNC", not config.VSYNC)
+    store.set("VSYNC", config.VSYNC)
     assert store.apply(spare) == ()
 
 
@@ -253,18 +253,20 @@ def test_a_new_entity_setting_reaches_the_next_one_built(window, monkeypatch):
 
 
 def test_a_boot_setting_is_only_read_at_startup():
-    """WINDOW and VSYNC are read once, before the loop; nothing re-reads them."""
+    """VSYNC is read where the display is opened and nowhere else, which is what
+    makes it honestly boot-only. WINDOW is live now and is read wherever the
+    display is rebuilt, so it is no longer part of this guarantee."""
     source = Path(__file__).parent.parent / "shooter"
     reads = [
         f"{path.relative_to(source)}:{node.lineno}"
         for path in source.rglob("*.py")
         for node in ast.walk(ast.parse(path.read_text()))
         if isinstance(node, ast.Attribute)
-        and node.attr in {"WINDOW", "VSYNC"}
+        and node.attr == "VSYNC"
         and isinstance(node.value, ast.Name)
         and node.value.id == "config"
     ]
-    assert len(reads) == 2, reads
+    assert len(reads) == 1, reads
 
 
 def test_no_setting_is_frozen_into_another_name_at_import():

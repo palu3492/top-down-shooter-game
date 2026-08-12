@@ -90,7 +90,7 @@ class Setting:
 RESOLUTIONS = ((1080, 720), (1280, 720), (1600, 900), (1920, 1080), (2560, 1440))
 
 CATALOGUE = (
-    Setting("WINDOW", BOOT, choices=RESOLUTIONS),
+    Setting("WINDOW", LIVE, choices=RESOLUTIONS),
     Setting("VSYNC", BOOT),
     Setting("FPS", LIVE, minimum=30, maximum=1000),
     Setting("DEV_TOOLS", LIVE),
