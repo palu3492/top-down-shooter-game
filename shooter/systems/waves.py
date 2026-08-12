@@ -16,6 +16,15 @@ BOARD_STRIPE = (100, 255, 100)
 
 
 class WaveSystem:
+    """The freeplay rules: waves for as long as the player survives.
+
+    `outcome` is the seam AT31 left for modes. Endless play has no finish line,
+    so this never declares a win and a game only ends by being lost. A level
+    (AT34) is this with a target.
+    """
+
+    outcome = None
+
     def __init__(self, window, zombie_group, player_cash, visible=None):
         self.wave_count = 0
         self.wave_seconds = 0.0
