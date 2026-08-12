@@ -928,10 +928,10 @@ That has not been true since AT14 moved quitting behind the pause screen.
 **Short description:** Scaling is not layout. Reposition HUD elements relative
 to window edges instead of stretching a fixed-resolution image.
 
-**Dependencies:** AT17
+**Dependencies:** AT17, AT21 (which owns adopting `pygame_gui`)
 
 **Goals**
-- [ ] Adopt `pygame_gui` and rebuild the HUD with anchors
+- [ ] Rebuild the HUD with anchors
 - [ ] Replace the hand-tuned absolute offsets throughout `ui/hud.py`
 - [ ] Fix the wave banner, currently fully absolute at `(300, 210, 500, 100)`
 - [ ] Radar, ammo, health and cash all track their nearest corner
@@ -955,7 +955,7 @@ the AT2 fork decision already unblocks this.
 
 ---
 
-## AT20 — Settings menu — TODO
+## AT20 — Settings menu — SUPERSEDED by AT21–AT24
 
 **Short description:** A mouse-driven settings screen for display and gameplay
 options. Keyboard and controller navigation come later; the widget library
@@ -1028,3 +1028,172 @@ it.
 **Open question for Aaron:** are the zombie options meant as a difficulty
 feature for players, or a debug affordance for us? That changes where they live
 and whether they need to be safe mid-game.
+
+---
+
+## AT21 — Screen stack, theme, and a navigable pause menu — TODO
+
+**Short description:** The foundation the menus need: adopt `pygame_gui`, add a
+base theme, turn the flat screen state into a stack, and give the pause overlay
+real navigation to Settings and Dev.
+
+**Dependencies:** AT17
+
+**Goals**
+- [ ] Adopt `pygame_gui` and a `UIManager` owned by the screen layer
+- [ ] A base theme file, so everything after this inherits a look rather than inventing one
+- [ ] Screen **stack**, not a flat enum
+- [ ] Screens declare whether they overlay the game or replace it
+- [ ] Pause overlay gains buttons: Resume, Settings, Dev, Quit
+- [ ] Settings and Dev exist as stubs, reachable and dismissable
+
+**Why a stack rather than more names.** AT14 introduced `PLAYING | PAUSED` as a
+named state so more screens could be added by adding names. That holds for
+siblings, but `pause → settings → back to pause` is nesting, not switching — a
+flat enum has nowhere to record what "back" means. A stack of screens does, and
+it is the difference between this working and being rewritten at the third
+screen.
+
+**Overlay versus full-screen is a property, not a special case.** Pause draws
+the frozen frame behind a veil; the dev screen wants the whole display. If a
+screen declares which it is, the loop stops special-casing pause the way it does
+today.
+
+**AT18 no longer owns adopting `pygame_gui`.** Both the HUD and the menus need
+it, and two tickets adopting the same dependency is how themes end up
+inconsistent. This ticket owns it; AT18 depends on it.
+
+---
+
+## AT22 — Layout grid, themed widgets, and a dev screen — TODO
+
+**Short description:** A Bootstrap-style grid for arranging UI, thin themed
+wrappers over the widgets `pygame_gui` already provides, and a full-screen dev
+screen that exercises all of it.
+
+**Dependencies:** AT21
+
+**Goals**
+- [ ] `Grid` / `Row` / `Column` laying out rectangles by span, like Bootstrap
+- [ ] Thin themed wrappers so call sites are ours, not the library's
+- [ ] Full-screen dev screen, reachable from pause
+- [ ] A gallery: every widget arranged by the grid, with light examples
+- [ ] Iterate on theming and UX here, not in the settings screen
+
+**The grid is arithmetic, not a widget.** `pygame_gui` positions everything with
+a `relative_rect`, so what we are missing is not a component — it is something
+that *computes* those rects. `Grid` divides a rect into columns, `Row` splits
+horizontally, a `Column` claims a span. It returns rectangles and nothing else.
+
+That has a property worth having: no pygame, no display, no manager. It is pure
+geometry, so it can be exhaustively unit-tested headlessly, which is exactly
+where off-by-one layout bugs live.
+
+**Deliberately dumb.** Fixed column count, explicit spans, explicit gutters. No
+constraint solving, no auto-sizing, no reflow. A layout you can predict by
+reading it is worth more here than a clever one, and the whole point is that
+`pygame_gui` handles the widgets while we only decide where they sit.
+
+**What it is for.** Arranging a setting as a row — a label claiming most of the
+width and a `UICheckBox` claiming the rest — and having the next setting line up
+underneath without anyone hand-tuning pixel offsets. That is the same problem
+AT18 solves for the HUD, from the other direction.
+
+**Only wrappers are needed for the rest.** Checked against the installed
+`pygame_gui` 0.6.14: `UICheckBox`, `UISelectionList`, `UIDropDownMenu`,
+`UIForm`, `UIPanel`, `UIWindow`, `UIScrollingContainer`, `UITextEntryLine` and
+`UIConfirmationDialog` all exist. A thin `shooter/ui/widgets.py` keeps theme and
+defaults in one place and gives the grid somewhere natural to live beside them.
+
+**Naming carries the explanation.** No comments justifying layout maths — if a
+`span`, a `gutter` or a `cell_rect` needs a paragraph to explain it, the name is
+wrong. This is the house style and the grid is a good test of it.
+
+**This is the iteration surface.** Theming and spacing get argued out on a
+screen with no gameplay consequences, before the settings form depends on them.
+
+**Open questions for Aaron**
+- Should the dev screen be gated in release builds, or always reachable?
+- Theme direction: match the game's military/HUD palette, or deliberately plain so dev tools read as dev tools?
+
+---|---|
+| Checkbox | `UICheckBox` exists |
+| Selector | `UISelectionList` and `UIDropDownMenu` exist |
+| **Table with header and rows** | **nothing table-like — build it** |
+
+Also available and worth knowing: `UIForm`, `UIPanel`, `UIWindow`,
+`UITabContainer` (marked experimental), `UIScrollingContainer`, `UITextEntryLine`,
+`UIConfirmationDialog`.
+
+**Wrap rather than use directly.** A thin `shooter/ui/widgets.py` over
+`pygame_gui` means the theme and defaults live in one place, and swapping or
+patching the library later touches one file. It also gives the `Table` somewhere
+natural to sit next to the elements it visually matches.
+
+**This is the iteration surface.** Theming and layout get argued out here, on a
+screen with no gameplay consequences, rather than mid-way through building
+settings.
+
+**Open questions for Aaron**
+- Should `Table` sort, scroll, or support row selection, or is it display-only to begin with?
+- Should the dev screen be gated in release builds, or always reachable?
+- Theme direction: match the game's military/HUD palette, or deliberately plain so dev tools read as dev tools?
+
+---
+
+## AT23 — Runtime settings store — TODO
+
+**Short description:** The non-UI half of settings. Solve the problem AT20
+uncovered: `config` is import-time constants and settings are mutable persisted
+state.
+
+**Dependencies:** none — pure logic, buildable in parallel with AT22
+
+**Goals**
+- [ ] A settings object taking its defaults from `config`
+- [ ] Persist to the platform user-config directory, not the repo
+- [ ] Each setting declares when it applies: **live**, **new entities only**, or **boot only**
+- [ ] Load at start-up; unknown or invalid stored values fall back to defaults
+- [ ] Fully tested without any UI
+
+**Why it is its own ticket.** It is the only genuinely hard part, it has no
+visual component, and it is completely testable. Bundling it with a screen would
+hide it behind UI review.
+
+**The two failure modes it has to solve**, both verified on the current code:
+
+Gameplay values are captured in `__init__`, so changing one mid-game leaves
+existing entities stale — a zombie built before the change kept speed 360 while
+new ones got 999. Seventeen call sites read `config` at construction.
+
+Default arguments bind at import: `dt=config.SIM_DT` stayed 0.0166 after
+`config.SIM_DT` was set to 0.5. Any setting feeding a default argument silently
+does nothing.
+
+**`SIM_HZ` stays out of settings.** AT16 bought determinism at a fixed rate;
+exposing it discards the property physics will depend on.
+
+---
+
+## AT24 — Settings screen — TODO
+
+**Short description:** The form. Reads and writes the AT23 store, saves only on
+an explicit Save, and warns before anything that needs a restart.
+
+**Dependencies:** AT22, AT23
+
+**Goals**
+- [ ] Form-based, built on `UIForm`, laid out with the AT22 grid
+- [ ] Nothing persists until Save is clicked; leaving without saving discards
+- [ ] Boot-only settings show a `UIConfirmationDialog` before being accepted
+- [ ] Settings marked "new entities only" say so in the UI rather than appearing broken
+- [ ] Display section: vsync, frame cap, resolution
+- [ ] Gameplay section: whatever we decide is player-facing
+
+**Save semantics matter more than they look.** Applying live while the user is
+still dragging a slider means a half-configured game and no way to cancel. An
+explicit Save also gives the confirmation dialog somewhere sensible to fire.
+
+**Open question for Aaron:** are the zombie tunables a difficulty feature for
+players, or a debug affordance for us? Difficulty belongs here; debug belongs on
+the dev screen, where "new entities only" is acceptable rather than confusing.
