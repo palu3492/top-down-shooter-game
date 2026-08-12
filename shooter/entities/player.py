@@ -85,7 +85,7 @@ class Human(pygame.sprite.Sprite):
         else:
             return 0
 
-    def health_regen(self, dt=1 / config.FPS):
+    def health_regen(self, dt=config.SIM_DT):
         if self.health < config.PLAYER_HEALTH:
             self.health = min(
                 config.PLAYER_HEALTH, self.health + config.PLAYER_REGEN * dt

@@ -69,10 +69,10 @@ def test_manual_reload_with_nothing_left_reports_no_ammo(gun):
 
 
 def test_reload_counts_down_then_clears(gun):
-    dt = 1 / config.FPS
+    dt = config.SIM_DT
     assert gun.reload_seconds == config.RELOAD_SECONDS
 
-    for _ in range(int(config.RELOAD_SECONDS * config.FPS)):
+    for _ in range(int(config.RELOAD_SECONDS * config.SIM_HZ)):
         assert gun.reloading(dt) == "reload"
 
     assert gun.reloading(dt) is None

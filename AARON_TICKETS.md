@@ -784,7 +784,7 @@ fast the machine draws.
 - [x] Accumulator loop: simulate in constant `SIM_DT` steps
 - [x] Keep the frame-time clamp as the spiral-of-death guard
 - [x] Determinism: identical state after an equal number of steps at any frame rate
-- [ ] Interpolate entities between steps — camera only for now, see AT19
+- [x] Interpolate entities between steps — completed in AT19
 - [ ] Retire the bespoke bullet sub-stepping — deferred, see below
 
 **Determinism achieved, which AT12 could not give.** Byte-identical state hashes
@@ -827,30 +827,44 @@ continuous collision.
 
 ---
 
-## AT19 — Interpolate entities between simulation steps — TODO
+## AT19 — Interpolate entities between simulation steps — DONE
 
-**Short description:** Finish what AT16 started. Every drawn entity needs a
-previous and current position so rendering can interpolate, which is the
-prerequisite for running the renderer faster than the simulation.
+**Short description:** Finish what AT16 started. Every drawn entity now keeps a
+previous world position, so rendering can draw between steps — which is what
+lets the renderer run faster than the simulation.
 
 **Dependencies:** AT16
 
 **Goals**
-- [ ] Zombies, bullets, throwables and power-ups each keep a previous world position
-- [ ] Render positions computed as `previous + (current - previous) * alpha`
-- [ ] Decouple `FPS` from `SIM_HZ` and remove the constraint noted in `config.py`
-- [ ] Confirm motion is smooth at 144 Hz with the simulation still at 60 Hz
+- [x] Zombies, bullets, throwables, detonations and power-ups keep a previous world position
+- [x] Render positions computed as `previous + (current - previous) * alpha`
+- [x] `FPS` decoupled from `SIM_HZ`; the constraint note in `config.py` is gone
+- [x] Confirm motion is smooth above 60 Hz with the simulation still at 60 Hz
 
-**Why it was not done in AT16.** Partial interpolation looks worse than none:
-smoothly scrolling ground behind entities stepping at 60 Hz reads as juddering.
-Either everything interpolates or nothing does, and doing everything is a change
-to every moving entity rather than to the loop.
+**Measured.** Rendering at 144 Hz against a 60 Hz simulation draws the camera at
+**142 distinct positions per second** rather than 60, with `alpha` ranging up to
+0.917. At 60 Hz `alpha` stays 0 — there is no remainder to interpolate, exactly
+as expected.
 
-**Why it is not urgent.** With `FPS == SIM_HZ` the accumulator remainder is
-approximately zero, so there is nothing to interpolate. This ticket is a
-prerequisite for high-refresh displays and for the GPU-bound rendering the 3D
-direction implies, not a fix for anything visible today.
+**Drawing never touches `rect`.** That is the rule AT16 paid for: `rect` is
+simulation state that collision reads, and rendering that mutates it makes the
+hitbox frame-rate dependent. Entities expose `draw_position()` and a
+`blit_group` helper blits there, so `rect` stays authoritative. A test asserts
+every mover's `rect` is unchanged after a full interpolated draw.
 
+**`PowerUps` had no world position at all.** It accumulated camera deltas
+straight into `rect`, so there was nothing to interpolate *from*. It now holds a
+world position like every other entity and derives `rect` from it, which also
+removes an inconsistency rather than just enabling interpolation.
+
+**A mismatch the decoupling exposed.** Thirteen simulation methods defaulted to
+`dt=1 / config.FPS`. Once `FPS` became the *render* cap that default was simply
+wrong, and it was silently correct only while the two rates were equal. They now
+default to `config.SIM_DT`, and `config.FPS` appears in exactly two places, both
+capping frames.
+
+**Render cap is 240, not uncapped.** `FPS = 0` spins a core flat out. Vsync is a
+display concern and belongs with AT17.
 ---
 
 ## AT17 — Resizable window via SCALED — TODO

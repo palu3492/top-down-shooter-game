@@ -5,6 +5,7 @@ import pygame
 
 from shooter import config
 from shooter.assets import load_image, load_sound
+from shooter.render import Interpolated
 
 BULLET_DAMAGE = config.BULLET_DAMAGE
 LETHAL = config.LETHAL
@@ -32,7 +33,7 @@ def play(spec):
     _load(*spec).play()
 
 
-class Shot(pygame.sprite.Sprite):
+class Shot(Interpolated, pygame.sprite.Sprite):
     SPEED = config.BULLET_SPEED
 
     def __init__(self, start_x, start_y, x, y, damage=BULLET_DAMAGE):
@@ -47,9 +48,11 @@ class Shot(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.bullet_x = start_x - (self.rect[0] / 2)
         self.bullet_y = start_y - (self.rect[1] / 2)
+        self.remember_position()
         play(GUN_SHOT)
 
-    def update(self, camera_x, camera_y, zombie_group, dt=1 / config.FPS):
+    def update(self, camera_x, camera_y, zombie_group, dt=config.SIM_DT):
+        self.remember_position()
         if not self.kill_me:
             # Sub-step by distance so a fast shot cannot tunnel past a zombie,
             # and so the step count follows the frame length instead of fixing it.
@@ -75,6 +78,14 @@ class Shot(pygame.sprite.Sprite):
         ):
             self.kill_me = True
 
+    @property
+    def world_x(self):
+        return self.bullet_x
+
+    @property
+    def world_y(self):
+        return self.bullet_y
+
     def bullet_touching_zombie(self, zombie):
         if pygame.sprite.collide_rect(zombie, self):
             if zombie.remove_health(self.damage):
@@ -83,7 +94,7 @@ class Shot(pygame.sprite.Sprite):
             return True
 
 
-class Grenade(pygame.sprite.Sprite):
+class Grenade(Interpolated, pygame.sprite.Sprite):
     def __init__(self, start_x, start_y, x, y):
         pygame.sprite.Sprite.__init__(self)
         self.explode = config.GRENADE_FUSE
@@ -96,8 +107,18 @@ class Grenade(pygame.sprite.Sprite):
         self.grenade_y = start_y - (self.rect[1] * 1.0 / 2.0)
         self.travelled = 0.0
         self.flight = math.hypot(x, y) / config.GRENADE_SPEED
+        self.remember_position()
 
-    def update(self, camera_x, camera_y, explosions, dt=1 / config.FPS):
+    @property
+    def world_x(self):
+        return self.grenade_x
+
+    @property
+    def world_y(self):
+        return self.grenade_y
+
+    def update(self, camera_x, camera_y, explosions, dt=config.SIM_DT):
+        self.remember_position()
         if self.travelled < self.flight:
             step = min(dt, self.flight - self.travelled)
             self.grenade_x += self.change_x * step
@@ -113,7 +134,7 @@ class Grenade(pygame.sprite.Sprite):
         self.rect.y = self.grenade_y + camera_y
 
 
-class GrenadeDetonation(pygame.sprite.Sprite):
+class GrenadeDetonation(Interpolated, pygame.sprite.Sprite):
     def __init__(self, start_x, start_y):
         pygame.sprite.Sprite.__init__(self)
         self.life = config.EXPLOSION_SECONDS
@@ -123,7 +144,17 @@ class GrenadeDetonation(pygame.sprite.Sprite):
         self.explosion_y = start_y - (self.rect.size[1] / 2)
         play(EXPLOSION)
 
-    def update(self, camera_x, camera_y, dt=1 / config.FPS):
+        self.remember_position()
+
+    @property
+    def world_x(self):
+        return self.explosion_x
+
+    @property
+    def world_y(self):
+        return self.explosion_y
+
+    def update(self, camera_x, camera_y, dt=config.SIM_DT):
         if self.life > 0:
             self.rect.x = self.explosion_x + camera_x
             self.rect.y = self.explosion_y + camera_y
@@ -132,7 +163,7 @@ class GrenadeDetonation(pygame.sprite.Sprite):
             self.kill()
 
 
-class StunGrenade(pygame.sprite.Sprite):
+class StunGrenade(Interpolated, pygame.sprite.Sprite):
     def __init__(self, start_x, start_y, x, y):
         pygame.sprite.Sprite.__init__(self)
         self.explode = config.GRENADE_FUSE
@@ -145,8 +176,18 @@ class StunGrenade(pygame.sprite.Sprite):
         self.grenade_y = start_y - (self.rect[1] * 1.0 / 2.0)
         self.travelled = 0.0
         self.flight = math.hypot(x, y) / config.GRENADE_SPEED
+        self.remember_position()
 
-    def update(self, camera_x, camera_y, explosions, dt=1 / config.FPS):
+    @property
+    def world_x(self):
+        return self.grenade_x
+
+    @property
+    def world_y(self):
+        return self.grenade_y
+
+    def update(self, camera_x, camera_y, explosions, dt=config.SIM_DT):
+        self.remember_position()
         if self.travelled < self.flight:
             step = min(dt, self.flight - self.travelled)
             self.grenade_x += self.change_x * step
@@ -162,7 +203,7 @@ class StunGrenade(pygame.sprite.Sprite):
         self.rect.y = self.grenade_y + camera_y
 
 
-class StunDetonation(pygame.sprite.Sprite):
+class StunDetonation(Interpolated, pygame.sprite.Sprite):
     def __init__(self, start_x, start_y):
         pygame.sprite.Sprite.__init__(self)
         self.life = config.EXPLOSION_SECONDS
@@ -172,7 +213,17 @@ class StunDetonation(pygame.sprite.Sprite):
         self.explosion_y = start_y - (self.rect.size[1] / 2)
         play(EXPLOSION)
 
-    def update(self, camera_x, camera_y, dt=1 / config.FPS):
+        self.remember_position()
+
+    @property
+    def world_x(self):
+        return self.explosion_x
+
+    @property
+    def world_y(self):
+        return self.explosion_y
+
+    def update(self, camera_x, camera_y, dt=config.SIM_DT):
         if self.life > 0:
             self.rect.x = self.explosion_x + camera_x
             self.rect.y = self.explosion_y + camera_y

@@ -16,6 +16,7 @@ from shooter.entities.projectiles import (
     StunGrenade,
 )
 from shooter.systems.waves import WaveSystem
+from shooter.render import blit_group
 from shooter.ui import pause
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
 from shooter.ui.radar import RadarScreen
@@ -42,7 +43,7 @@ def reset_zombie_pos(zombie):
     zombie.reset_position()
 
 
-def is_zombie_attacking(human, zombie, dt=1 / config.FPS):
+def is_zombie_attacking(human, zombie, dt=config.SIM_DT):
     if pygame.sprite.collide_rect(human, zombie):
         zombie.update_anim("ATTACK", dt)
         if human.remove_health(config.ZOMBIE_DAMAGE * dt):
@@ -235,7 +236,7 @@ def game_loop():
                 zombie.zombie_speed_timer(config.SIM_DT)
 
             for powerup in powerups_group:
-                collected = powerup.update(human, change_x, change_y, config.SIM_DT)
+                collected = powerup.update(human, camera_x, camera_y, config.SIM_DT)
                 if collected is None:
                     continue
                 if collected != powerup_kinds.EXPIRED:
@@ -269,20 +270,20 @@ def game_loop():
         image = bck.image_at((0 - draw_x, 0 - draw_y, window[0], window[1]))
         screen.blit(image, (0, 0))
 
-        powerups_group.draw(screen)
+        blit_group(screen, powerups_group, draw_x, draw_y, alpha)
         for zombie in zombie_group:
-            zombie.health_bar(screen)
-        zombie_group.draw(screen)
+            zombie.health_bar(screen, zombie.draw_position(draw_x, draw_y, alpha))
+        blit_group(screen, zombie_group, draw_x, draw_y, alpha)
         human_group.draw(screen)
-        bullets.draw(screen)
+        blit_group(screen, bullets, draw_x, draw_y, alpha)
 
         if len(zombie_group) == 0:
             wave_system.draw(screen)
 
-        grenades.draw(screen)
-        explosions.draw(screen)
-        stun_grenades.draw(screen)
-        stun_explosions.draw(screen)
+        blit_group(screen, grenades, draw_x, draw_y, alpha)
+        blit_group(screen, explosions, draw_x, draw_y, alpha)
+        blit_group(screen, stun_grenades, draw_x, draw_y, alpha)
+        blit_group(screen, stun_explosions, draw_x, draw_y, alpha)
 
         screen.blit(cursor, (mouse_x - 23, mouse_y - 22))
 

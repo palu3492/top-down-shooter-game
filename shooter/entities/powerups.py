@@ -4,19 +4,24 @@ import pygame
 
 from shooter import config
 from shooter.assets import load_image
+from shooter.render import Interpolated
 
 INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH = 1, 2, 3, 4
 EXPIRED = "EXPIRED"
 LIFETIME = config.POWERUP_LIFETIME_SECONDS
 
 
-class PowerUps(pygame.sprite.Sprite):
+class PowerUps(Interpolated, pygame.sprite.Sprite):
     def spawning_location(self):
-        self.rect.x, self.rect.y = config.POWERUP_SPAWN
+        # A real world position, like every other entity. It used to accumulate
+        # camera deltas into rect, which left nothing to interpolate from.
+        self.world_x, self.world_y = config.POWERUP_SPAWN
+        self.remember_position()
+        self.rect.topleft = config.POWERUP_SPAWN
 
-    def move_with_camera(self, x, y):
-        self.rect.y = self.rect.y + y
-        self.rect.x = self.rect.x + x
+    def follow_camera(self, camera_x, camera_y):
+        self.remember_position()
+        self.rect.topleft = (self.world_x + camera_x, self.world_y + camera_y)
 
     def instakill(self):
         self.image = load_image("Power Ups/instakill.png")
@@ -49,7 +54,7 @@ class PowerUps(pygame.sprite.Sprite):
         elif self.powerup_selected == 4:
             self.max_health()
 
-    def tick(self, dt=1 / config.FPS):
+    def tick(self, dt=config.SIM_DT):
         if self.alive_seconds == 0:
             self.og_image = self.image
             self.blank_image = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
@@ -64,13 +69,13 @@ class PowerUps(pygame.sprite.Sprite):
         self.alive_seconds += dt
         return None
 
-    def update(self, human, change_x, change_y, dt=1 / config.FPS):
+    def update(self, human, camera_x, camera_y, dt=config.SIM_DT):
         """Return the kind collected, EXPIRED, or None if still on the field.
 
         Applying the effect is the caller's job -- a pickup that reached into
         the zombie group, the gun and the player would know about everything.
         """
-        self.move_with_camera(change_x, change_y)
+        self.follow_camera(camera_x, camera_y)
         if pygame.sprite.collide_rect(human, self):
             return self.powerup_selected
         return self.tick(dt)

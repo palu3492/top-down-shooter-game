@@ -64,12 +64,12 @@ def test_every_kind_can_spawn():
 def test_survives_its_whole_lifetime_then_expires(make_powerup, far_away, kind):
     powerup = make_powerup(kind)
 
-    dt = 1 / config.FPS
-    for frame in range(int(LIFETIME * config.FPS) + 2):
+    dt = config.SIM_DT
+    for frame in range(int(LIFETIME * config.SIM_HZ) + 2):
         result = powerup.update(far_away, 0, 0, dt)
         if result is not None:
             assert result == EXPIRED
-            assert frame == pytest.approx(LIFETIME * config.FPS, abs=2)
+            assert frame == pytest.approx(LIFETIME * config.SIM_HZ, abs=2)
             return
 
     raise AssertionError("never expired")
@@ -80,8 +80,8 @@ def test_blinks_before_expiring(make_powerup, far_away, kind):
     powerup = make_powerup(kind)
     transparent = visible = 0
 
-    dt = 1 / config.FPS
-    for _ in range(int(LIFETIME * config.FPS)):
+    dt = config.SIM_DT
+    for _ in range(int(LIFETIME * config.SIM_HZ)):
         if powerup.update(far_away, 0, 0, dt) is not None:
             break
         if powerup.alive_seconds > config.POWERUP_BLINK_AFTER:
