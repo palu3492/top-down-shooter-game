@@ -2,6 +2,8 @@ import pygame
 
 from shooter.assets import load_animation
 
+MAX_HEALTH = 100.0
+
 ANIMATIONS = {
     "IDLE": ("Player Animations/Idle", "survivor-idle_rifle_", 20),
     "MOVE": ("Player Animations/Move", "survivor-move_rifle_", 20),
@@ -70,6 +72,9 @@ class Human(pygame.sprite.Sprite):
 
     def add_health(self, repair):
         self.health += repair
+
+    def restore_health(self):
+        self.health = MAX_HEALTH
 
     def get_health(self):
         if self.health > 0:

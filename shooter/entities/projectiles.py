@@ -5,6 +5,9 @@ import pygame
 
 from shooter.assets import load_image, load_sound
 
+BULLET_DAMAGE = 20
+LETHAL = 1000
+
 GUN_SHOT = ("Sounds/gunAudio.wav", 0.01)
 EXPLOSION = ("Sounds/explosion.wav", 0.01)
 
@@ -37,8 +40,9 @@ class Shot(pygame.sprite.Sprite):
     continuous = bullet_speed / 14
     kill_me = False
 
-    def __init__(self, start_x, start_y, x, y):
+    def __init__(self, start_x, start_y, x, y, damage=BULLET_DAMAGE):
         pygame.sprite.Sprite.__init__(self)
+        self.damage = damage
         angle = math.atan2(y, x)  # find angle of shot
         self.small_change_x = math.cos(angle)
         self.small_change_y = -math.sin(angle)
@@ -73,7 +77,7 @@ class Shot(pygame.sprite.Sprite):
 
     def bullet_touching_zombie(self, zombie):
         if pygame.sprite.collide_rect(zombie, self):
-            if zombie.remove_health(20):
+            if zombie.remove_health(self.damage):
                 zombie.kill()
             self.kill_me = True
             return True
