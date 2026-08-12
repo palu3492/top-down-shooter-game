@@ -45,6 +45,13 @@ def field(screen, name):
     return next(f for f in screen.form.fields if f.setting.name == name)
 
 
+def toggle(screen, name):
+    control = field(screen, name).control
+    control.set_state(not control.get_state())
+    pygame.event.clear()
+    return control
+
+
 def press(screen, button):
     return screen.handle(
         pygame.event.Event(pygame_gui.UI_BUTTON_PRESSED, ui_element=button)
@@ -104,7 +111,7 @@ def test_saving_a_live_setting_reaches_config(screen, monkeypatch):
 
 def test_a_boot_setting_asks_before_it_is_written(screen, store):
     screen.draft.apply_at_startup(config)
-    field(screen, "WINDOW").control.selected_option = ("1920 x 1080", "1920 x 1080")
+    toggle(screen, "VSYNC")
 
     press(screen, screen.save_button)
 
@@ -114,19 +121,19 @@ def test_a_boot_setting_asks_before_it_is_written(screen, store):
 
 def test_confirming_the_restart_warning_writes_it(screen, store):
     screen.draft.apply_at_startup(config)
-    field(screen, "WINDOW").control.selected_option = ("1920 x 1080", "1920 x 1080")
+    toggle(screen, "VSYNC")
     press(screen, screen.save_button)
 
     screen.handle(pygame.event.Event(pygame_gui.UI_CONFIRMATION_DIALOG_CONFIRMED))
 
     assert screen.confirming is None
-    assert store["WINDOW"] == (1920, 1080)
-    assert json.loads(store.path.read_text())["WINDOW"] == [1920, 1080]
+    assert store["VSYNC"] is not config.VSYNC
+    assert json.loads(store.path.read_text())["VSYNC"] is not config.VSYNC
 
 
 def test_dismissing_the_restart_warning_writes_nothing(screen, store):
     screen.draft.apply_at_startup(config)
-    field(screen, "WINDOW").control.selected_option = ("1920 x 1080", "1920 x 1080")
+    toggle(screen, "VSYNC")
     press(screen, screen.save_button)
 
     screen.handle(
@@ -149,7 +156,7 @@ def test_a_boot_setting_left_alone_saves_without_asking(screen, store):
 
 def test_the_dialog_swallows_escape_rather_than_leaving(screen):
     screen.draft.apply_at_startup(config)
-    field(screen, "WINDOW").control.selected_option = ("1920 x 1080", "1920 x 1080")
+    toggle(screen, "VSYNC")
     press(screen, screen.save_button)
 
     escape = pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)
@@ -158,7 +165,7 @@ def test_the_dialog_swallows_escape_rather_than_leaving(screen):
 
 def test_closing_the_screen_takes_the_dialog_with_it(stack, screen):
     screen.draft.apply_at_startup(config)
-    field(screen, "WINDOW").control.selected_option = ("1920 x 1080", "1920 x 1080")
+    toggle(screen, "VSYNC")
     press(screen, screen.save_button)
     dialog = screen.confirming
 

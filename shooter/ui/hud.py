@@ -22,16 +22,29 @@ class HealthBar:
 
 
 class HUD:
-    def __init__(self, window):
+    """Corner pieces, placed when they are drawn rather than when they are made.
+
+    `update` was already given the window; computing the offsets there means a
+    resolution change moves them with no help from anyone.
+    """
+
+    def __init__(self, window=None):
         self.images = (
-            [load_image("HUD/blHUD.png"), (40, window[1] - 76)],
-            [load_image("HUD/brHUD.png"), (window[0] - 263, window[1] - 162)],
-            [load_image("HUD/tmHUD.png"), ((window[0] / 2.0) - 225, 0)],
+            load_image("HUD/blHUD.png"),
+            load_image("HUD/brHUD.png"),
+            load_image("HUD/tmHUD.png"),
+        )
+
+    def positions(self, window):
+        return (
+            (40, window[1] - 76),
+            (window[0] - 263, window[1] - 162),
+            ((window[0] / 2.0) - 225, 0),
         )
 
     def update(self, screen, window):
-        for image in self.images:
-            screen.blit(image[0], image[1])
+        for image, position in zip(self.images, self.positions(window), strict=True):
+            screen.blit(image, position)
 
 
 class GunData:

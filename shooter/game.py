@@ -20,6 +20,7 @@ from shooter.systems.waves import WaveSystem
 from shooter.render import blit_group
 from shooter.ui import dev, menu, settings_screen
 from shooter.settings import Settings
+from shooter.viewport import Viewport
 from shooter.ui.layout import LayoutOverflowError
 from shooter.ui.screens import ScreenStack
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
@@ -65,6 +66,30 @@ def stun_explosion_touching_zombie(zombie, explosion):
         zombie.remove_speed(config.STUN_SPEED)
 
 
+def open_display(window):
+    """SCALED keeps the render surface at `window` whatever size the OS window
+    is, and letterboxes to preserve aspect."""
+    return pygame.display.set_mode(
+        tuple(window), pygame.SCALED | pygame.RESIZABLE, vsync=config.VSYNC
+    )
+
+
+def match_resolution(window, screens, human):
+    """Rebuild the display when the setting no longer matches what is on screen.
+
+    Nothing here touches the world. Positions are in world coordinates and
+    health is a number, so a resolution change cannot invalidate any of it --
+    only the surface and the layout are made again.
+    """
+    if window == config.WINDOW:
+        return None
+    window.resize(config.WINDOW)
+    surface = open_display(window)
+    screens.resize(window)
+    human.recentre(window)
+    return surface
+
+
 def open_screen(screens, screen):
     """A screen too big for the window must not end the game -- the menu the
     player is already looking at stays open instead."""
@@ -77,13 +102,11 @@ def game_loop():
     settings = Settings()
     settings.load()
     settings.apply_at_startup()
-    window = config.WINDOW
+    window = Viewport(config.WINDOW)
     # SCALED keeps the render surface at WINDOW whatever size the window is, and
     # letterboxes to preserve aspect. Without it, going fullscreen changes the
     # surface itself and every fixed HUD offset moves with it.
-    screen = pygame.display.set_mode(
-        window, pygame.SCALED | pygame.RESIZABLE, vsync=config.VSYNC
-    )
+    screen = open_display(window)
     screen.blit(
         pygame.font.Font(None, 40).render("Loading...", True, config.WHITE),
         (100, 100),
@@ -99,8 +122,6 @@ def game_loop():
     pygame.mouse.set_visible(False)
 
     camera_x, camera_y = 0, 0
-    min_camera_x = -(config.WORLD[0] - window[0])
-    min_camera_y = -(config.WORLD[1] - window[1])
 
     bck = BackgroundSheet(asset_path("Backgrounds/background_0.jpg"))
 
@@ -136,6 +157,8 @@ def game_loop():
     shooting = False
     previous_camera = (camera_x, camera_y)
     while game_is_running:
+        screen = match_resolution(window, screens, human) or screen
+
         pressed = pygame.key.get_pressed()
 
         # When button is lifted up sets camera x,y change to 0
@@ -248,8 +271,8 @@ def game_loop():
                     change_x = -config.PLAYER_SPEED * config.SIM_DT
 
             previous_camera = (camera_x, camera_y)
-            camera_x = min(0, max(min_camera_x, camera_x + change_x))
-            camera_y = min(0, max(min_camera_y, camera_y + change_y))
+            camera_x = min(0, max(-(config.WORLD[0] - window[0]), camera_x + change_x))
+            camera_y = min(0, max(-(config.WORLD[1] - window[1]), camera_y + change_y))
 
             if ammo_count == "reload":
                 ammo_count = ammo_class.reloading(config.SIM_DT)

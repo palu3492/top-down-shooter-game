@@ -27,6 +27,11 @@ class Human(pygame.sprite.Sprite):
         }
         self.image = self.frames["IDLE"][0]
         self.rect = self.image.get_rect()
+        self.recentre(window_size)
+
+    def recentre(self, window_size):
+        """The player is always drawn at the middle of the screen, so a change
+        of resolution moves them rather than leaving them off to one side."""
         self.rect.x = (window_size[0] / 2.0) - (self.rect.size[0] / 2.0)
         self.rect.y = (window_size[1] / 2.0) - (self.rect.size[1] / 2.0)
 

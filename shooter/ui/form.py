@@ -220,6 +220,7 @@ class FormScreen(Screen):
         if self.confirming is not None:
             self.confirming.kill()
             self.confirming = None
+        self.form = Form(self.draft, self.manager, self.add)
         super().close()
 
 

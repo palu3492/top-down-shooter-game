@@ -102,6 +102,22 @@ class ScreenStack:
             self._screens[-1].open()
         self._sync_pointer()
 
+    def resize(self, size):
+        """Rebuild the open screen against a new render size.
+
+        `open()` is where a screen decides where everything goes, so reopening
+        is the whole of re-laying-out -- there is no second layout path to keep
+        in step with the first.
+        """
+        self.window = size
+        self.manager.set_window_resolution(tuple(size))
+        if not self._screens:
+            return
+        top = self._screens[-1]
+        top.close()
+        top.window = size
+        top.open()
+
     def _sync_pointer(self):
         """Gameplay hides the system pointer and draws its own crosshair, so a
         menu has to ask for the real one back before anything is clickable."""
