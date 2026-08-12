@@ -22,6 +22,9 @@ include = ["shooter*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+# SDL's dummy driver has no renderer, so SCALED cannot engage headlessly and
+# says so on every set_mode. Real displays do not emit this.
+filterwarnings = ["ignore:no fast renderer available"]
 
 [tool.ruff]
 target-version = "py310"

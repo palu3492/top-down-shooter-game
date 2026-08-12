@@ -72,8 +72,12 @@ so it is reproducible only up to `pygame-ce>=2.5.5,<3`.
 | `G` | Throw frag grenade (5 to start) |
 | `F` | Throw stun grenade (5 to start) |
 | `Space` | Skip the between-wave timer and start the next wave |
+| `Esc` | Pause / resume |
+| `Q` | Quit — only while paused |
 | `\` | Toggle fullscreen |
-| `P` | Quit |
+
+The window is resizable: the view keeps its 1080×720 proportions and letterboxes
+to fit whatever size you drag it to.
 
 Each wave spawns `5 + wave²` zombies. Kills pay $50. Health regenerates slowly
 while you stay untouched.
