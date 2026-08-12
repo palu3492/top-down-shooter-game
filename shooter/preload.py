@@ -34,6 +34,7 @@ SPRITES = (
 )
 
 SHEETS = ("Backgrounds/background_0.jpg",)
+MENU_ART = "Backgrounds/menu_1.jpg"
 
 ZOMBIE_STILL = "Zombie Animations/zombie_idle/skeleton-idle_0.png"
 
@@ -42,6 +43,8 @@ def preload():
     """Warm every cache a session reads from. Safe to call more than once."""
     for relative, alpha in SPRITES:
         load_image(relative, alpha)
+
+    load_image(MENU_ART)
 
     for relative in SHEETS:
         load_sheet(relative)

@@ -159,7 +159,7 @@ def test_nothing_happens_while_the_setting_matches(display, viewport, monkeypatc
 
 
 def test_the_game_changes_resolution_without_losing_the_world(
-    _settings_isolated, monkeypatch
+    straight_to_game, _settings_isolated, monkeypatch
 ):
     """The real flow: pause, change resolution, come back to the same world.
 

@@ -60,6 +60,16 @@ class Scene:
     def update(self, inputs, dt):
         """One fixed simulation step. Interface scenes have nothing to advance."""
 
+    def tick(self, seconds):
+        """Real elapsed time, every frame, whether or not the scene simulates.
+
+        The two are different clocks and conflating them is how a splash screen
+        ends up running at the simulation rate. `update` is the fixed step the
+        world is built on; this is wall time, for anything that animates while
+        the world is standing still. Returns an action, or None.
+        """
+        return None
+
     def draw(self, surface, alpha):
         if self.opaque:
             surface.fill(BACKDROP)
@@ -148,6 +158,16 @@ class SceneStack:
         if self._scenes:
             self._scenes[-1].update(inputs, dt)
 
+    def tick(self, seconds):
+        """Wall time for the top scene and the widgets, once per frame.
+
+        The interface used to be handed a constant 1/60 from inside `draw`,
+        so pygame_gui ran its own animations at the wrong rate on any machine
+        not managing exactly sixty frames.
+        """
+        self.manager.update(seconds)
+        return self._scenes[-1].tick(seconds) if self._scenes else None
+
     def visible(self):
         """The scenes that have to be drawn, bottom first.
 
@@ -161,10 +181,9 @@ class SceneStack:
                 break
         return list(reversed(showing))
 
-    def draw(self, surface, alpha, dt):
+    def draw(self, surface, alpha):
         if not self._scenes:
             return
         for scene in self.visible():
             scene.draw(surface, alpha)
-        self.manager.update(dt)
         self.manager.draw_ui(surface)

@@ -193,7 +193,7 @@ def drive(events, monkeypatch):
     return counter
 
 
-def test_escape_then_quit_leaves_the_game(monkeypatch):
+def test_escape_then_quit_leaves_the_game(straight_to_game, monkeypatch):
     """Quit lives on the pause menu now, not on a bare keypress."""
     live = {}
     real_init = SceneStack.__init__
@@ -225,7 +225,7 @@ def test_escape_then_quit_leaves_the_game(monkeypatch):
     assert pygame.display.get_init() is False
 
 
-def test_the_world_stops_while_a_screen_is_open(monkeypatch):
+def test_the_world_stops_while_a_screen_is_open(straight_to_game, monkeypatch):
     ticks = []
     real = session.Human.update_anim
 

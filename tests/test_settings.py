@@ -315,7 +315,9 @@ def test_a_setting_with_choices_rejects_anything_else():
         setting.clean((9, 9))
 
 
-def test_a_stored_value_reaches_the_running_game(_settings_isolated, monkeypatch):
+def test_a_stored_value_reaches_the_running_game(
+    straight_to_game, _settings_isolated, monkeypatch
+):
     """The whole point: something written to disk changes how the game runs."""
     _settings_isolated.parent.mkdir(parents=True, exist_ok=True)
     _settings_isolated.write_text(json.dumps({"FPS": 144, "ZOMBIE_SPEED": 500}))
