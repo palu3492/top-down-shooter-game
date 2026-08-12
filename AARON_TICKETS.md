@@ -225,18 +225,58 @@ method is never called, but it would have broken the moment AT5 enabled it.
 
 ---
 
-## AT4 — Fix crashes and unsafe-shutdown paths — TODO
+## AT4 — Fix crashes and unsafe-shutdown paths — DONE
 
 **Short description:** Live crash bugs and exit paths that only work by accident.
 
 **Dependencies:** AT3
 
 **Goals**
-- [x] ~~`PowerUps.Timer` loads `"Human.png"`~~ — moved to AT2.2 and pulled ahead of AT3; it was capping QA sessions at 7 seconds
-- [ ] `loadBackground.image_at`: `if colorkey is -1` should be `==`. Correction to an earlier draft of this ticket — verified on 3.14 that this form emits **no** SyntaxWarning (CPython only warns on bare literals, and `-1` parses as a unary op). It happens to work because -1 falls in CPython's small-int cache, so it is latent fragility rather than a live bug. Note the whole `colorkey` branch is currently unreachable: the only caller passes no colorkey.
-- [ ] Replace `pygame.quit(); quit()` with `sys.exit()` — `quit()` is a `site` builtin and is absent under `python -S` or when frozen
-- [ ] Move `pygame.mixer.init()` and the module-level `Sound(...)` loads out of `Projectiles.py` import time into explicit init
-- [ ] Move `PowerUps.og_image = pygame.image.load(...)` off the class body (runs at import)
+- [x] ~~`PowerUps.Timer` loads `"Human.png"`~~ — moved to AT2.2 and pulled ahead of AT3
+- [x] `loadBackground.image_at`: `colorkey is -1` → `== -1`
+- [x] Replace `pygame.quit(); quit()` with a real shutdown path
+- [x] Move `pygame.mixer.init()` and the module-level `Sound(...)` loads out of import time
+- [x] Move `PowerUps.og_image` off the class body
+
+**Severity correction — goal 4 was a live crash, not tidiness.** The ticket
+filed it as a style issue. It is not: `projectiles.py` called
+`pygame.mixer.init()` at import, `game.py` imports `projectiles` at import, so
+on any machine without a usable audio device the game died before
+`pygame.init()` ever ran:
+
+```
+$ SDL_AUDIODRIVER=nonsense python main.py
+pygame.error: Audio target 'nonsense' not available
+```
+
+Headless servers, containers with no ALSA/PulseAudio, and machines with audio in
+a bad state all hit it. `pygame.init()` tolerates the same failure — it returns
+`(4 succeeded, 1 failed)` and raises nothing — so deferring the load makes audio
+genuinely optional. The game now runs **silently** instead of not at all.
+
+**Sound loading is deferred, not optimised.** Measured 0.54 ms and 0.97 ms for
+the two WAVs against a 16.7 ms frame budget, then ~0.0004 ms cached. The blink
+of first-shot latency is 3–6% of one frame, once — so the pre-warm this ticket
+originally proposed was dropped as unnecessary. `play()` returns early when
+`pygame.mixer.get_init()` is falsy, which is what makes a missing device a
+no-op rather than a relocated crash.
+
+**Shutdown goes through the flag that was already there.** `game_is_running`
+was declared at `game.py:40`, read at line 77, and never assigned `False` — a
+dead flag. Both exit paths now set it, and a single `pygame.quit()` runs after
+the loop. Better than the `sys.exit()` this ticket proposed: no `SystemExit`
+thrown mid-frame, one teardown path, and `game_loop()` returns normally, which
+let AT11's smoke test drop its exception-based escape.
+
+**Consequence for the test suite.** `game_loop()` calling `pygame.quit()` tore
+down the session display fixture and broke all 8 wave tests that ran after it.
+`conftest` now re-initialises pygame per test when a previous one shut it down,
+and `display` returns the *current* surface rather than a captured one.
+Verified order-independent.
+
+**`og_image` was deleted, not relocated.** `Timer` assigns `self.og_image`
+before any read, so the class attribute was dead weight doing disk I/O at
+import. Overlaps AT8's dead-code sweep.
 
 ---
 

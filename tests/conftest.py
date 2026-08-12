@@ -21,12 +21,21 @@ def window():
     return (1080, 720)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def display(window):
-    pygame.init()
-    surface = pygame.display.set_mode(window)
-    yield surface
-    pygame.quit()
+@pytest.fixture(autouse=True)
+def _pygame_ready(window):
+    """Bring pygame up, and back up after a test that shut it down.
+
+    game_loop() calls pygame.quit() on its way out, so the shutdown tests leave
+    the library uninitialised for whatever runs next.
+    """
+    if not pygame.display.get_init():
+        pygame.init()
+        pygame.display.set_mode(window)
+
+
+@pytest.fixture
+def display(_pygame_ready):
+    return pygame.display.get_surface()
 
 
 @pytest.fixture

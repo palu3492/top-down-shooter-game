@@ -123,8 +123,7 @@ def game_loop():
                     bullets.add(bullet)
                     ammoCount = ammo_class.shooting_bullet()
             if event.type==pygame.QUIT:
-                pygame.quit()
-                quit()
+                game_is_running = False
             if event.type==pygame.KEYDOWN:
                 if event.key==pygame.K_g:
                     if all_grenade_data.grenade_amount > 0:
@@ -144,8 +143,7 @@ def game_loop():
 
         # Quit the game
         if pressed[pygame.K_p]:
-            pygame.quit()
-            quit()
+            game_is_running = False
 
         #Human
         if human_anim == "IDLE":
@@ -241,3 +239,5 @@ def game_loop():
         screen.blit(pygame.font.Font(None, 20).render(str(clock.get_fps()), True, (255, 255, 255)), (0, 0))
         pygame.display.flip()
         clock.tick(60)
+
+    pygame.quit()
