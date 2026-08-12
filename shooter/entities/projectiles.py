@@ -48,19 +48,11 @@ class Shot(pygame.sprite.Sprite):
         self.bulletY = startY - (self.rect[1] / 2)
         play(GUN_SHOT)
 
-    # def update(self,cameraX,cameraY,zombie_group):
-    #     self.rect.x=self.bulletX+cameraX
-    #     self.rect.y=self.bulletY+cameraY
-    #     if self.rect.x>2500 or self.rect.x<-2500 or self.rect.y>2500 or self.rect.y<-2500:
-    #         self.kill()
-    #     # add change amount
-    #     self.bulletX+=self.changeX
-    #     self.bulletY+=self.changeY
 
 
     def update(self,cameraX,cameraY,zombie_group):
         if not self.kill_me:
-            for i in range(int(self.continuous)):   #checks to see if bullet is touching zombie (bullet movement / bullet size) times
+            for _ in range(int(self.continuous)):   #checks to see if bullet is touching zombie (bullet movement / bullet size) times
                 self.rect.x=self.bulletX+cameraX
                 self.rect.y=self.bulletY+cameraY
                 self.bulletX += (14 * self.smallChangeX)

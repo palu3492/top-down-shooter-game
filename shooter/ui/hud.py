@@ -2,15 +2,6 @@ import pygame
 
 from shooter.assets import load_image
 
-width = 1920
-height = 50
-
-BLACK = (0,0,0)
-WHITE = (255,255,255)
-
-human_X = 0
-human_Y = 0
-
 class HealthBar:
     lives = 0
     def __init__(self, window_size):
@@ -77,10 +68,9 @@ class gun_data:
         elif self.clip_size==0:
             return "no ammo"
 
-    def reloading(self,screen):
+    def reloading(self):
         if self.reload_time>0:
             self.reload_time-=1
-            self.update(screen)
             return "reload"
         else:
             #return nothing so it knows that its not still "reloading"
@@ -117,39 +107,3 @@ class Cash:
 
     def update(self,screen):
         screen.blit(pygame.font.Font(None, 40).render("$"+str(self.cash_amount), True, (255, 255, 255)), (400, 7))
-
-class Shop_Gui(pygame.sprite.Sprite):
-
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.window_size=(1080, 720)
-        self.image = load_image("Zombie Animations/zombie_idle/skeleton-idle_0.png")
-        self.image = pygame.transform.scale(self.image, (int(120.5), 111))
-        self.rect = self.image.get_rect()
-
-
-
-
-
-# Zombie killed counter
-# class Zombies_Killed:
-#     zombies_killed = 0
-#     def __init__(self, window_size):
-#         self.window_size=window_size
-#
-#     def killed_zombie(self):
-#         self.zombies_killed +=1
-#
-#     def draw(self, screen):
-#         health_value = str(self.zombies_killed)
-#         health_text = pygame.font.Font(None, 25)
-#         screen.blit(health_text.render("Zombies Killed: " + health_value, True, (255, 255, 255)), (160, self.window_size[1]-60))
-
-
-"""
-class Clock:
-    def __init__(self, window_size):
-        self.window_size=window_size
-
-    def drawClock(self):
-"""

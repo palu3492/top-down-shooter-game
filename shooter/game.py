@@ -4,7 +4,6 @@ import math
 from shooter.assets import asset_path, load_image
 from shooter.entities.player import Human
 from shooter.systems.waves import  Wave_System
-#from CarePackage import PackageSystem
 from shooter.ui import pause
 from shooter.ui.hud import *
 from shooter.ui.radar import *
@@ -26,9 +25,8 @@ def is_zombie_attacking(human, zombie):
             human.kill()
 
 def explosion_touching_zombie(zombie, explotion):
-    if pygame.sprite.collide_rect(zombie, explotion):
-        if zombie.remove_health(75):
-            zombie.kill()
+    if pygame.sprite.collide_rect(zombie, explotion) and zombie.remove_health(75):
+        zombie.kill()
 
 def stun_explosion_touching_zombie(zombie, explotion):
     if pygame.sprite.collide_rect(zombie, explotion):
@@ -113,12 +111,11 @@ def game_loop():
             human_anim = "IDLE"
 
         for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if ammoCount!="no ammo" and ammoCount!="reload":
-                    human_anim = "SHOOT"
-                    bullet = Shot((window[0]/2.0)-cameraX, (window[1]/2.0)-cameraY, centerX, centerY)
-                    bullets.add(bullet)
-                    ammoCount = ammo_class.shooting_bullet()
+            if event.type == pygame.MOUSEBUTTONDOWN and ammoCount not in ("no ammo", "reload"):
+                human_anim = "SHOOT"
+                bullet = Shot((window[0]/2.0)-cameraX, (window[1]/2.0)-cameraY, centerX, centerY)
+                bullets.add(bullet)
+                ammoCount = ammo_class.shooting_bullet()
             if event.type==pygame.QUIT:
                 game_is_running = False
             if event.type==pygame.KEYDOWN:
@@ -134,16 +131,14 @@ def game_loop():
                     fullscreen_flag = not fullscreen_flag
                     screen = pygame.display.set_mode(
                         window, pygame.FULLSCREEN if fullscreen_flag else 0)
-                if event.key==pygame.K_g:
-                    if all_grenade_data.grenade_amount > 0:
-                        grenade = Grenade((window[0] / 2.0) - cameraX, (window[1] / 2.0) - cameraY, centerX, centerY)
-                        grenades.add(grenade)
-                        all_grenade_data.grenade_amount -= 1
-                if event.key==pygame.K_f:
-                    if all_grenade_data.stun_grenade_amount>0:
-                        stun_grenade = stunGrenade((window[0] / 2.0) - cameraX, (window[1] / 2.0) - cameraY, centerX, centerY)
-                        stun_grenades.add(stun_grenade)
-                        all_grenade_data.stun_grenade_amount-=1
+                if event.key==pygame.K_g and all_grenade_data.grenade_amount > 0:
+                    grenade = Grenade((window[0] / 2.0) - cameraX, (window[1] / 2.0) - cameraY, centerX, centerY)
+                    grenades.add(grenade)
+                    all_grenade_data.grenade_amount -= 1
+                if event.key==pygame.K_f and all_grenade_data.stun_grenade_amount>0:
+                    stun_grenade = stunGrenade((window[0] / 2.0) - cameraX, (window[1] / 2.0) - cameraY, centerX, centerY)
+                    stun_grenades.add(stun_grenade)
+                    all_grenade_data.stun_grenade_amount-=1
                 if event.key == pygame.K_r:
                     ammoCount = ammo_class.manual_reload()
 
@@ -154,7 +149,7 @@ def game_loop():
             continue
 
         if ammoCount=="reload":
-            ammoCount=ammo_class.reloading(screen)
+            ammoCount=ammo_class.reloading()
 
         #Human
         if human_anim == "IDLE":
@@ -213,10 +208,8 @@ def game_loop():
         bullets.update(cameraX, cameraY,zombie_group)
         bullets.draw(screen)
 
-        if len(zombie_group) == 0:
-            controls_on = False
-            if wave_system.wave_gui(screen):
-                wave_system.wave_control(screen, window, zombie_group, player_cash)
+        if len(zombie_group) == 0 and wave_system.wave_gui(screen):
+            wave_system.wave_control(screen, window, zombie_group, player_cash)
 
         #Grenades and explosions
         grenades.update(cameraX, cameraY, screen, explosions)
@@ -230,8 +223,6 @@ def game_loop():
 
         #Draw crosshair cursor
         screen.blit(cursor, (mouseX - 23, mouseY - 22))
-
-        #pygame.draw.rect(screen, (255, 255, 255), human.get_rect())
 
         # Updating radar with new data, Human and Zombies
         radar.draw(screen, -cameraX+960, -cameraY+540)
