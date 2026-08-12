@@ -1041,10 +1041,10 @@ real navigation to Settings and Dev.
 
 **Goals**
 - [ ] Adopt `pygame_gui` and a `UIManager` owned by the screen layer
-- [ ] A base theme file, so everything after this inherits a look rather than inventing one
+- [ ] A base theme file — blocky, military, one theme for everything (see AT22)
 - [ ] Screen **stack**, not a flat enum
 - [ ] Screens declare whether they overlay the game or replace it
-- [ ] Pause overlay gains buttons: Resume, Settings, Dev, Quit
+- [ ] Pause overlay gains buttons: Resume, Settings, Quit, and Dev when `config.DEV_TOOLS` is on
 - [ ] Settings and Dev exist as stubs, reachable and dismissable
 
 **Why a stack rather than more names.** AT14 introduced `PLAYING | PAUSED` as a
@@ -1112,9 +1112,20 @@ wrong. This is the house style and the grid is a good test of it.
 **This is the iteration surface.** Theming and spacing get argued out on a
 screen with no gameplay consequences, before the settings form depends on them.
 
-**Open questions for Aaron**
-- Should the dev screen be gated in release builds, or always reachable?
-- Theme direction: match the game's military/HUD palette, or deliberately plain so dev tools read as dev tools?
+**The dev screen is gated.** `config.DEV_TOOLS` guards both the pause-menu entry
+and the screen itself. It stays on while we build; productionising flips it off,
+and until there is a build process a plain flag is more honest than pretending
+we have one. The pause menu must not show an entry it cannot open.
+
+**Theme: blocky and military.** Voxel-leaning — hard edges, no rounded corners,
+chunky borders, a tight palette of olive and khaki against dark panels with a
+single warm accent for focus and selection. `pygame_gui` themes are JSON, so
+this is a data file rather than code, which is what makes iterating on it cheap.
+Deliberately not a separate "dev tools look": one theme, exercised here first.
+
+**The dev screen owns the gameplay tunables.** Zombie speed, health, spawn
+counts and wave scaling are debug affordances, not player settings — see AT24
+for why.
 
 ---|---|
 | Checkbox | `UICheckBox` exists |
@@ -1184,6 +1195,7 @@ an explicit Save, and warns before anything that needs a restart.
 
 **Goals**
 - [ ] Form-based, built on `UIForm`, laid out with the AT22 grid
+- [ ] Display settings only; gameplay tunables stay on the dev screen
 - [ ] Nothing persists until Save is clicked; leaving without saving discards
 - [ ] Boot-only settings show a `UIConfirmationDialog` before being accepted
 - [ ] Settings marked "new entities only" say so in the UI rather than appearing broken
@@ -1194,6 +1206,13 @@ an explicit Save, and warns before anything that needs a restart.
 still dragging a slider means a half-configured game and no way to cancel. An
 explicit Save also gives the confirmation dialog somewhere sensible to fire.
 
-**Open question for Aaron:** are the zombie tunables a difficulty feature for
-players, or a debug affordance for us? Difficulty belongs here; debug belongs on
-the dev screen, where "new entities only" is acceptable rather than confusing.
+**Gameplay tunables live on the dev screen, not here.** Exposing zombie speed or
+health as a player setting runs straight into the AT23 finding: the change
+applies to new entities only, so the zombies already chasing you would not
+change. That reads as broken. On a dev screen it is acceptable and useful —
+spawn a wave and watch the new values take.
+
+**Player-facing difficulty should be presets, not sliders**, chosen before a game
+starts rather than during one, which sidesteps the problem entirely. That needs
+a main menu that can start a game, so it belongs with the splash/menu work
+rather than here.
