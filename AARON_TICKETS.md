@@ -1138,7 +1138,7 @@ shrinking. It caught two real mistakes while the dev screen was being written.
 
 ---
 
-## AT23 — Runtime settings store — TODO
+## AT23 — Runtime settings store — DONE
 
 **Short description:** The non-UI half of settings. Solve the problem AT20
 uncovered: `config` is import-time constants and settings are mutable persisted
@@ -1147,11 +1147,39 @@ state.
 **Dependencies:** none — pure logic, buildable in parallel with AT22
 
 **Goals**
-- [ ] A settings object taking its defaults from `config`
-- [ ] Persist to the platform user-config directory, not the repo
-- [ ] Each setting declares when it applies: **live**, **new entities only**, or **boot only**
-- [ ] Load at start-up; unknown or invalid stored values fall back to defaults
-- [ ] Fully tested without any UI
+- [x] A settings object taking its defaults from `config`
+- [x] Persist to the platform user-config directory, not the repo
+- [x] Each setting declares when it applies: **live**, **new entities only**, or **boot only**
+- [x] Load at start-up; unknown or invalid stored values fall back to defaults
+- [x] Fully tested without any UI
+
+**A third failure mode, found while classifying.** Beyond the two the ticket
+already named, some modules copy a config value into a *new name* at import --
+`projectiles.BULLET_DAMAGE`, `GunData.CLIP`, `game.INSTAKILL_SECONDS`. Changing
+`config` afterwards does nothing at all, not even for new entities. Those names
+cannot be settings until their readers are rewired, and an AST guard now fails
+the build if one is ever added to the catalogue.
+
+**The classification is checked, not asserted.** Every `live` and
+`new entities` claim is verified against real game objects. That turned up two
+things worth knowing: `PLAYER_HEALTH` is captured as a starting value but its
+regeneration cap is read live, so raising it does reach an existing player; and
+a stunned zombie re-reads `ZOMBIE_SPEED` when the stun expires, so
+`new entities` is a promise that new ones always get the value, not that
+existing ones never will.
+
+**Invalid stored values fall back rather than clamp.** A value out of range is
+treated as corrupt, not as a near-miss to be squeezed into range -- clamping
+would silently run the game at a number the player never chose. `load()` returns
+the names it rejected so AT24 can say so.
+
+**Saves are atomic.** Written to a temporary file beside the target and moved
+into place, so a crash mid-save leaves the previous settings rather than half a
+file.
+
+**Nothing is rewired.** Applying writes back onto the `config` module, so all
+seventeen existing read sites keep working untouched. That is what makes this
+ticket small enough to review.
 
 **Why it is its own ticket.** It is the only genuinely hard part, it has no
 visual component, and it is completely testable. Bundling it with a screen would

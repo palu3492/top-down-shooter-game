@@ -7,6 +7,8 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 import pygame
 import pytest
 
+from shooter import config, settings
+
 
 class RecordingCash:
     def __init__(self):
@@ -19,6 +21,22 @@ class RecordingCash:
 @pytest.fixture(scope="session")
 def window():
     return (1080, 720)
+
+
+@pytest.fixture(autouse=True)
+def _settings_isolated(tmp_path_factory, monkeypatch):
+    """No test reads or writes the developer's own settings file.
+
+    game_loop() applies settings onto the config module at startup, so the
+    values it touches are put back afterwards too.
+    """
+    path = tmp_path_factory.mktemp("settings") / "settings.json"
+    monkeypatch.setattr(settings, "settings_path", lambda: path)
+
+    before = {s.name: getattr(config, s.name) for s in settings.CATALOGUE}
+    yield path
+    for name, value in before.items():
+        setattr(config, name, value)
 
 
 @pytest.fixture(autouse=True)
