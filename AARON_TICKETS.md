@@ -931,3 +931,79 @@ twice would be waste.
 
 **Dependency note.** `pygame_gui` requires `pygame-ce>=2.5.3`; we pin 2.5.8, so
 the AT2 fork decision already unblocks this.
+
+---
+
+## AT20 — Settings menu — TODO
+
+**Short description:** A mouse-driven settings screen for display and gameplay
+options. Keyboard and controller navigation come later; the widget library
+supports focus, so the structure should not need rewriting for it.
+
+**Dependencies:** AT18 (shares `pygame_gui`)
+
+**Goals**
+- [ ] `SETTINGS` joins `PLAYING` / `PAUSED` as a named screen state
+- [ ] Reachable from the pause screen; from the main menu once that exists
+- [ ] Display options: vsync, frame cap, resolution
+- [ ] Gameplay options: whatever we decide players should tune
+- [ ] Settings persist between sessions
+- [ ] Mouse only, but built so focus-based navigation can be added
+
+**It fits the seam AT14 left.** Screen state is already a named pair rather than
+a boolean precisely so this could be added by adding a name. Settings reached
+*from pause* also sidesteps AT14's blocker: it overlays like the pause screen
+does, so it does not need the ~30 locals lifted out of `game_loop` the way a
+main menu that can *start* a game will.
+
+**Widgets come from `pygame_gui`**, already adopted in AT18: `UIDropDownMenu`,
+`UIHorizontalSlider`, `UIButton`, `UILabel`. Note there is **no checkbox
+element** — an on/off like vsync is a two-item dropdown or a button that toggles
+its own label. Focus management exists (`select()`, `unfocus()`, the manager's
+focus system), which is the hook for controller support later.
+
+### The part that needs designing: `config` is constants, settings are state
+
+`shooter/config.py` is module-level constants read at import. A settings screen
+needs mutable, persisted values, and the two do not compose. Demonstrated on the
+current code:
+
+**Most gameplay values are captured at construction.** Changing
+`config.ZOMBIE_SPEED` from 360 to 999 mid-game left the existing zombie at 360
+while newly spawned ones got 999. Seventeen call sites read config in
+`__init__`, so a live change means "applies to new entities only" unless every
+entity re-reads.
+
+**Default arguments bind at import.** `dt=config.SIM_DT` was evaluated once when
+the module loaded; setting `config.SIM_DT = 0.5` afterwards left the default at
+0.0166. Any setting that feeds a default argument simply will not take effect.
+
+So this ticket cannot just mutate `config`. Options to weigh:
+- a `Settings` object passed to constructors, with `config` as its defaults
+- keep `config` for constants, add a separate settings store for tunables
+- accept "new entities only" and say so in the UI
+
+That decision is the substance of the ticket; the widgets are the easy part.
+
+### Which settings are actually safe
+
+| setting | applying it |
+|---|---|
+| frame cap | live — it is only `clock.tick(n)` |
+| vsync | needs `set_mode` again, which recreates the surface |
+| resolution | same, and SCALED cannot go below 1080×720 (pygame #3709) |
+| zombie speed / health | new spawns only, per the finding above |
+| `SIM_HZ` | **do not expose** |
+
+**`SIM_HZ` should not be a user setting.** AT16 made the simulation
+deterministic at a fixed rate; letting players change it changes game feel and
+throws away the property physics will depend on. If it is ever exposed it
+belongs behind a debug flag, not in a settings menu.
+
+**Persistence** should write to the platform's user-config directory, not into
+the repo. A JSON file is sufficient; `.gitignore` should not need to know about
+it.
+
+**Open question for Aaron:** are the zombie options meant as a difficulty
+feature for players, or a debug affordance for us? That changes where they live
+and whether they need to be safe mid-game.
