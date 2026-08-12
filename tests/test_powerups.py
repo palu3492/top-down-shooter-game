@@ -14,7 +14,7 @@ from shooter.entities.powerups import (
     PowerUps,
 )
 from shooter.entities.zombie import Zombie
-from shooter.game import INSTAKILL_SECONDS, collect_powerup
+from shooter.session import INSTAKILL_SECONDS, collect_powerup
 from shooter.ui.hud import GunData
 
 EVERY_KIND = [INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH]

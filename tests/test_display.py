@@ -100,9 +100,14 @@ def test_the_logical_surface_never_changes_size(monkeypatch):
 
 
 def test_the_legacy_resize_event_is_not_used():
+    """AT17 replaced pygame 1's VIDEORESIZE with WINDOWRESIZED. AT26 then
+    dropped RESIZABLE, so no resize event is delivered at all and the handler
+    went with it -- the surface is re-read where it can actually change, at the
+    fullscreen toggle."""
     import pathlib
 
     source = pathlib.Path("shooter/game.py").read_text()
 
     assert "VIDEORESIZE" not in source
-    assert "WINDOWRESIZED" in source
+    assert "toggle_fullscreen" in source
+    assert "get_surface" in source

@@ -392,6 +392,123 @@ corner, and an arbitrary point.
 
 ---
 
+## AT27 — Lift the game out of `game_loop` into a `Session` — DONE
+
+**Short description:** `game_loop` is 297 lines holding 50 locals. Move the
+world into an object so there is something to construct and something to throw
+away.
+
+**Dependencies:** AT26
+
+**Goals**
+- [x] `Session` owns the world: entities, camera, systems, HUD data
+- [x] `game_loop` keeps only the shell: display, clock, fixed timestep, events
+- [x] Rules arrive as a collaborator, so a campaign can replace freeplay later
+- [x] No behaviour change; the existing suite is the guard
+
+**297 lines and 50 locals became 89 and 13.** The world moved to
+`shooter/session.py`.
+
+**One dead line found on the way.** `human_anim` was assigned once per *frame*
+before the event loop and then recomputed inside every simulation step, so the
+frame-level assignment could never be read.
+
+**One real fix.** The crosshair sampled the pointer later in the frame than the
+aim did, so it could draw a frame away from where a bullet would go. Both take
+one sample now.
+
+**`WINDOWRESIZED` handling went.** AT26 dropped `RESIZABLE`, so no resize event
+is delivered any more; the surface is re-read where it can still change, at the
+fullscreen toggle.
+
+**Why this is the blocker.** Splash, main menu, start game, end game and restart
+all need a game to *begin* and *stop*. Today the game is a function's local
+scope: there is nothing to build, nothing to discard, and no way to have none of
+it while a menu is up. Every other item on the roadmap waits behind this.
+
+**The seam the loop already has.** `if screens: ... continue` is exactly the
+boundary between shell and world -- the loop already knows how to run with the
+world paused. Extraction follows that line rather than inventing one.
+
+**Rules as a collaborator, not a class hierarchy.** `WaveSystem` already *is*
+the freeplay rules: it decides what spawns and when. `Session` takes it as a
+parameter rather than hard-coding it, which is the whole of the seam a campaign
+mode needs. No `Mode` abstraction until there is a second implementation to
+justify it.
+
+**Keeping the save-game seam.** World state -- positions, health, wave count,
+cash -- stays in plain attributes that never hold a `Surface`. That costs
+nothing now and makes serialising a session additive later rather than a
+rewrite. See AT30.
+
+---
+
+## AT28 — Load everything before play, never during — TODO
+
+**Short description:** `load_image` is lazily cached, so the first zombie of a
+kind or a background swap costs a hitch mid-game. Load up front instead.
+
+**Dependencies:** AT27
+
+**Goals**
+- [ ] Everything a session needs is loaded before the first frame
+- [ ] A test fails if the image cache grows during gameplay
+- [ ] The existing "Loading..." moment covers it; no progress bar yet
+
+**Measured.** First `Human()` costs 35ms, first `Zombie()` 42ms, one background
+JPEG 162ms; 86 of 107 images end up cached. At 60Hz a 162ms hitch is ten lost
+frames, and `MAX_FRAME_SECONDS` bounds the damage without hiding the stutter.
+
+**The test is the point.** Run gameplay frames and assert
+`load_image.cache_info().currsize` does not change. That is what stops lazy
+loading creeping back as assets grow.
+
+---
+
+## AT29 — Gameplay becomes a scene — TODO
+
+**Short description:** Generalise the AT21 screen stack so gameplay sits on it
+like everything else, and `covers_game` becomes a plain `opaque`.
+
+**Dependencies:** AT27
+
+**Goals**
+- [ ] One stack holding splash, menu, gameplay and pause
+- [ ] `Session` is created when the gameplay scene is entered, dropped when it exits
+- [ ] Starting and ending a game become stack operations
+
+**We are most of the way there.** AT21 built a scene stack that deliberately
+excluded the one scene that matters, which is why `Screen` has a `covers_game`
+flag naming the thing it cannot hold. With gameplay on the stack that flag is
+just opacity.
+
+---
+
+## AT30 — Splash, main menu, and ending a game — TODO
+
+**Short description:** The flow: animated splash, main menu, start game, pause,
+end game back to the menu.
+
+**Dependencies:** AT28, AT29
+
+---
+
+## AT31 — Game modes: freeplay levels and campaign progress — TODO
+
+**Short description:** Freeplay as levelled endless waves; campaign as levels
+with checkpoints and persisted progress.
+
+**Dependencies:** AT29, AT30
+
+**Two different problems, deliberately separated.** *Progress* -- which levels
+are unlocked, the checkpoint reached, best score -- is small, and AT23 already
+has the pattern: validated JSON in the platform config directory with atomic
+writes. *Mid-game serialisation* -- exact zombie positions -- is a much larger
+commitment, and checkpoints do not need it: a checkpoint restarts a segment from
+its definition. Build the first; AT27 keeps the seam for the second.
+
+---
+
 ## AT26 — Resolution changes abort inside SDL — DONE
 
 **Short description:** AT25 made `set_mode` something a player calls again from
