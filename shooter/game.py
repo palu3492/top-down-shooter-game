@@ -18,7 +18,7 @@ from shooter.entities.projectiles import (
 )
 from shooter.systems.waves import WaveSystem
 from shooter.render import blit_group
-from shooter.ui import dev, menu
+from shooter.ui import dev, menu, settings_screen
 from shooter.settings import Settings
 from shooter.ui.layout import LayoutOverflowError
 from shooter.ui.screens import ScreenStack
@@ -151,9 +151,17 @@ def game_loop():
                 if action == menu.RESUME:
                     screens.clear()
                 elif action == menu.SETTINGS:
-                    open_screen(screens, menu.SettingsScreen(window, screens.manager))
+                    open_screen(
+                        screens,
+                        settings_screen.SettingsScreen(
+                            window, screens.manager, settings
+                        ),
+                    )
                 elif action == menu.DEV:
-                    open_screen(screens, dev.DevScreen(window, screens.manager))
+                    open_screen(
+                        screens,
+                        dev.DevScreen(window, screens.manager, settings),
+                    )
                 elif action == menu.BACK:
                     screens.pop()
                 elif action == menu.QUIT:

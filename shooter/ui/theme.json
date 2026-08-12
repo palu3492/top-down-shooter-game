@@ -125,5 +125,32 @@
       "text_horiz_alignment": "left",
       "text_horiz_alignment_padding": "8"
     }
+  },
+  "#confirmation_dialog": {
+    "misc": {
+      "shape": "rectangle",
+      "border_width": "3",
+      "shadow_width": "0"
+    }
+  },
+  "#confirm_button": {
+    "font": {
+      "name": "noto_sans",
+      "size": "12",
+      "bold": "1"
+    },
+    "misc": {
+      "border_width": "2"
+    }
+  },
+  "#cancel_button": {
+    "font": {
+      "name": "noto_sans",
+      "size": "12",
+      "bold": "0"
+    },
+    "misc": {
+      "border_width": "2"
+    }
   }
 }
