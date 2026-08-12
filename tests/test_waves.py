@@ -21,7 +21,7 @@ def test_first_wave_spawns_five(waves, group):
 
 
 def test_timer_ticks_up_between_waves(waves, group, display, window, make_cash):
-    waves.wave_control(display, window, group, make_cash())
+    waves.advance(window, group, make_cash())
 
     assert waves.wave_seconds == pytest.approx(1 / config.FPS)
 
@@ -37,7 +37,7 @@ def test_spawn_count_follows_five_plus_wave_squared(
     waves.wave_seconds = config.WAVE_INTERVAL_SECONDS
     group.empty()
 
-    waves.wave_control(display, window, group, make_cash())
+    waves.advance(window, group, make_cash())
 
     assert waves.wave_count == wave
     assert len(group) == expected
@@ -46,7 +46,7 @@ def test_spawn_count_follows_five_plus_wave_squared(
 def test_spawning_resets_the_timer(waves, group, display, window, make_cash):
     waves.wave_seconds = config.WAVE_INTERVAL_SECONDS
 
-    waves.wave_control(display, window, group, make_cash())
+    waves.advance(window, group, make_cash())
 
     assert waves.wave_seconds == 0.0
 
@@ -55,7 +55,7 @@ def test_two_wave_systems_do_not_share_progress(
     waves, group, display, window, make_cash
 ):
     waves.wave_seconds = config.WAVE_INTERVAL_SECONDS
-    waves.wave_control(display, window, group, make_cash())
+    waves.advance(window, group, make_cash())
 
     fresh = WaveSystem(window, pygame.sprite.Group(), make_cash())
 

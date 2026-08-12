@@ -14,26 +14,24 @@ class WaveSystem:
     def wave_gui(self, screen):
         return True
 
-    def wave_control(
-        self, screen, window, zombie_group, player_cash, dt=1 / config.FPS
-    ):
-        # tick and next wave spawner
+    def advance(self, window, zombie_group, player_cash, dt=1 / config.FPS):
+        """Move the between-wave timer forward and spawn when it elapses."""
         if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.wave_count += 1
-            num_spawn = config.WAVE_BASE + pow(self.wave_count, 2)
-            for _ in range(num_spawn):
+            for _ in range(config.WAVE_BASE + pow(self.wave_count, 2)):
                 zombie_group.add(Zombie(window, player_cash))
             self.wave_seconds = 0.0
         else:
             self.wave_seconds += dt
 
-        # Updating timer to screen
+        if pygame.key.get_pressed()[pygame.K_SPACE]:
+            self.wave_seconds = config.WAVE_INTERVAL_SECONDS
+
+    def draw(self, screen):
+        remaining = max(0, int(config.WAVE_INTERVAL_SECONDS - self.wave_seconds))
         screen.blit(
             pygame.font.Font(None, 40).render(
-                "Time until next round "
-                + str(max(0, int(config.WAVE_INTERVAL_SECONDS - self.wave_seconds))),
-                True,
-                config.WHITE,
+                "Time until next round " + str(remaining), True, config.WHITE
             ),
             (400, 150),
         )
@@ -43,7 +41,6 @@ class WaveSystem:
             ),
             (370, 180),
         )
-
         pygame.draw.rect(screen, (100, 100, 100), (300, 210, 500, 100))
         pygame.draw.rect(screen, (100, 255, 100), (300, 210, 500, 10))
         screen.blit(
@@ -52,10 +49,3 @@ class WaveSystem:
             ),
             (300, 230),
         )
-
-        # Checks if player is pressing SPACE
-        # if so, then timer is set to 0 and
-        # next round starts
-        pressed = pygame.key.get_pressed()
-        if pressed[pygame.K_SPACE]:
-            self.wave_seconds = config.WAVE_INTERVAL_SECONDS

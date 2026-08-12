@@ -76,7 +76,6 @@ def game_loop():
     state = PLAYING
     paused_frame = None
     instakill_seconds = 0.0
-    dt = 1 / config.FPS
 
     cursor = load_image("cursor.png")
     pygame.mouse.set_visible(False)
@@ -114,34 +113,12 @@ def game_loop():
     ammo_count = ""
 
     clock = pygame.time.Clock()
+    accumulator = 0.0
+    change_x = change_y = 0
+    shooting = False
+    previous_camera = (camera_x, camera_y)
     while game_is_running:
-        change_x = change_y = 0
-        human_anim = "MOVE"
-
         pressed = pygame.key.get_pressed()
-
-        # Controls for moving the camera, moving 40 px per frame
-        if state == PLAYING and human.alive():
-            if pressed[pygame.K_w]:
-                change_y = config.PLAYER_SPEED * dt
-            elif pressed[pygame.K_s]:
-                change_y = -config.PLAYER_SPEED * dt
-            if pressed[pygame.K_a]:
-                change_x = config.PLAYER_SPEED * dt
-            elif pressed[pygame.K_d]:
-                change_x = -config.PLAYER_SPEED * dt
-
-        camera_x += change_x
-        camera_y += change_y
-
-        if camera_x > 0:
-            camera_x = 0
-        elif camera_x < min_camera_x:
-            camera_x = min_camera_x
-        if camera_y > 0:
-            camera_y = 0
-        elif camera_y < min_camera_y:
-            camera_y = min_camera_y
 
         # When button is lifted up sets camera x,y change to 0
         if change_x <= 0 or change_y <= 0:
@@ -152,7 +129,7 @@ def game_loop():
                 "no ammo",
                 "reload",
             ):
-                human_anim = "SHOOT"
+                shooting = True
                 bullet = Shot(
                     (window[0] / 2.0) - camera_x,
                     (window[1] / 2.0) - camera_y,
@@ -203,105 +180,127 @@ def game_loop():
             pause.draw(screen, window, paused_frame)
             pygame.display.flip()
             clock.tick(config.FPS)
-            dt = 1 / config.FPS
+            accumulator = 0.0
             continue
 
-        if ammo_count == "reload":
-            ammo_count = ammo_class.reloading(dt)
-
-        # Human
-        if human_anim == "IDLE":
-            human.update_anim("IDLE", dt)
-        elif human_anim == "MOVE":
-            human.update_anim("MOVE", dt)
-        elif human_anim == "SHOOT":
-            human.update_anim("SHOOT", dt)
-
-        # Controls background rendering
-        image = bck.image_at((0 - camera_x, 0 - camera_y, window[0], window[1]))
-        screen.blit(image, (0, 0))
-
-        # 1. Updates zombie animation
-        # 1. Checks if Zombie is attacking
-        # 2. Sends zombie to Human
-        # 3. Moves Zombies when camera moves
-        for zombie in zombie_group:
-            zombie.update_anim("MOVE", dt)
-            is_zombie_attacking(human, zombie, dt)
-            zombie.move_toward_center(camera_x, camera_y, dt)
-            zombie.health_bar(screen)
-            for explosion in explosions:
-                explosion_touching_zombie(zombie, explosion)
-            for stun_explosion in stun_explosions:
-                stun_explosion_touching_zombie(zombie, stun_explosion)
-            zombie.zombie_speed_timer(dt)  # count down any active stun
-
-        # Mouse Controls
-        mouse_x = pygame.mouse.get_pos()[0]
-        mouse_y = pygame.mouse.get_pos()[1]
+        # Aim is sampled once per frame; the pointer does not move between steps.
+        mouse_x, mouse_y = pygame.mouse.get_pos()
         center_x = int(mouse_x - (window[0] / 2))
         center_y = -int(mouse_y - (window[1] / 2))
-        rotation_angle = math.degrees(math.atan2(center_y, center_x))
-        human.rot_center(rotation_angle)
 
-        ###################################
-        #
-        #           Updates PowerUps
-        #           Draws to screen
-        #
-        ###################################
-        for powerup in powerups_group:
-            collected = powerup.update(human, change_x, change_y, dt)
-            if collected is None:
-                continue
-            if collected != powerup_kinds.EXPIRED:
-                instakill_seconds += collect_powerup(
-                    collected, human, zombie_group, ammo_class
-                )
-            powerup.kill()
+        # ------------------------------------------------------------------
+        # Simulation: fixed steps, however long the frame took to draw.
+        # ------------------------------------------------------------------
+        while accumulator >= config.SIM_DT:
+            accumulator -= config.SIM_DT
+
+            if state == PLAYING and human.alive():
+                if pressed[pygame.K_w]:
+                    change_y = config.PLAYER_SPEED * config.SIM_DT
+                elif pressed[pygame.K_s]:
+                    change_y = -config.PLAYER_SPEED * config.SIM_DT
+                if pressed[pygame.K_a]:
+                    change_x = config.PLAYER_SPEED * config.SIM_DT
+                elif pressed[pygame.K_d]:
+                    change_x = -config.PLAYER_SPEED * config.SIM_DT
+
+            previous_camera = (camera_x, camera_y)
+            camera_x = min(0, max(min_camera_x, camera_x + change_x))
+            camera_y = min(0, max(min_camera_y, camera_y + change_y))
+
+            if ammo_count == "reload":
+                ammo_count = ammo_class.reloading(config.SIM_DT)
+
+            # Preserves the original rule, quirks included: MOVE only when both
+            # axes are positive, otherwise IDLE, and SHOOT overrides either.
+            human_anim = "MOVE"
+            if change_x <= 0 or change_y <= 0:
+                human_anim = "IDLE"
+            if shooting:
+                human_anim = "SHOOT"
+            human.update_anim(human_anim, config.SIM_DT)
+            # Rotation resizes human.rect, which collision reads, so it has to
+            # happen exactly once per step -- in the render pass it compounded
+            # with frame rate and inflated the hitbox.
+            human.rot_center(math.degrees(math.atan2(center_y, center_x)))
+
+            for zombie in zombie_group:
+                zombie.update_anim("MOVE", config.SIM_DT)
+                is_zombie_attacking(human, zombie, config.SIM_DT)
+                zombie.move_toward_center(camera_x, camera_y, config.SIM_DT)
+                for explosion in explosions:
+                    explosion_touching_zombie(zombie, explosion)
+                for stun_explosion in stun_explosions:
+                    stun_explosion_touching_zombie(zombie, stun_explosion)
+                zombie.zombie_speed_timer(config.SIM_DT)
+
+            for powerup in powerups_group:
+                collected = powerup.update(human, change_x, change_y, config.SIM_DT)
+                if collected is None:
+                    continue
+                if collected != powerup_kinds.EXPIRED:
+                    instakill_seconds += collect_powerup(
+                        collected, human, zombie_group, ammo_class
+                    )
+                powerup.kill()
+
+            bullets.update(camera_x, camera_y, zombie_group, config.SIM_DT)
+            grenades.update(camera_x, camera_y, explosions, config.SIM_DT)
+            explosions.update(camera_x, camera_y, config.SIM_DT)
+            stun_grenades.update(camera_x, camera_y, stun_explosions, config.SIM_DT)
+            stun_explosions.update(camera_x, camera_y, config.SIM_DT)
+
+            if len(zombie_group) == 0:
+                wave_system.advance(window, zombie_group, player_cash, config.SIM_DT)
+
+            if instakill_seconds > 0:
+                instakill_seconds = max(0.0, instakill_seconds - config.SIM_DT)
+
+            change_x = change_y = 0
+            shooting = False
+
+        # ------------------------------------------------------------------
+        # Render: once per frame, at whatever rate the machine manages.
+        # ------------------------------------------------------------------
+        alpha = accumulator / config.SIM_DT
+        draw_x = previous_camera[0] + (camera_x - previous_camera[0]) * alpha
+        draw_y = previous_camera[1] + (camera_y - previous_camera[1]) * alpha
+
+        image = bck.image_at((0 - draw_x, 0 - draw_y, window[0], window[1]))
+        screen.blit(image, (0, 0))
+
         powerups_group.draw(screen)
-
-        # Loads in Human and Zombie
+        for zombie in zombie_group:
+            zombie.health_bar(screen)
         zombie_group.draw(screen)
         human_group.draw(screen)
-
-        # Bullet animation
-        bullets.update(camera_x, camera_y, zombie_group, dt)
         bullets.draw(screen)
 
-        if len(zombie_group) == 0 and wave_system.wave_gui(screen):
-            wave_system.wave_control(screen, window, zombie_group, player_cash, dt)
+        if len(zombie_group) == 0:
+            wave_system.draw(screen)
 
-        # Grenades and explosions
-        grenades.update(camera_x, camera_y, screen, explosions, dt)
         grenades.draw(screen)
-        explosions.update(camera_x, camera_y, dt)
         explosions.draw(screen)
-        stun_grenades.update(camera_x, camera_y, screen, stun_explosions, dt)
         stun_grenades.draw(screen)
-        stun_explosions.update(camera_x, camera_y, dt)
         stun_explosions.draw(screen)
 
-        # Draw crosshair cursor
         screen.blit(cursor, (mouse_x - 23, mouse_y - 22))
 
-        # Updating radar with new data, Human and Zombies
         radar.draw(screen, -camera_x + window[0] / 2, -camera_y + window[1] / 2)
         for zombie in zombie_group:
             radar.update_zom(screen, zombie)
 
         if instakill_seconds > 0:
-            instakill_seconds = max(0.0, instakill_seconds - dt)
-            seconds = int(instakill_seconds) + 1
             screen.blit(
                 pygame.font.Font(None, 34).render(
-                    f"INSTAKILL {seconds}s", True, config.INSTAKILL_TEXT
+                    f"INSTAKILL {int(instakill_seconds) + 1}s",
+                    True,
+                    config.INSTAKILL_TEXT,
                 ),
                 (window[0] / 2.0 - 70, 40),
             )
 
         heads_up_display.update(screen, window)
-        # Updates Health Bar
         health_data.draw(screen, human.get_health())
         ammo_class.update(screen)
         player_cash.update(screen)
@@ -317,6 +316,6 @@ def game_loop():
             (0, 0),
         )
         pygame.display.flip()
-        dt = min(clock.tick(config.FPS) / 1000.0, config.MAX_FRAME_SECONDS)
+        accumulator += min(clock.tick(config.FPS) / 1000.0, config.MAX_FRAME_SECONDS)
 
     pygame.quit()

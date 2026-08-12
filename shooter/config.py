@@ -5,6 +5,11 @@ identical whatever frame rate the loop actually achieves.
 """
 
 FPS = 60
+SIM_HZ = 60
+SIM_DT = 1 / SIM_HZ
+# Only the camera is interpolated between simulation steps, so raising FPS above
+# SIM_HZ would scroll the ground smoothly while entities stepped at 60 Hz. Keep
+# the two equal until AT19 interpolates entities as well.
 
 WINDOW = (1080, 720)
 WORLD = (5000, 5000)
