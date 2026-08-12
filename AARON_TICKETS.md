@@ -377,7 +377,7 @@ file. Those should not land without a net.
 **Goals**
 - [x] `ruff` config in `pyproject.toml`; repo passes `ruff check` clean
 - [x] `.github/workflows/ci.yml` running lint + smoke checks on push and PR
-- [x] CI matrix over Python 3.10–3.14, making `requires-python` enforced rather than asserted
+- [x] CI matrix over Python versions (narrowed in AT10.1 — see below)
 - [x] CI runs on `ubuntu-latest` — a genuinely case-sensitive filesystem
 
 **Deferred, with reasons:**
@@ -392,6 +392,18 @@ ticket that owns each code, so the gate tightens as they land: naming and
 wildcard imports and line length are AT9; dead code and collapsible branches are
 AT8. 19 violations were auto-fixed here; everything else is either fixed or
 explicitly owned.
+
+**Matrix narrowed in AT10.1.** The original 3.10–3.14 sweep never produced
+independent signal: across 8 runs all five jobs agreed every time, and the code
+has no version-conditional branches at all — no `sys.version_info`, no guarded
+imports. It now runs two jobs: **3.14**, the version pinned in
+`.python-version`, which gates merges; and **3.15**, the next release, as a
+non-blocking canary via `continue-on-error`.
+
+**Open consequence:** `requires-python = ">=3.10"` is once again an untested
+claim, which is exactly what this ticket set out to fix. Either narrow it to
+`>=3.14` to match what CI proves, or accept it as aspirational. Worth deciding
+rather than leaving implicit.
 
 **On the asset guard:** the first version used `os.path.exists`, which is
 case-insensitive on macOS and so would only have caught an AT3-style regression
