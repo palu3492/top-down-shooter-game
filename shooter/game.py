@@ -19,6 +19,7 @@ from shooter.entities.projectiles import (
 from shooter.systems.waves import WaveSystem
 from shooter.render import blit_group
 from shooter.ui import dev, menu
+from shooter.settings import Settings
 from shooter.ui.layout import LayoutOverflowError
 from shooter.ui.screens import ScreenStack
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
@@ -73,6 +74,9 @@ def open_screen(screens, screen):
 
 def game_loop():
     pygame.init()
+    settings = Settings()
+    settings.load()
+    settings.apply_at_startup()
     window = config.WINDOW
     # SCALED keeps the render surface at WINDOW whatever size the window is, and
     # letterboxes to preserve aspect. Without it, going fullscreen changes the
