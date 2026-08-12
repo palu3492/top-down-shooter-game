@@ -455,7 +455,7 @@ rewrite. See AT30.
 
 ---
 
-## AT28 — Load everything before play, never during — TODO
+## AT28 — Load everything before play, never during — DONE
 
 **Short description:** `load_image` is lazily cached, so the first zombie of a
 kind or a background swap costs a hitch mid-game. Load up front instead.
@@ -463,9 +463,29 @@ kind or a background swap costs a hitch mid-game. Load up front instead.
 **Dependencies:** AT27
 
 **Goals**
-- [ ] Everything a session needs is loaded before the first frame
-- [ ] A test fails if the image cache grows during gameplay
-- [ ] The existing "Loading..." moment covers it; no progress bar yet
+- [x] Everything a session needs is loaded before the first frame
+- [x] A test fails if the image cache grows during gameplay
+- [x] The existing "Loading..." moment covers it; no progress bar yet
+
+**The hitch was smaller than the ticket claimed, and the real cost was
+elsewhere.** Measured before changing anything: the eight sprites read during
+play cost 5ms in total, none of them a whole frame. What did cost was
+`BackgroundSheet` calling `pygame.image.load` directly, outside the cache -- a
+5000x5000 JPEG re-read for **180ms on every session**. Harmless today with one
+game per process; a freeze on every "Start Game" once AT29 lands. Starting a
+game now costs 0ms.
+
+**The guard found a bug nobody was looking for.** `functools.cache` keys on the
+call as written, so `load_image(path)` and `load_image(path, False)` were two
+entries -- two reads of the same file and two copies of the same surface in
+memory. `GunData` omits the flag, the manifest passes it, and the preload was
+quietly loading a second copy of everything rather than preventing the lazy
+read. Every loader normalises its arguments before the cache now.
+
+**An explicit manifest, not a directory walk.** 14MB of the 19MB on disk is
+backgrounds this mode never shows; loading them would trade a hitch for a slower
+start. The cold-start test is what keeps the list honest -- it clears every
+cache, preloads, plays, and fails naming anything that still reached disk.
 
 **Measured.** First `Human()` costs 35ms, first `Zombie()` 42ms, one background
 JPEG 162ms; 86 of 107 images end up cached. At 60Hz a 162ms hitch is ten lost
