@@ -6,6 +6,7 @@ steps produces byte-identical state at any rendering speed.
 """
 
 import hashlib
+import random
 
 import pygame
 import pytest
@@ -26,6 +27,11 @@ def fingerprint(*values):
 
 def simulate(steps, cash):
     """Run a fixed number of simulation steps and fingerprint the result."""
+    # Each zombie walks at its own pace, drawn when it is built, so two runs
+    # only compare if they are built from the same point in the sequence. The
+    # property under test is that the *step count* decides the outcome, not
+    # that a zombie is identical to every other zombie.
+    random.seed(20190101)
     zombie = Zombie(config.WINDOW, cash)
     zombie.set_position(2500, 2500)
     zombie.move_position(0, 0)

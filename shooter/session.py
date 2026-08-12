@@ -20,6 +20,7 @@ from shooter import config
 from shooter.background import BackgroundSheet
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
+from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
 from shooter.entities.projectiles import (
     BULLET_DAMAGE,
@@ -277,6 +278,8 @@ class Session:
             for stun_explosion in self.stun_explosions:
                 stun_explosion_touching_zombie(zombie, stun_explosion)
             zombie.zombie_speed_timer(dt)
+
+        keep_apart(self.zombies, self.camera, dt)
 
     def _collect_powerups(self, dt):
         for powerup in self.powerups:

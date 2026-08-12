@@ -14,6 +14,55 @@ ANIMATIONS = {
 }
 
 
+# A crowd all moving at exactly one speed reads as a single object. Each
+# zombie gets its own pace, so a wave arrives strung out rather than in rank.
+PACE_SPREAD = 0.18
+
+# How close two of them get before they start pushing each other away, and how
+# hard, as a fraction of walking speed. Enough to stop them stacking into one
+# sprite without turning the crowd into a pinball table.
+PERSONAL_SPACE = 76
+SHOVE = 1.8
+
+
+def keep_apart(zombies, camera, dt=config.SIM_DT):
+    """Push overlapping zombies off each other.
+
+    Every push is worked out before anything moves, so the result does not
+    depend on the order the group happens to iterate in -- which is what keeps
+    a wave identical at any frame rate.
+    """
+    crowd = list(zombies)
+    pushes = [[0.0, 0.0] for _ in crowd]
+
+    for index, one in enumerate(crowd):
+        for other_index in range(index + 1, len(crowd)):
+            other = crowd[other_index]
+            away_x = one.zombie_x - other.zombie_x
+            away_y = one.zombie_y - other.zombie_y
+            gap = math.hypot(away_x, away_y)
+            if gap >= PERSONAL_SPACE:
+                continue
+            if gap == 0:
+                # Exactly stacked. Any fixed direction will do; without one
+                # they would sit inside each other for ever.
+                away_x, away_y, gap = 1.0, 0.0, 1.0
+            crowding = (PERSONAL_SPACE - gap) / PERSONAL_SPACE
+            shove = crowding * SHOVE * config.ZOMBIE_SPEED * dt
+            step_x = away_x / gap * shove
+            step_y = away_y / gap * shove
+            pushes[index][0] += step_x
+            pushes[index][1] += step_y
+            pushes[other_index][0] -= step_x
+            pushes[other_index][1] -= step_y
+
+    for zombie, (push_x, push_y) in zip(crowd, pushes, strict=True):
+        if push_x or push_y:
+            zombie.zombie_x += push_x
+            zombie.zombie_y += push_y
+            zombie.move_position(*camera)
+
+
 def spawn_margin():
     """How far outside the view a wave starts.
 
@@ -36,7 +85,8 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         self.zombie_x = self.zombie_y = 0
         self.type = "MOVE"
         self.current_idle = self.current_move = self.current_attack = 0
-        self.zombie_speed = config.ZOMBIE_SPEED
+        self.pace = random.uniform(1 - PACE_SPREAD, 1 + PACE_SPREAD)
+        self.zombie_speed = self.walking_speed
         self.stun_seconds = 0.0
         self.animation_clock = 0.0
         self.zombie_health = config.ZOMBIE_HEALTH
@@ -45,11 +95,12 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
             name: load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
             for name, (directory, prefix, count) in ANIMATIONS.items()
         }
-        self.image = load_sized(
+        self.upright = load_sized(
             "Zombie Animations/zombie_idle/skeleton-idle_0.png",
             *config.ZOMBIE_SIZE,
             True,
         )
+        self.image = self.upright
         self.rect = self.image.get_rect()
         self.spawn_zombie(visible)
         self.remember_position()
@@ -119,8 +170,9 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
             "MOVE": self.current_move,
             "ATTACK": self.current_attack,
         }[self.type]
-        self.image = self.frames[self.type][frame]
-        self.rect = self.image.get_rect(topleft=self.rect.topleft)
+        self.upright = self.frames[self.type][frame]
+        self.image = self.upright
+        self.rect = self.upright.get_rect(topleft=self.rect.topleft)
 
     @property
     def world_x(self):
@@ -163,6 +215,34 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         self.zombie_x += move_x_amount
         self.zombie_y += move_y_amount
         self.move_position(camera_x, camera_y)
+        self.face_player()
+
+    def face_player(self):
+        """Turn to look at whoever is being chased.
+
+        Always applied to `self.upright` -- the frame the animation chose --
+        never to whatever is currently being drawn. Rotating an already rotated
+        sprite lands it on a bigger surface every time, and a caller that turns
+        without animating would grow it without bound.
+        """
+        towards_x = self.window_size[0] / 2 - self.rect.centerx
+        towards_y = self.window_size[1] / 2 - self.rect.centery
+        if not (towards_x or towards_y):
+            return
+
+        upright = self.upright
+        turned = pygame.transform.rotate(
+            upright, math.degrees(math.atan2(-towards_y, towards_x))
+        )
+        # `rect` is deliberately left alone. A rotated sprite needs a bigger
+        # surface, and letting the footprint grow with it would mean a zombie
+        # coming at forty-five degrees reached the player before one walking
+        # straight in -- the hitbox goes from 144x155 to 201x205 on the turn.
+        self.image = turned
+        self.image_offset = (
+            (upright.get_width() - turned.get_width()) / 2,
+            (upright.get_height() - turned.get_height()) / 2,
+        )
 
     def health_bar(self, screen, at=None):
         x, y = at if at else self.rect.topleft
@@ -194,8 +274,13 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         self.zombie_speed = stun_amount
         self.stun_seconds = config.STUN_SECONDS
 
+    @property
+    def walking_speed(self):
+        """This one's own pace, not the crowd's."""
+        return config.ZOMBIE_SPEED * self.pace
+
     def zombie_speed_timer(self, dt=config.SIM_DT):
         if self.stun_seconds > 0:
             self.stun_seconds -= dt
         else:
-            self.zombie_speed = config.ZOMBIE_SPEED
+            self.zombie_speed = self.walking_speed

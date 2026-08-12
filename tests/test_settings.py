@@ -230,7 +230,8 @@ def test_a_new_entity_setting_leaves_existing_entities_alone(window, monkeypatch
     monkeypatch.setattr(config, "ZOMBIE_SPEED", 999)
     after = Zombie(window, Cash())
 
-    assert (before.zombie_speed, after.zombie_speed) == (360, 999)
+    assert before.zombie_speed == 360 * before.pace
+    assert after.zombie_speed == 999 * after.pace
 
 
 def test_new_entities_is_a_promise_about_new_ones_only(window, monkeypatch):
@@ -244,7 +245,7 @@ def test_new_entities_is_a_promise_about_new_ones_only(window, monkeypatch):
     for _ in range(int(config.STUN_SECONDS * 60) + 5):
         zombie.zombie_speed_timer(1 / 60)
 
-    assert zombie.zombie_speed == 999
+    assert zombie.zombie_speed == 999 * zombie.pace
 
 
 def test_a_new_entity_setting_reaches_the_next_one_built(window, monkeypatch):
