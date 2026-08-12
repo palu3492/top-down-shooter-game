@@ -867,38 +867,59 @@ capping frames.
 display concern and belongs with AT17.
 ---
 
-## AT17 — Resizable window via SCALED — TODO
+## AT17 — Resizable window via SCALED — DONE
 
-**Short description:** Let players size the window freely. Start with
-`pygame.SCALED`, which is one flag rather than a rendering rewrite.
+**Short description:** Let players size the window freely, with the game keeping
+a fixed logical resolution.
 
 **Dependencies:** AT12
 
 **Goals**
-- [ ] `set_mode(WINDOW, pygame.SCALED | pygame.RESIZABLE)`
-- [ ] Confirm mouse aiming still lands correctly — SCALED claims to scale mouse events for us
-- [ ] Make the fullscreen toggle actually fill the display rather than re-opening at 1080×720
-- [ ] Handle `WINDOWRESIZED`, not the legacy `VIDEORESIZE`
-- [ ] Verify the documented limitation: a SCALED window may only be resized *larger* than its design size
+- [x] `set_mode(WINDOW, pygame.SCALED | pygame.RESIZABLE, vsync=1)`
+- [x] Fullscreen actually fills the display instead of re-opening at 1080×720
+- [x] Handle `WINDOWRESIZED`, not the legacy `VIDEORESIZE`
+- [x] Verify the documented resize-smaller limitation
+- [ ] Confirm mouse aiming still lands correctly — needs manual QA, see below
 
-**Why SCALED first.** The game keeps believing it renders 1080×720 while pygame
-scales and letterboxes to preserve aspect ratio. Crucially the docs state
-*"mouse events are scaled for you, so your game doesn't need to do it"* — which
-matters here because aiming is raw mouse-position arithmetic.
+**Measured, on a real display.** Without SCALED, going fullscreen changes the
+render surface itself to 1147×716, which moves every fixed HUD offset. With
+SCALED the surface stays 1080×720 while the window grows to 1800×1130. A frame
+captured in fullscreen is 1080×720 with the HUD exactly where it belongs.
 
-**Two caveats, both real.** SCALED is still marked *"an experimental API and may
-change in future releases"*, and pygame issue #3709 reports that a SCALED window
-cannot be resized below its design resolution. Open and unresolved.
+**Fullscreen was re-opening the window.** The old toggle called
+`set_mode(FULLSCREEN)`, which recreated the window at the same 1080×720 — so
+"fullscreen" never filled a modern display. `toggle_fullscreen()` does, and a
+test asserts `set_mode` is called exactly once for the whole session.
 
-**The fallback if SCALED disappoints** is render-to-surface plus manual
-letterboxing: draw to a fixed internal surface, scale it to the window
-preserving aspect, blit centred with bars. More control, but mouse translation
-becomes ours to write — the thing SCALED gives away free.
+**A crash this introduced, caught by the tests.** `toggle_fullscreen()` raises
+`pygame.error: That operation is not supported` on SDL's dummy driver. The old
+`set_mode` path never did, so pressing `\` could have taken the game down on
+some drivers. Wrapped in `contextlib.suppress(pygame.error)` — a keypress must
+not be able to kill the process.
 
-**Risk to check before committing.** If the 3D-ish direction leads to an OpenGL
-context via ModernGL, scaling is handled by the GL viewport rather than by
-SCALED. Worth confirming how the two interact before building anything on top of
-SCALED.
+**Mouse scaling is documented but unverified.** pygame states *"mouse events are
+scaled for you"*, and aiming here is raw pointer arithmetic so it matters. I
+could not verify it programmatically: `set_pos` round-trips do not prove
+anything without real pointer input, and SCALED cannot engage headlessly at all.
+**Needs a human to play in fullscreen and confirm the crosshair still tracks.**
+
+**CI cannot test the scaling itself.** SDL's dummy driver has no renderer, so
+SCALED silently degrades and warns "no fast renderer available" on every
+`set_mode`. The tests pin what is observable headlessly — the flags requested,
+that `set_mode` runs once, that the logical surface never changes size — and the
+warning is filtered by exact message in `pyproject.toml`.
+
+**vsync is on.** It caps rendering at the display refresh, observed at 120 FPS
+on this machine against the 240 config cap. AT19 made that safe: rendering and
+simulation are independent, so a vsync cap cannot slow the game down.
+
+**The known limitation stands.** pygame issue #3709 — a SCALED window cannot be
+resized below its design size — is unresolved upstream. 1080×720 is therefore a
+floor, not a default. Acceptable, but it is why AT18's anchoring matters: the
+window can only grow, and a stretched HUD is the thing anchoring fixes.
+
+**Also corrected the README controls table**, which still listed `P` as quit.
+That has not been true since AT14 moved quitting behind the pause screen.
 
 ---
 

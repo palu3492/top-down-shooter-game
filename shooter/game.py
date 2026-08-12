@@ -1,3 +1,4 @@
+import contextlib
 import math
 
 import pygame
@@ -66,14 +67,18 @@ def stun_explosion_touching_zombie(zombie, explosion):
 def game_loop():
     pygame.init()
     window = config.WINDOW
-    screen = pygame.display.set_mode(window)
+    # SCALED keeps the render surface at WINDOW whatever size the window is, and
+    # letterboxes to preserve aspect. Without it, going fullscreen changes the
+    # surface itself and every fixed HUD offset moves with it.
+    screen = pygame.display.set_mode(
+        window, pygame.SCALED | pygame.RESIZABLE, vsync=config.VSYNC
+    )
     screen.blit(
         pygame.font.Font(None, 40).render("Loading...", True, config.WHITE),
         (100, 100),
     )
     pygame.display.update()
     game_is_running = True
-    fullscreen_flag = True
     state = PLAYING
     paused_frame = None
     instakill_seconds = 0.0
@@ -142,6 +147,10 @@ def game_loop():
                 ammo_count = ammo_class.shooting_bullet()
             if event.type == pygame.QUIT:
                 game_is_running = False
+            if event.type == pygame.WINDOWRESIZED:
+                # SCALED handles the scaling itself; re-reading the surface keeps
+                # our reference valid if pygame swapped it out underneath us.
+                screen = pygame.display.get_surface()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if state == PLAYING:
@@ -152,10 +161,13 @@ def game_loop():
                 if event.key == pygame.K_q and state == PAUSED:
                     game_is_running = False
                 if event.key == pygame.K_BACKSLASH:
-                    fullscreen_flag = not fullscreen_flag
-                    screen = pygame.display.set_mode(
-                        window, pygame.FULLSCREEN if fullscreen_flag else 0
-                    )
+                    # With SCALED this keeps the render surface intact; the old
+                    # set_mode(FULLSCREEN) re-opened the window at 1080x720.
+                    # Not every driver supports it -- SDL's dummy raises -- and a
+                    # keypress must not be able to bring the game down.
+                    with contextlib.suppress(pygame.error):
+                        pygame.display.toggle_fullscreen()
+                    screen = pygame.display.get_surface()
                 if event.key == pygame.K_g and all_grenade_data.grenade_amount > 0:
                     grenade = Grenade(
                         (window[0] / 2.0) - camera_x,
