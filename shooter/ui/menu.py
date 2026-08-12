@@ -3,12 +3,13 @@
 import pygame
 import pygame_gui
 
-from shooter import config
+from shooter import config, session
 from shooter.ui import widgets
 from shooter.scenes import Scene
 
 RESUME, SETTINGS, DEV, QUIT, BACK = "RESUME", "SETTINGS", "DEV", "QUIT", "BACK"
 END_GAME = "END_GAME"
+RETRY = "RETRY"
 
 BUTTON_SIZE = (280, 54)
 BUTTON_GAP = 14
@@ -56,4 +57,38 @@ class PauseScreen(MenuScreen):
     def handle(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return RESUME
+        return super().handle(event)
+
+
+class ResultScreen(MenuScreen):
+    """What happened, and what to do about it.
+
+    Transparent, so the world is still there behind the veil -- where the
+    player died is part of what the screen is telling them. It does not
+    simulate, which is what stops the zombies closing in on a body.
+    """
+
+    opaque = False
+
+    TITLES = ((session.LOST, "YOU DIED"), (session.WON, "LEVEL COMPLETE"))
+
+    entries = (
+        ("RETRY", RETRY),
+        ("MAIN MENU", END_GAME),
+        ("QUIT", QUIT),
+    )
+
+    def __init__(self, window, manager, outcome=session.LOST):
+        super().__init__(window, manager)
+        self.outcome = outcome
+
+    @property
+    def title(self):
+        return dict(self.TITLES).get(self.outcome, "GAME OVER")
+
+    def handle(self, event):
+        """Escape does not dismiss this one -- there is nothing to go back to,
+        and closing it would leave a finished game running underneath."""
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            return None
         return super().handle(event)

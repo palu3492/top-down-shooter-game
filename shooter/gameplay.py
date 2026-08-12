@@ -31,6 +31,7 @@ class GameplayScene(Scene):
     def __init__(self, window, manager=None, rules=None):
         super().__init__(window, manager)
         self.session = Session(window) if rules is None else Session(window, rules)
+        self.reported = False
 
     def open(self):
         """Nothing to build: the session is the scene, and it outlives being
@@ -48,6 +49,17 @@ class GameplayScene(Scene):
     def update(self, inputs, dt=config.SIM_DT):
         self.session.aim_at(inputs.pointer)
         self.session.step(inputs.pressed, dt)
+
+    def tick(self, seconds):
+        """Report an ending once.
+
+        The outcome stays true for every frame after it happens, so without
+        this the shell would be handed a result screen sixty times a second.
+        """
+        if self.reported or self.session.outcome is None:
+            return None
+        self.reported = True
+        return self.session.outcome
 
     def draw(self, surface, alpha):
         self.session.draw(surface, alpha)

@@ -15,6 +15,7 @@ from shooter.assets import load_image
 from shooter.gameplay import PAUSE, GameplayScene
 from shooter.preload import preload
 from shooter.scenes import SceneStack
+from shooter import session
 from shooter.settings import Settings
 from shooter.ui import dev, menu, settings_screen, title
 from shooter.ui.layout import LayoutOverflowError
@@ -90,11 +91,19 @@ def route(action, scenes, window, settings):
         open_scene(scenes, title.MainMenuScene(window, scenes.manager))
     elif action == title.START:
         open_scene(scenes, GameplayScene(window, scenes.manager))
+    elif action in (session.LOST, session.WON):
+        open_scene(scenes, menu.ResultScreen(window, scenes.manager, action))
+    elif action == menu.RETRY:
+        # Drop the result screen and the game that produced it, then start a
+        # fresh one on the menu that has been underneath all along.
+        scenes.pop()
+        scenes.pop()
+        open_scene(scenes, GameplayScene(window, scenes.manager))
     elif action == menu.END_GAME:
-        # The main menu is still underneath, so ending a game is dropping the
-        # pause screen and the game and finding it where it was left.
-        scenes.pop()
-        scenes.pop()
+        # The main menu is still underneath, so ending a game is dropping
+        # whatever is over it and finding it where it was left.
+        while len(scenes) > 1:
+            scenes.pop()
     elif action in (menu.RESUME, menu.BACK):
         scenes.pop()
     elif action == menu.SETTINGS:

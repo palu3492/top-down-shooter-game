@@ -42,6 +42,9 @@ BACKGROUND = "Backgrounds/background_0.jpg"
 NO_AMMO = "no ammo"
 RELOAD = "reload"
 
+# How a game can finish. `None` means it is still being played.
+LOST, WON = "LOST", "WON"
+
 
 def collect_powerup(kind, human, zombie_group, gun):
     """Apply a collected power-up. Returns instakill seconds to add, if any."""
@@ -123,6 +126,19 @@ class Session:
         self.radar = RadarScreen()
 
         self.rules = rules(window, self.zombies, self.cash, self.visible)
+
+    @property
+    def outcome(self):
+        """`None` while the game is still being played.
+
+        Losing belongs to the session: a player at zero health is lost whatever
+        mode is being played. Winning belongs to the rules, because what counts
+        as finished is exactly what a mode decides -- endless freeplay never
+        declares one.
+        """
+        if not self.human.alive():
+            return LOST
+        return self.rules.outcome
 
     @property
     def visible(self):

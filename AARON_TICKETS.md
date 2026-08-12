@@ -668,12 +668,77 @@ per-frame is already there.
 
 ---
 
-## AT31 — Game modes: freeplay levels and campaign progress — TODO
+## AT31 — A game can end — DONE
 
-**Short description:** Freeplay as levelled endless waves; campaign as levels
-with checkpoints and persisted progress.
+**Short description:** Nothing in the game can be won or lost. The player dies
+and the world carries on without them. Everything about modes waits behind this.
 
 **Dependencies:** AT29, AT30
+
+**Goals**
+- [x] A session knows whether it is still being played
+- [x] Dying ends the game rather than leaving a corpse walking the zombies around
+- [x] The rules can declare a win, which is the seam levels need
+- [x] A result screen: what happened, retry, or back to the menu
+
+**Losing beats winning.** A player at zero health has lost even if the rules
+were about to be satisfied on the same step, so the session checks health first
+and only then asks the mode.
+
+**Reported once, not every frame.** An outcome stays true for every frame after
+it happens, so the scene remembers that it has said so -- otherwise the shell
+would be handed a result screen sixty times a second.
+
+**The world stops because the result screen does not simulate**, not because
+anything special was added. That is AT29's `simulates` doing its job; before
+this the zombies kept closing in on a body.
+
+**END GAME now pops down to the menu** rather than exactly two scenes, since a
+game can be left from the pause screen or from a result screen and those are
+different depths.
+
+**Measured first.** `human.kill()` fires on death and nothing responds -- three
+hundred steps later the zombies are still converging on a body and the wave
+timer is still counting. There is no attribute anywhere that says a game is
+over.
+
+**Why this is its own ticket.** "Freeplay levels" and "campaign progress" both
+mean *a level is completed*, and completion is a kind of ending. Building either
+mode before a game can finish would mean inventing the concept twice.
+
+**Losing is the session's business, winning is the rules'.** A player at zero
+health is lost whatever mode is being played. Winning depends entirely on what
+the mode considers finished, so it comes from the rules object AT27 left a slot
+for -- and endless freeplay simply never declares one.
+
+---
+
+## AT34 — Freeplay levels — TODO
+
+**Short description:** Turn endless waves into numbered levels with a target,
+so freeplay has an arc rather than a difficulty curve that runs forever.
+
+**Dependencies:** AT31
+
+**A level is a rules object.** `WaveSystem` already decides what spawns and
+when; a level is the same thing with a finish line, declaring a win when its
+target is met. That is what AT31's outcome seam is for.
+
+---
+
+## AT35 — Campaign and persisted progress — TODO
+
+**Short description:** Levels in sequence, checkpoints, and progress that
+survives closing the game.
+
+**Dependencies:** AT34
+
+**Two problems, deliberately separated.** *Progress* -- which levels are
+unlocked, the checkpoint reached, best score -- is small, and AT23 already has
+the pattern: validated JSON in the platform config directory with atomic writes.
+*Mid-game serialisation* -- exact zombie positions -- is a much larger
+commitment, and checkpoints do not need it: a checkpoint restarts a segment from
+its definition. Build the first; AT27 kept the seam for the second.
 
 **Two different problems, deliberately separated.** *Progress* -- which levels
 are unlocked, the checkpoint reached, best score -- is small, and AT23 already
