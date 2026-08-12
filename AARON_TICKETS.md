@@ -769,3 +769,125 @@ obligation AT14 recorded. Resuming cannot bank the paused duration.
 **Animations advance on their own clock.** `ANIMATION_FPS = 60` reproduces the
 previous one-frame-per-tick behaviour exactly at 60 FPS while staying correct
 elsewhere.
+
+---
+
+## AT16 — Fixed timestep with interpolation — TODO
+
+**Short description:** Replace AT12's variable delta time with a fixed-step
+accumulator and render-time interpolation. Research spike concluded this is the
+industry-standard loop and, given planned physics, effectively mandatory.
+
+**Dependencies:** AT12
+
+**Goals**
+- [ ] Accumulator loop: simulate in constant `SIM_DT` steps, render with `alpha = accumulator / SIM_DT`
+- [ ] Interpolate drawn positions between the previous and current simulation states
+- [ ] Keep the existing `dt` clamp as the spiral-of-death guard
+- [ ] Retire the bespoke bullet sub-stepping, which the accumulator generalises
+- [ ] Assert determinism: identical inputs produce byte-identical state at 30, 60 and 144 FPS
+
+**Why this is no longer optional.** The first spike judged variable `dt`
+"defensible for a shooter with no physics solver". Aaron has since confirmed the
+roadmap includes physics for explosions and beyond, which inverts that
+conclusion. Pymunk — the standard 2D physics binding for Python — is explicit:
+*"The most important part in your game loop is to keep the dt argument to the
+pymunk.Space.step() function constant."* A constant step is also *"an order of
+magnitude fewer iterations to resolve the collisions in the usual case"*.
+
+**Explosions are the exact failure case.** Fiedler's variable-`dt` failure modes
+are springs exploding, tunnelling, and bodies falling through floors — all
+impulse-driven, which is what an explosion is.
+
+**Sequencing matters more than the change itself.** This must land *before* any
+physics engine is introduced. Adding physics on variable `dt` and converting
+afterwards means doing the migration twice and debugging an unstable simulation
+in between, unable to tell engine bugs from timing bugs.
+
+**AT12 was not wasted.** Converting every constant to seconds and px/sec was the
+prerequisite; the accumulator is a change to the loop, not to the units.
+
+**Determinism is the real prize.** AT12 measured health at 87.30 / 87.00 / 86.69
+across three frame rates — close, but not equal. A fixed step makes those
+identical, which enables replays, deterministic tests, and eventually netplay.
+
+**Interpolation is not optional.** Without it there is always a sub-`dt`
+remainder, so every frame renders the simulation at slightly the wrong instant —
+visible as stutter. Skipping it is the common half-implementation.
+
+**3D-ish rendering strengthens the case.** Sprite stacking, raycasting or a
+ModernGL/shader path all make frame times less predictable and more GPU-bound.
+A fixed simulation step decouples the two: physics stays at 60 Hz while
+rendering runs at whatever the hardware manages.
+
+**Note the tunnelling overlap.** Pymunk recommends multiple smaller steps per
+frame to prevent tunnelling — which is precisely what the accumulator does, and
+precisely what `Shot.update` currently hand-rolls for bullets alone. The
+accumulator replaces that special case with the general mechanism.
+
+---
+
+## AT17 — Resizable window via SCALED — TODO
+
+**Short description:** Let players size the window freely. Start with
+`pygame.SCALED`, which is one flag rather than a rendering rewrite.
+
+**Dependencies:** AT12
+
+**Goals**
+- [ ] `set_mode(WINDOW, pygame.SCALED | pygame.RESIZABLE)`
+- [ ] Confirm mouse aiming still lands correctly — SCALED claims to scale mouse events for us
+- [ ] Make the fullscreen toggle actually fill the display rather than re-opening at 1080×720
+- [ ] Handle `WINDOWRESIZED`, not the legacy `VIDEORESIZE`
+- [ ] Verify the documented limitation: a SCALED window may only be resized *larger* than its design size
+
+**Why SCALED first.** The game keeps believing it renders 1080×720 while pygame
+scales and letterboxes to preserve aspect ratio. Crucially the docs state
+*"mouse events are scaled for you, so your game doesn't need to do it"* — which
+matters here because aiming is raw mouse-position arithmetic.
+
+**Two caveats, both real.** SCALED is still marked *"an experimental API and may
+change in future releases"*, and pygame issue #3709 reports that a SCALED window
+cannot be resized below its design resolution. Open and unresolved.
+
+**The fallback if SCALED disappoints** is render-to-surface plus manual
+letterboxing: draw to a fixed internal surface, scale it to the window
+preserving aspect, blit centred with bars. More control, but mouse translation
+becomes ours to write — the thing SCALED gives away free.
+
+**Risk to check before committing.** If the 3D-ish direction leads to an OpenGL
+context via ModernGL, scaling is handled by the GL viewport rather than by
+SCALED. Worth confirming how the two interact before building anything on top of
+SCALED.
+
+---
+
+## AT18 — Adaptive HUD via pygame_gui anchors — TODO
+
+**Short description:** Scaling is not layout. Reposition HUD elements relative
+to window edges instead of stretching a fixed-resolution image.
+
+**Dependencies:** AT17
+
+**Goals**
+- [ ] Adopt `pygame_gui` and rebuild the HUD with anchors
+- [ ] Replace the hand-tuned absolute offsets throughout `ui/hud.py`
+- [ ] Fix the wave banner, currently fully absolute at `(300, 210, 500, 100)`
+- [ ] Radar, ammo, health and cash all track their nearest corner
+
+**Why anchors.** `pygame_gui` positions elements with anchors such as
+`{'right': 'right', 'bottom': 'bottom'}`, which keeps an element's size while
+tracking a container edge as the window resizes. That is the model to copy
+whether or not we keep the library.
+
+**What is wrong today.** The HUD is placed with hand-tuned magic offsets —
+`(40, window[1] - 76)`, `(window[0] - 263, window[1] - 162)`,
+`(window[0] / 2 - 225, 0)` — numbers that only work because the HUD art happens
+to be the size it is. The wave banner ignores the window entirely.
+
+**Sequencing.** This should land *after* the splash and menu screens, not before.
+Menus are the most layout-sensitive thing on the roadmap, and building anchoring
+twice would be waste.
+
+**Dependency note.** `pygame_gui` requires `pygame-ce>=2.5.3`; we pin 2.5.8, so
+the AT2 fork decision already unblocks this.
