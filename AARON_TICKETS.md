@@ -1065,25 +1065,58 @@ inconsistent. This ticket owns it; AT18 depends on it.
 
 ---
 
-## AT22 — GUI primitives and a dev screen to exercise them — TODO
+## AT22 — Layout grid, themed widgets, and a dev screen — TODO
 
-**Short description:** A full-screen dev screen showing every UI primitive we
-use, and the one primitive `pygame_gui` does not provide.
+**Short description:** A Bootstrap-style grid for arranging UI, thin themed
+wrappers over the widgets `pygame_gui` already provides, and a full-screen dev
+screen that exercises all of it.
 
 **Dependencies:** AT21
 
 **Goals**
-- [ ] Full-screen dev screen, reachable from pause
-- [ ] Build `Table` — header row plus data rows
+- [ ] `Grid` / `Row` / `Column` laying out rectangles by span, like Bootstrap
 - [ ] Thin themed wrappers so call sites are ours, not the library's
-- [ ] A gallery: every primitive rendered with light examples
+- [ ] Full-screen dev screen, reachable from pause
+- [ ] A gallery: every widget arranged by the grid, with light examples
 - [ ] Iterate on theming and UX here, not in the settings screen
 
-**Only one primitive actually needs building.** Checked against the installed
-`pygame_gui` 0.6.14 rather than the docs, which are out of date:
+**The grid is arithmetic, not a widget.** `pygame_gui` positions everything with
+a `relative_rect`, so what we are missing is not a component — it is something
+that *computes* those rects. `Grid` divides a rect into columns, `Row` splits
+horizontally, a `Column` claims a span. It returns rectangles and nothing else.
 
-| wanted | status |
-|---|---|
+That has a property worth having: no pygame, no display, no manager. It is pure
+geometry, so it can be exhaustively unit-tested headlessly, which is exactly
+where off-by-one layout bugs live.
+
+**Deliberately dumb.** Fixed column count, explicit spans, explicit gutters. No
+constraint solving, no auto-sizing, no reflow. A layout you can predict by
+reading it is worth more here than a clever one, and the whole point is that
+`pygame_gui` handles the widgets while we only decide where they sit.
+
+**What it is for.** Arranging a setting as a row — a label claiming most of the
+width and a `UICheckBox` claiming the rest — and having the next setting line up
+underneath without anyone hand-tuning pixel offsets. That is the same problem
+AT18 solves for the HUD, from the other direction.
+
+**Only wrappers are needed for the rest.** Checked against the installed
+`pygame_gui` 0.6.14: `UICheckBox`, `UISelectionList`, `UIDropDownMenu`,
+`UIForm`, `UIPanel`, `UIWindow`, `UIScrollingContainer`, `UITextEntryLine` and
+`UIConfirmationDialog` all exist. A thin `shooter/ui/widgets.py` keeps theme and
+defaults in one place and gives the grid somewhere natural to live beside them.
+
+**Naming carries the explanation.** No comments justifying layout maths — if a
+`span`, a `gutter` or a `cell_rect` needs a paragraph to explain it, the name is
+wrong. This is the house style and the grid is a good test of it.
+
+**This is the iteration surface.** Theming and spacing get argued out on a
+screen with no gameplay consequences, before the settings form depends on them.
+
+**Open questions for Aaron**
+- Should the dev screen be gated in release builds, or always reachable?
+- Theme direction: match the game's military/HUD palette, or deliberately plain so dev tools read as dev tools?
+
+---|---|
 | Checkbox | `UICheckBox` exists |
 | Selector | `UISelectionList` and `UIDropDownMenu` exist |
 | **Table with header and rows** | **nothing table-like — build it** |
@@ -1150,7 +1183,7 @@ an explicit Save, and warns before anything that needs a restart.
 **Dependencies:** AT22, AT23
 
 **Goals**
-- [ ] Form-based, built on `UIForm` and the AT22 primitives
+- [ ] Form-based, built on `UIForm`, laid out with the AT22 grid
 - [ ] Nothing persists until Save is clicked; leaving without saving discards
 - [ ] Boot-only settings show a `UIConfirmationDialog` before being accepted
 - [ ] Settings marked "new entities only" say so in the UI rather than appearing broken
