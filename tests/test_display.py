@@ -39,13 +39,17 @@ def run_briefly(monkeypatch, frames=8):
     game.game_loop()
 
 
-def test_the_window_is_opened_scaled_and_resizable(monkeypatch, captured_mode):
+def test_the_window_is_opened_scaled_but_not_resizable(monkeypatch, captured_mode):
+    """AT17 asked for both flags. AT26 dropped RESIZABLE: a second `set_mode`
+    with SCALED and RESIZABLE together aborts inside SDL, and AT25 made that
+    second call something a player triggers from the settings screen.
+    """
     run_briefly(monkeypatch)
 
     opening = captured_mode[0]
     assert opening["size"] == config.WINDOW
     assert opening["flags"] & pygame.SCALED
-    assert opening["flags"] & pygame.RESIZABLE
+    assert not opening["flags"] & pygame.RESIZABLE
 
 
 def test_vsync_is_requested(monkeypatch, captured_mode):

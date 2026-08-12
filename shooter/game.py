@@ -76,10 +76,15 @@ def centred_text(screen, window, message, top, size, colour=config.WHITE):
 
 def open_display(window):
     """SCALED keeps the render surface at `window` whatever size the OS window
-    is, and letterboxes to preserve aspect."""
-    return pygame.display.set_mode(
-        tuple(window), pygame.SCALED | pygame.RESIZABLE, vsync=config.VSYNC
-    )
+    is, and letterboxes to preserve aspect.
+
+    Deliberately without RESIZABLE. Calling `set_mode` a second time with
+    SCALED and RESIZABLE together aborts inside SDL -- reproducibly on Linux,
+    intermittently on macOS -- and AT25 made that second call a thing players
+    can trigger from the settings screen. SCALED on its own survives repeated
+    changes, and the window size is a setting now rather than something to drag.
+    """
+    return pygame.display.set_mode(tuple(window), pygame.SCALED, vsync=config.VSYNC)
 
 
 def match_resolution(window, screens, human):

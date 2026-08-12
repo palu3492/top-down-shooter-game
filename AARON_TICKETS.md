@@ -392,6 +392,45 @@ corner, and an arbitrary point.
 
 ---
 
+## AT26 — Resolution changes abort inside SDL — DONE
+
+**Short description:** AT25 made `set_mode` something a player calls again from
+the settings screen. With `SCALED | RESIZABLE` the second call aborts inside
+SDL. Dropping `RESIZABLE` fixes it.
+
+**Dependencies:** AT25
+
+**Goals**
+- [x] Find why CI segfaulted on `dev` from AT25 onward
+- [x] Establish whether players are affected or only the dummy driver
+- [x] Fix it, with a test that would have caught it
+
+**Measured, not guessed.** Exit code 139 on Linux, 134 on macOS, both inside
+`open_display`. Isolating the flags gave a clean answer:
+
+| flags | 40 changes on a real driver |
+|---|---|
+| `SCALED \| RESIZABLE` | aborts, 4 runs in 5 |
+| `SCALED` | survives, 5 in 5 |
+| `RESIZABLE` | survives |
+| neither | survives |
+
+**Not a test artefact.** The first instinct was to blame SDL's dummy driver,
+since that is what CI uses. Repeating the check against macOS's real `cocoa`
+driver aborted 3 runs in 5, so this was a crash a player could hit by changing
+resolution -- the tests only found it first.
+
+**Why it went unnoticed.** It is a hard abort rather than a failed assertion,
+and it needs a *second* `set_mode`, which nothing did before AT25. On macOS it
+misses roughly five times in six, so it looked like flakiness; on Linux it is
+reliable, which is why `dev` was red from AT25 onward while every PR run passed.
+
+**What is lost.** The OS window can no longer be dragged to resize. `SCALED`
+still letterboxes, the fullscreen toggle still works, and resolution is a
+setting now -- which is what dragging was standing in for.
+
+---
+
 ## AT25 — Changing resolution without restarting — DONE
 
 **Short description:** Make `WINDOW` a live setting. Recreate the display and

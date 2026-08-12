@@ -247,3 +247,49 @@ def test_saving_a_new_resolution_no_longer_asks_for_a_restart(display, tmp_path)
     assert screen.confirming is None, "resolution should no longer warn"
     assert json.loads(store.path.read_text())["WINDOW"] == [1920, 1080]
     stack.clear()
+
+
+RESOLUTION_WALK = [(1280, 720), (1600, 900), (1920, 1080), (1080, 720), (2560, 1440)]
+
+
+def test_many_resolution_changes_do_not_bring_the_process_down(display, monkeypatch):
+    """A crash cannot be asserted, only survived.
+
+    `set_mode` with SCALED *and* RESIZABLE aborts inside SDL on a second call --
+    reliably on Linux, roughly one run in six on macOS. AT25 put that call
+    behind a settings screen, so this walks the sizes a player could actually
+    pick. Reaching the end is the assertion.
+    """
+    stack = ScreenStack(SMALL)
+    viewport = Viewport(SMALL)
+    human = Human(viewport)
+
+    for size in RESOLUTION_WALK:
+        monkeypatch.setattr(config, "WINDOW", size)
+        assert game.match_resolution(viewport, stack, human) is not None
+        assert viewport == size
+
+    stack.clear()
+    game.open_display(Viewport(config.WINDOW))
+
+
+def test_the_display_does_not_ask_for_a_resizable_window():
+    """The flag combination that aborts is SCALED with RESIZABLE, and only on a
+    second call -- which is exactly what changing resolution does."""
+    flags = []
+    real = pygame.display.set_mode
+
+    def spy(size, flag=0, *args, **kwargs):
+        flags.append(flag)
+        return real(size, flag, *args, **kwargs)
+
+    original = pygame.display.set_mode
+    pygame.display.set_mode = spy
+    try:
+        game.open_display(Viewport(SMALL))
+    finally:
+        pygame.display.set_mode = original
+
+    assert flags
+    assert not flags[0] & pygame.RESIZABLE
+    assert flags[0] & pygame.SCALED
