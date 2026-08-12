@@ -179,3 +179,32 @@ def test_the_game_stays_up_when_a_screen_will_not_fit(display):
     game.open_screen(stack, DevScreen(TINY, stack.manager))
     assert isinstance(stack.top, menu.PauseScreen)
     stack.clear()
+
+
+WRAPPERS = {
+    "title": lambda rect, manager: widgets.title(rect, "x", manager),
+    "hint": lambda rect, manager: widgets.hint(rect, "x", manager),
+    "caption": lambda rect, manager: widgets.caption(rect, "x", manager),
+    "button": lambda rect, manager: widgets.button(rect, "x", manager),
+    "checkbox": lambda rect, manager: widgets.checkbox(rect, "x", manager),
+    "checked checkbox": lambda rect, manager: widgets.checkbox(
+        rect, "x", manager, checked=True
+    ),
+    "dropdown": lambda rect, manager: widgets.dropdown(rect, ["A", "B"], manager),
+    "preselected dropdown": lambda rect, manager: widgets.dropdown(
+        rect, ["A", "B"], manager, selected="B"
+    ),
+    "slider": lambda rect, manager: widgets.slider(rect, manager, 5, (0, 10)),
+    "selector": lambda rect, manager: widgets.selector(rect, ["A", "B"], manager),
+    "panel": lambda rect, manager: widgets.panel(rect, manager),
+}
+
+
+@pytest.mark.parametrize("name", WRAPPERS)
+def test_building_a_widget_announces_nothing(stack, name):
+    """A widget that emits while a screen is being built is indistinguishable
+    from the player using it. AT24 reads these events as edits to a form, so
+    every wrapper has to stay quiet until someone actually touches it."""
+    pygame.event.clear()
+    WRAPPERS[name](pygame.Rect(0, 0, 200, 120), stack.manager)
+    assert pygame.event.get() == []

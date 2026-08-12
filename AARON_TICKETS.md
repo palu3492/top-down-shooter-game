@@ -1170,6 +1170,15 @@ does nothing.
 **`SIM_HZ` stays out of settings.** AT16 bought determinism at a fixed rate;
 exposing it discards the property physics will depend on.
 
+**Loading a stored value must not look like an edit.** Audited every wrapper in
+`shooter/ui/widgets.py` while reviewing AT22: construction is silent for all of
+them, and a regression test now holds that. One setter is not --
+`UICheckBox.set_state` posts `UI_CHECK_BOX_CHECKED`, which is right for a click
+and wrong for populating a form from the store. Slider, dropdown and selector
+all load silently, so this is one known method rather than a general hazard.
+Whatever populates a form from this store either avoids `set_state` or ignores
+events raised before the screen's first draw.
+
 ---
 
 ## AT24 — Settings screen — TODO
