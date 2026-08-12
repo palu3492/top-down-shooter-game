@@ -11,10 +11,6 @@ LIFETIME = config.POWERUP_LIFETIME_FRAMES
 
 
 class PowerUps(pygame.sprite.Sprite):
-    powerup_selected = 0
-
-    timer_count = 0
-
     def spawning_location(self):
         self.rect.x, self.rect.y = config.POWERUP_SPAWN
 
@@ -87,6 +83,10 @@ class PowerUps(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        self.powerup_selected = 0
+        self.timer_count = 0
+        self.og_image = None
+        self.blank_image = None
         self.select_powerup()
         self.image = pygame.transform.scale(
             self.image,

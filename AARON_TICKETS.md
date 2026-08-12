@@ -414,19 +414,33 @@ Not fatal, which is why it is its own ticket rather than a hotfix.
 
 ---
 
-## AT7 — Class attributes used as mutable instance state — TODO
+## AT7 — Class attributes used as mutable instance state — DONE
 
-**Short description:** Nearly every class declares its mutable state on the class
-body (`health = 100.00`, `cash_amount = 0`, `zombie_speed = 6`). It works only
-because `+=` on an int rebinds to the instance — a genuine landmine the moment
-anyone introduces a list, dict, or a second instance that reads before writing.
+**Short description:** Nearly every class declared its mutable state on the
+class body. It worked only because `+=` on an int rebinds to the instance.
 
 **Dependencies:** AT6
 
 **Goals**
-- [ ] Move all mutable state into `__init__` across `Human`, `Zombie`, `GunData`, `Cash`, `GrenadeData`, `PowerUps`, `WaveSystem`, `Shot`, `Grenade`, `StunGrenade`, and both detonation classes
-- [ ] ~~Drop `Human.player` / `Zombie.player`~~ — already removed in AT3
-- [ ] `Zombie.zombie_speed` reset in `zombie_speed_timer` re-reads a class constant — make it an instance default
+- [x] Move all mutable state into `__init__` across all 13 classes
+- [x] Drop the dead `HealthBar.lives` and `Human.player_cash`
+- [x] `Zombie.zombie_speed` resets from `config`, not a class attribute
+
+**52 class attributes → 4**, and the four that remain are genuine read-only
+constants: `GunData.CLIP`, `GunData.RESERVE`, `Shot.SPEED`, `Shot.STEPS`. The
+last two were `bullet_speed` and `continuous` — renamed to caps so they stop
+reading like state.
+
+**The old isolation tests passed by accident.** Demonstrated before touching
+anything: after `a.increase_cash(50)`, `'cash_amount' in vars(a)` is `True` but
+`vars(b)` is empty — `b` was reading the class attribute and merely looked
+correct. The five "two instances do not share" tests written in AT11 could not
+have caught a genuine sharing bug involving a list or a dict.
+
+**A structural guard replaces the accident.** `test_no_class_body_still_declares
+_mutable_state` walks the AST of every module and fails on any non-`ALL_CAPS`
+assignment in a class body. Mutation-tested: reintroducing `cash_amount = 0` on
+`Cash` turns it red.
 
 ---
 
