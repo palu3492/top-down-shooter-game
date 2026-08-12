@@ -154,10 +154,55 @@ def test_drawing_does_not_advance_the_world(session):
     assert [z.get_position() for z in session.zombies] == before
 
 
-def test_a_session_follows_a_resize(session):
-    session.resize(Viewport((1920, 1080)))
+def test_everything_in_a_session_follows_a_resize(display):
+    """The earlier version of this test passed a fresh Viewport and checked only
+    `session.window` and the player -- the two things that did update -- while
+    the gun, the health bar and every zombie silently kept the old size.
+    """
+    window = Viewport(WINDOW)
+    session = Session(window)
+    zombie = next(iter(session.zombies))
+
+    window.resize((1920, 1080))
+    session.resize()
+
     assert session.window == (1920, 1080)
     assert session.human.rect.centerx == pytest.approx(960, abs=1)
+    assert session.human.rect.centery == pytest.approx(540, abs=1)
+    assert tuple(session.gun.window) == (1920, 1080)
+    assert tuple(session.health_display.window_size) == (1920, 1080)
+    assert tuple(zombie.window_size) == (1920, 1080), (
+        "an existing zombie walks at half the window, so a stale size sends it "
+        "at a point the player is not standing on"
+    )
+
+
+def test_resize_takes_no_window_to_pass_the_wrong_one(session):
+    """There is only ever one viewport; accepting another would imply copies."""
+    with pytest.raises(TypeError):
+        session.resize(Viewport((1920, 1080)))
+
+
+def test_the_opening_frame_aims_at_the_pointer(display, monkeypatch):
+    """Input is handled before the loop first calls `aim_at`, so a click on the
+    opening frame used to fire at atan2(0, 0) -- straight right."""
+    monkeypatch.setattr(pygame.mouse, "get_pos", lambda: (200, 360))
+    session = Session(Viewport(WINDOW))
+
+    assert session.aim != (0, 0)
+
+    session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
+    bullet = next(iter(session.bullets))
+    assert bullet.small_change_x < 0, "the pointer was left of centre"
+
+
+def test_the_opening_aim_matches_a_later_sample(display, monkeypatch):
+    monkeypatch.setattr(pygame.mouse, "get_pos", lambda: (900, 100))
+    session = Session(Viewport(WINDOW))
+    opening = session.aim
+
+    session.aim_at((900, 100))
+    assert session.aim == opening
 
 
 def test_world_state_holds_no_surfaces(session):

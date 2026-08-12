@@ -96,7 +96,11 @@ class Session:
         self.camera_x, self.camera_y = 0, 0
         self.previous_camera = (0, 0)
         self.instakill_seconds = 0.0
+        # Sampled now rather than left at the origin: input is handled before
+        # the loop first calls `aim_at`, so a click on the opening frame would
+        # otherwise fire at atan2(0, 0) -- straight right, wherever the pointer.
         self.aim = (0, 0)
+        self.aim_at(pygame.mouse.get_pos())
 
         self.change_x = self.change_y = 0
         self.shooting = False
@@ -130,9 +134,16 @@ class Session:
     def camera(self):
         return (self.camera_x, self.camera_y)
 
-    def resize(self, window):
-        self.window = window
-        self.human.recentre(window)
+    def resize(self):
+        """Take no window: there is only ever one.
+
+        AT25 replaced twenty copies of the render size with a single shared
+        `Viewport`, so the gun, the health bar and every zombie already read the
+        new size the moment it changes. Accepting a window here would imply
+        there are copies to update and quietly leave most of them stale -- the
+        player is the only thing holding a position derived from it.
+        """
+        self.human.recentre(self.window)
 
     def aim_at(self, pointer):
         """Sampled once per frame; the pointer does not move between steps."""

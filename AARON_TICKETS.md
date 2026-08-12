@@ -417,6 +417,18 @@ frame-level assignment could never be read.
 aim did, so it could draw a frame away from where a bullet would go. Both take
 one sample now.
 
+**Review fixes (AT27.1).** `resize` took a window it mostly ignored: it set
+`self.window` and re-centred the player, while the gun, the health bar and every
+existing zombie kept the viewport they were built with. Production never noticed
+because the shared `Viewport` mutates in place -- but a caller passing a fresh
+one got zombies walking at the old screen centre, and the test written for it
+checked only the two things that did update. It takes no window now, which is
+what AT25's single shared viewport already meant.
+
+`Session.aim` also started at the origin, so a click on the opening frame fired
+at `atan2(0, 0)` -- straight right, wherever the pointer was. It samples the
+pointer at construction, as the old loop did before it.
+
 **`WINDOWRESIZED` handling went.** AT26 dropped `RESIZABLE`, so no resize event
 is delivered any more; the surface is re-read where it can still change, at the
 fullscreen toggle.
