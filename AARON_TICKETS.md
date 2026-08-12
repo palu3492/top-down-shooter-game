@@ -129,11 +129,10 @@ interpreter upgrade ladder to climb. What was missing was the pin and the proof,
 not modernization. `requires-python = ">=3.10"` is still an untested claim;
 AT10's CI matrix is what makes it real.
 
-**Follow-up left open:** `requirements.txt` and `pyproject.toml` now both
-declare the dependency, and `uv run` resolves from `pyproject.toml` rather than
-the exact pin — so they can drift once a newer pygame-ce ships. Consolidating on
-`uv.lock` as the single source of truth and dropping `requirements.txt` is the
-clean end state, deliberately deferred to keep this change additive.
+**Follow-up — resolved in AT13.** `requirements.txt` and `pyproject.toml` both
+declared the dependency, and `uv run` resolved from `pyproject.toml` rather than
+the exact pin, so they could drift once a newer pygame-ce shipped. AT13
+consolidates on `uv.lock` and deletes the requirements files.
 
 ---
 
@@ -400,10 +399,9 @@ imports. It now runs two jobs: **3.14**, the version pinned in
 `.python-version`, which gates merges; and **3.15**, the next release, as a
 non-blocking canary via `continue-on-error`.
 
-**Open consequence:** `requires-python = ">=3.10"` is once again an untested
-claim, which is exactly what this ticket set out to fix. Either narrow it to
-`>=3.14` to match what CI proves, or accept it as aspirational. Worth deciding
-rather than leaving implicit.
+**Open consequence — decided in AT13.** `requires-python = ">=3.10"` became an
+untested claim once the matrix narrowed. AT13 narrows it to `>=3.14` so the
+declaration matches both `.python-version` and what CI gates on.
 
 **On the asset guard:** the first version used `os.path.exists`, which is
 case-insensitive on macOS and so would only have caught an AT3-style regression
@@ -471,6 +469,45 @@ have broken *on* AT5. Power-ups are now constructed through a `make_powerup`
 factory that pins the kind via a scoped `MonkeyPatch.context()`, and the
 lifetime, blink and pickup tests are parametrised over all four kinds, so AT5's
 fix is exercised before it lands.
+
+---
+
+## AT13 — Single source of truth for dependencies — DONE
+
+**Short description:** The dependency was declared three times and `uv run`
+read the wrong one. Consolidate on `pyproject.toml` + `uv.lock` and delete the
+requirements files.
+
+**Dependencies:** AT2.1, AT10.1
+
+**Goals**
+- [x] Dev tooling moves to a PEP 735 `[dependency-groups]` entry
+- [x] `uv.lock` committed as the exact, reproducible resolution
+- [x] `requirements.txt` and `requirements-dev.txt` deleted
+- [x] CI switches to `uv sync --locked`
+- [x] README install collapses to a single `uv sync`
+- [x] Decide `requires-python`
+
+**The drift this removes.** `requirements.txt` pinned `pygame-ce==2.5.8` while
+`pyproject.toml` declared `>=2.5.5,<3`, and `uv run` resolved from the latter.
+Identical today, divergent the day 2.5.9 ships. One source now, and
+`uv sync --locked` in CI additionally fails if the lock falls out of step with
+`pyproject.toml` — verified by editing the range without re-locking.
+
+**`requires-python` narrowed `>=3.10` → `>=3.14`.** It had gone back to being an
+untested claim after AT10.1 cut the matrix to 3.14 + 3.15. Narrowing makes the
+declaration match `.python-version` and the CI gate. Little is lost: `uv sync`
+fetches 3.14 regardless of the system Python, so uv users are unaffected;
+only a non-uv `pip install -e .` on 3.10–3.13 is refused. One line to widen
+again if we decide to support and test those.
+
+**No version changed.** The lock resolves to exactly what the deleted files
+pinned: pygame-ce 2.5.8, pytest 9.1.1, ruff 0.16.2.
+
+**Verified from a clean `git archive`:** `uv sync` alone fetches CPython 3.14.7,
+creates the venv, installs from the lock, and editable-installs the project —
+63 tests pass, ruff clean, the game runs, and the `shooter` console script runs
+from `/`.
 
 ---
 
