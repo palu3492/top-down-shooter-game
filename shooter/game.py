@@ -80,6 +80,7 @@ def game_loop():
     game_is_running = True
     screens = ScreenStack(window)
     frozen_frame = None
+    pause_requested = False
     instakill_seconds = 0.0
 
     cursor = load_image("cursor.png")
@@ -168,8 +169,7 @@ def game_loop():
                 screen = pygame.display.get_surface()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE and not screens:
-                    frozen_frame = screen.copy()
-                    screens.push(menu.PauseScreen(window, screens.manager))
+                    pause_requested = True
                 if event.key == pygame.K_BACKSLASH:
                     # With SCALED this keeps the render surface intact; the old
                     # set_mode(FULLSCREEN) re-opened the window at 1080x720.
@@ -307,8 +307,6 @@ def game_loop():
         blit_group(screen, stun_grenades, draw_x, draw_y, alpha)
         blit_group(screen, stun_explosions, draw_x, draw_y, alpha)
 
-        screen.blit(cursor, (mouse_x - 23, mouse_y - 22))
-
         radar.draw(screen, -camera_x + window[0] / 2, -camera_y + window[1] / 2)
         for zombie in zombie_group:
             radar.update_zom(screen, zombie)
@@ -338,6 +336,13 @@ def game_loop():
             pygame.font.Font(None, 20).render(str(clock.get_fps()), True, config.WHITE),
             (0, 0),
         )
+
+        if pause_requested:
+            frozen_frame = screen.copy()
+            screens.push(menu.PauseScreen(window, screens.manager))
+            pause_requested = False
+
+        screen.blit(cursor, (mouse_x - 23, mouse_y - 22))
         pygame.display.flip()
         accumulator += min(clock.tick(config.FPS) / 1000.0, config.MAX_FRAME_SECONDS)
 

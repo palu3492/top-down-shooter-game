@@ -80,6 +80,7 @@ class ScreenStack:
             self._screens[-1].close()
         self._screens.append(screen)
         screen.open()
+        self._sync_pointer()
 
     def pop(self):
         if not self._screens:
@@ -87,6 +88,12 @@ class ScreenStack:
         self._screens.pop().close()
         if self._screens:
             self._screens[-1].open()
+        self._sync_pointer()
+
+    def _sync_pointer(self):
+        """Gameplay hides the system pointer and draws its own crosshair, so a
+        menu has to ask for the real one back before anything is clickable."""
+        pygame.mouse.set_visible(bool(self._screens))
 
     def clear(self):
         while self._screens:

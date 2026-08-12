@@ -1,5 +1,8 @@
 """Pause menu and the screen stack it drives."""
 
+import ast
+from pathlib import Path
+
 import pygame
 import pygame_gui
 import pytest
@@ -129,6 +132,53 @@ def test_dev_is_hidden_when_dev_tools_are_off(stack, window, monkeypatch):
     stack.push(screen)
 
     assert "DEV" not in [b.text for b in screen.actions]
+
+
+def test_the_pointer_comes_back_for_menus_and_leaves_again(stack, window):
+    """Gameplay draws its own crosshair with the system pointer hidden."""
+    pygame.mouse.set_visible(False)
+
+    stack.push(menu.PauseScreen(window, stack.manager))
+    assert pygame.mouse.get_visible() is True
+
+    stack.push(menu.SettingsScreen(window, stack.manager))
+    assert pygame.mouse.get_visible() is True
+
+    stack.pop()
+    assert pygame.mouse.get_visible() is True
+
+    stack.clear()
+    assert pygame.mouse.get_visible() is False
+
+
+def test_the_frozen_frame_is_captured_before_the_crosshair_is_drawn():
+    """Otherwise the veiled backdrop keeps a crosshair where the mouse used to
+    be, and the player sees it alongside the live pointer."""
+    tree = ast.parse(Path(game.__file__).read_text())
+
+    capture = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(t, ast.Name) and t.id == "frozen_frame" for t in node.targets
+        )
+        and isinstance(node.value, ast.Call)
+    ]
+    crosshair = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "blit"
+        and node.args
+        and isinstance(node.args[0], ast.Name)
+        and node.args[0].id == "cursor"
+    ]
+
+    assert len(capture) == 1, "expected exactly one frozen-frame capture"
+    assert len(crosshair) == 1, "expected exactly one crosshair blit"
+    assert capture[0] < crosshair[0]
 
 
 def test_a_bare_screen_refuses_to_be_used_directly(window, stack):
