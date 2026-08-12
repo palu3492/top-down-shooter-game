@@ -44,5 +44,10 @@ def make_cash():
 
 
 @pytest.fixture
+def cash_factory(make_cash):
+    return make_cash
+
+
+@pytest.fixture
 def cash(make_cash):
     return make_cash()

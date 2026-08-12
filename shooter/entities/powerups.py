@@ -7,7 +7,7 @@ from shooter.assets import load_image
 
 INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH = 1, 2, 3, 4
 EXPIRED = "EXPIRED"
-LIFETIME = config.POWERUP_LIFETIME_FRAMES
+LIFETIME = config.POWERUP_LIFETIME_SECONDS
 
 
 class PowerUps(pygame.sprite.Sprite):
@@ -49,28 +49,22 @@ class PowerUps(pygame.sprite.Sprite):
         elif self.powerup_selected == 4:
             self.max_health()
 
-    def tick(self):
-        if self.timer_count == 0:
+    def tick(self, dt=1 / config.FPS):
+        if self.alive_seconds == 0:
             self.og_image = self.image
             self.blank_image = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
-        if self.timer_count >= config.POWERUP_BLINK_AFTER:
-            if (
-                (self.timer_count >= 400 and self.timer_count <= 500)
-                or (self.timer_count >= 600 and self.timer_count <= 650)
-                or (self.timer_count >= 800 and self.timer_count <= 850)
-                or (self.timer_count >= 1000 and self.timer_count <= 1050)
-                or (self.timer_count >= 1100 and self.timer_count <= 1125)
-                or (self.timer_count >= 1150 and self.timer_count <= 1175)
-            ):
-                self.image = self.blank_image
-            else:
-                self.image = self.og_image
-        if self.timer_count >= LIFETIME:
+        if self.alive_seconds >= config.POWERUP_BLINK_AFTER:
+            blinking = any(
+                start <= self.alive_seconds <= end
+                for start, end in config.POWERUP_BLINK_WINDOWS
+            )
+            self.image = self.blank_image if blinking else self.og_image
+        if self.alive_seconds >= LIFETIME:
             return EXPIRED
-        self.timer_count += 1
+        self.alive_seconds += dt
         return None
 
-    def update(self, human, change_x, change_y):
+    def update(self, human, change_x, change_y, dt=1 / config.FPS):
         """Return the kind collected, EXPIRED, or None if still on the field.
 
         Applying the effect is the caller's job -- a pickup that reached into
@@ -79,12 +73,12 @@ class PowerUps(pygame.sprite.Sprite):
         self.move_with_camera(change_x, change_y)
         if pygame.sprite.collide_rect(human, self):
             return self.powerup_selected
-        return self.tick()
+        return self.tick(dt)
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.powerup_selected = 0
-        self.timer_count = 0
+        self.alive_seconds = 0.0
         self.og_image = None
         self.blank_image = None
         self.select_powerup()

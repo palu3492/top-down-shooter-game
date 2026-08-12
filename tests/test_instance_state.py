@@ -27,17 +27,17 @@ from shooter.ui.hud import Cash, GrenadeData, GunData
 
 MUTABLE = {
     "Cash": ["cash_amount"],
-    "GunData": ["clip_size", "ammo_amount", "reload_time"],
+    "GunData": ["clip_size", "ammo_amount", "reload_seconds"],
     "GrenadeData": ["grenade_amount", "stun_grenade_amount"],
-    "WaveSystem": ["wave_count", "wave_timer"],
-    "PowerUps": ["powerup_selected", "timer_count"],
+    "WaveSystem": ["wave_count", "wave_seconds"],
+    "PowerUps": ["powerup_selected", "alive_seconds"],
     "Human": ["health", "current_idle", "current_move", "current_shoot", "type"],
-    "Zombie": ["zombie_health", "zombie_speed", "stun_timer", "zombie_x", "zombie_y"],
+    "Zombie": ["zombie_health", "zombie_speed", "stun_seconds", "zombie_x", "zombie_y"],
     "Shot": ["kill_me", "bullet_x", "bullet_y", "damage"],
-    "Grenade": ["explode", "grenade_x", "grenade_y", "x_counter", "y_counter"],
+    "Grenade": ["explode", "grenade_x", "grenade_y", "travelled", "flight"],
     "StunGrenade": ["explode", "grenade_x", "grenade_y"],
-    "GrenadeDetonation": ["counter", "explosion_x", "explosion_y"],
-    "StunDetonation": ["counter", "explosion_x", "explosion_y"],
+    "GrenadeDetonation": ["life", "explosion_x", "explosion_y"],
+    "StunDetonation": ["life", "explosion_x", "explosion_y"],
 }
 
 

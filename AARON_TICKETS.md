@@ -720,15 +720,52 @@ surprise worth removing.
 
 ---
 
-## AT12 — Frame-rate independence — TODO
+## AT12 — Frame-rate independence — DONE
 
-**Short description:** All movement, animation, timers, and cooldowns are counted
-in frames and assume a locked 60 FPS. Anything that drops frames plays in slow
-motion.
+**Short description:** Every speed and timer was counted in frames against a
+locked 60 FPS, so anything that dropped frames played in slow motion.
 
-**Dependencies:** AT11
+**Dependencies:** AT7
 
 **Goals**
-- [ ] Thread `dt` from `clock.tick(60)` through entity updates
-- [ ] Convert speeds to px/second and timers to seconds (`stun_timer`, `reload_time`, `wave_timer`, `PowerUps.timer_count`, `INSTAKILL_FRAMES`, animation frame advance)
-- [ ] Behaviour verified unchanged at 60 FPS, correct at 30 and 144
+- [x] Thread `dt` from `clock.tick` through every entity update
+- [x] Speeds become pixels per second, durations become seconds
+- [x] Behaviour verified at 30, 60 and 144 FPS
+
+**Measured in the real loop, not just unit-tested.** Driving `game_loop` with a
+fake clock at three rates, standing still with identical spawns:
+
+| | 30 FPS | 60 FPS | 144 FPS |
+|---|---|---|---|
+| health after 2s | 87.30 | 87.00 | 86.69 |
+| camera after 2s holding D | −1190 | −1200 | −1206 |
+
+Within about 1% across a 4.8× spread; the residue is frame quantisation.
+
+**Before the last fix those same numbers were 100 / 0 / 0 and −1190 / −990 /
+−381** — the player survived at 30 FPS and died before two seconds at 144.
+
+**Three of my own edits silently did nothing.** `ruff format` had already
+reflowed the code my replacements were matching on, and because those particular
+replacements had no assertion they failed quietly:
+`Shot.update`'s body, its off-screen bound, and — the one that mattered — the
+zombie damage call, which `ruff` had wrapped across three lines so
+`config.ZOMBIE_DAMAGE` never gained its `* dt`. Damage then scaled with frame
+count. Caught by driving the real loop rather than trusting the unit tests, all
+of which passed throughout.
+
+**Bullets sub-step by distance now.** The old loop ran a fixed number of 14px
+steps per frame; it now derives the step count from `SPEED * dt`, so the
+anti-tunnelling property holds at any frame rate instead of only at 60.
+
+**Grenades fly for a duration.** `x_counter` / `y_counter` counted frames along
+each axis; a grenade now travels for `distance / GRENADE_SPEED` seconds and then
+fuses for `GRENADE_FUSE` seconds.
+
+**`MAX_FRAME_SECONDS` caps `dt` at 0.1s** so a stalled frame cannot teleport
+anything across the map, and the paused branch resets `dt` every frame — the
+obligation AT14 recorded. Resuming cannot bank the paused duration.
+
+**Animations advance on their own clock.** `ANIMATION_FPS = 60` reproduces the
+previous one-frame-per-tick behaviour exactly at 60 FPS while staying correct
+elsewhere.

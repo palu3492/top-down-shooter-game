@@ -1,5 +1,7 @@
 import pytest
 
+from shooter import config
+
 from shooter.entities.player import Human
 from shooter.entities.zombie import Zombie
 
@@ -85,11 +87,11 @@ def test_two_zombies_have_separate_health(zombie, window, cash):
 
 def test_stun_slows_the_zombie_then_wears_off(zombie):
     original = zombie.zombie_speed
-    zombie.remove_speed(3)
+    zombie.remove_speed(config.STUN_SPEED)
 
-    assert zombie.zombie_speed == 3
-    for _ in range(zombie.stun_timer + 1):
-        zombie.zombie_speed_timer()
+    assert zombie.zombie_speed == config.STUN_SPEED
+    for _ in range(int(config.STUN_SECONDS * config.FPS) + 2):
+        zombie.zombie_speed_timer(1 / config.FPS)
 
     assert zombie.zombie_speed == original
 

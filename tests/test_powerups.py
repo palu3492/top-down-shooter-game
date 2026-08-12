@@ -2,6 +2,7 @@ import pygame
 import pytest
 
 import shooter.entities.powerups as powerups
+from shooter import config
 from shooter.entities.player import Human
 from shooter.entities.powerups import (
     EXPIRED,
@@ -13,7 +14,7 @@ from shooter.entities.powerups import (
     PowerUps,
 )
 from shooter.entities.zombie import Zombie
-from shooter.game import INSTAKILL_FRAMES, collect_powerup
+from shooter.game import INSTAKILL_SECONDS, collect_powerup
 from shooter.ui.hud import GunData
 
 EVERY_KIND = [INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH]
@@ -63,11 +64,12 @@ def test_every_kind_can_spawn():
 def test_survives_its_whole_lifetime_then_expires(make_powerup, far_away, kind):
     powerup = make_powerup(kind)
 
-    for frame in range(LIFETIME + 1):
-        result = powerup.update(far_away, 0, 0)
+    dt = 1 / config.FPS
+    for frame in range(int(LIFETIME * config.FPS) + 2):
+        result = powerup.update(far_away, 0, 0, dt)
         if result is not None:
             assert result == EXPIRED
-            assert frame == LIFETIME
+            assert frame == pytest.approx(LIFETIME * config.FPS, abs=2)
             return
 
     raise AssertionError("never expired")
@@ -78,10 +80,11 @@ def test_blinks_before_expiring(make_powerup, far_away, kind):
     powerup = make_powerup(kind)
     transparent = visible = 0
 
-    for _ in range(LIFETIME):
-        if powerup.update(far_away, 0, 0) is not None:
+    dt = 1 / config.FPS
+    for _ in range(int(LIFETIME * config.FPS)):
+        if powerup.update(far_away, 0, 0, dt) is not None:
             break
-        if powerup.timer_count > 400:
+        if powerup.alive_seconds > config.POWERUP_BLINK_AFTER:
             if is_transparent(powerup.image):
                 transparent += 1
             else:
@@ -153,8 +156,8 @@ def test_max_ammo_leaves_the_clip_alone(window):
 def test_instakill_grants_thirty_seconds():
     granted = collect_powerup(INSTAKILL, None, None, None)
 
-    assert granted == INSTAKILL_FRAMES
-    assert granted == 30 * 60
+    assert granted == INSTAKILL_SECONDS
+    assert granted == 30.0
 
 
 @pytest.mark.parametrize("kind", [NUKE, MAX_AMMO, MAX_HEALTH])

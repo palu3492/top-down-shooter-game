@@ -21,7 +21,8 @@ class Zombie(pygame.sprite.Sprite):
         self.type = "MOVE"
         self.current_idle = self.current_move = self.current_attack = 0
         self.zombie_speed = config.ZOMBIE_SPEED
-        self.stun_timer = 0
+        self.stun_seconds = 0.0
+        self.animation_clock = 0.0
         self.zombie_health = config.ZOMBIE_HEALTH
         self.window_size = window_size
         self.frames = {
@@ -53,32 +54,40 @@ class Zombie(pygame.sprite.Sprite):
             self.zombie_y = random.randint(0, height)
             self.zombie_x = width + 1
 
-    def update_anim(self, type):
-        if type == "Null":
-            pass
-        else:
+    def update_anim(self, type, dt=1 / config.ANIMATION_FPS):
+        if type != "Null":
             self.type = type
 
-        frame = 0
+        self.animation_clock += dt * config.ANIMATION_FPS
+        steps, self.animation_clock = divmod(self.animation_clock, 1)
+        for _ in range(int(steps)):
+            self._advance()
+        self._show()
+
+    def _advance(self):
+
         if self.type == "IDLE":
             if self.current_idle < 16:
                 self.current_idle += 1
             else:
                 self.current_idle = 0
-            frame = self.current_idle
         elif self.type == "MOVE":
             if self.current_move < 16:
                 self.current_move += 1
             else:
                 self.current_move = 0
-            frame = self.current_move
         elif self.type == "ATTACK":
             if self.current_attack < 8:
                 self.current_attack += 1
             else:
                 self.current_attack = 0
-            frame = self.current_attack
 
+    def _show(self):
+        frame = {
+            "IDLE": self.current_idle,
+            "MOVE": self.current_move,
+            "ATTACK": self.current_attack,
+        }[self.type]
         self.image = self.frames[self.type][frame]
         self.rect = self.image.get_rect(topleft=self.rect.topleft)
 
@@ -102,15 +111,15 @@ class Zombie(pygame.sprite.Sprite):
         self.rect.x = self.zombie_x + camera_x
         self.rect.y = self.zombie_y + camera_y
 
-    def move_toward_center(self, camera_x, camera_y):
+    def move_toward_center(self, camera_x, camera_y, dt=1 / config.FPS):
         zombie_pos = self.rect.x, self.rect.y
         distance_from_center_x = (self.window_size[0] / 2.0) - zombie_pos[0] - 120
         distance_from_center_y = (self.window_size[1] / 2.0) - zombie_pos[1] - 110
         angle = math.atan2(
             distance_from_center_x, distance_from_center_y
         )  # find angle of zombie toward center
-        move_x_amount = self.zombie_speed * math.sin(angle)  # x change amount
-        move_y_amount = self.zombie_speed * math.cos(angle)  # Y change amount
+        move_x_amount = self.zombie_speed * math.sin(angle) * dt
+        move_y_amount = self.zombie_speed * math.cos(angle) * dt
         self.zombie_x += move_x_amount
         self.zombie_y += move_y_amount
         self.move_position(camera_x, camera_y)
@@ -142,10 +151,10 @@ class Zombie(pygame.sprite.Sprite):
 
     def remove_speed(self, stun_amount):
         self.zombie_speed = stun_amount
-        self.stun_timer = config.STUN_FRAMES
+        self.stun_seconds = config.STUN_SECONDS
 
-    def zombie_speed_timer(self):
-        if self.stun_timer > 0:
-            self.stun_timer -= 1
+    def zombie_speed_timer(self, dt=1 / config.FPS):
+        if self.stun_seconds > 0:
+            self.stun_seconds -= dt
         else:
             self.zombie_speed = config.ZOMBIE_SPEED

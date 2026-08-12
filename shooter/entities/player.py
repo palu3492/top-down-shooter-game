@@ -19,6 +19,8 @@ class Human(pygame.sprite.Sprite):
         self.current_move = 0
         self.current_shoot = 0
         self.health = config.PLAYER_HEALTH
+        self.animation_clock = 0.0
+        self.frame = 0
         self.frames = {
             name: load_animation(directory, prefix, count, config.PLAYER_SCALE)
             for name, (directory, prefix, count) in ANIMATIONS.items()
@@ -34,11 +36,17 @@ class Human(pygame.sprite.Sprite):
         self.image = pygame.transform.rotate(self.image, angle)
         self.rect = self.image.get_rect(center=centre)
 
-    def update_anim(
-        self,
-        type,
-    ):
+    def update_anim(self, type, dt=1 / config.ANIMATION_FPS):
         self.type = type
+        self.animation_clock += dt * config.ANIMATION_FPS
+        steps, self.animation_clock = divmod(self.animation_clock, 1)
+        for _ in range(int(steps)):
+            self._advance()
+        self.image = self.frames[self.type][self.frame]
+        self.health_regen(dt)
+
+    def _advance(self):
+        type = self.type
         frame = 0
         if self.type == "IDLE":
             if self.current_idle < 19:
@@ -59,8 +67,7 @@ class Human(pygame.sprite.Sprite):
                 self.current_shoot = 0
             frame = self.current_shoot
 
-        self.image = self.frames[type][frame]
-        self.health_regen()
+        self.frame = frame
 
     def remove_health(self, damage):
         self.health -= damage
@@ -78,6 +85,8 @@ class Human(pygame.sprite.Sprite):
         else:
             return 0
 
-    def health_regen(self):
+    def health_regen(self, dt=1 / config.FPS):
         if self.health < config.PLAYER_HEALTH:
-            self.health += config.PLAYER_REGEN
+            self.health = min(
+                config.PLAYER_HEALTH, self.health + config.PLAYER_REGEN * dt
+            )

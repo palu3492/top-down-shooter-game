@@ -56,9 +56,9 @@ def test_the_world_stops_while_paused(monkeypatch):
     ticks = []
     real = game.Human.update_anim
 
-    def counting(self, kind):
+    def counting(self, kind, dt=None):
         ticks.append(kind)
-        return real(self, kind)
+        return real(self, kind) if dt is None else real(self, kind, dt)
 
     monkeypatch.setattr(game.Human, "update_anim", counting)
     frames = drive([pygame.K_ESCAPE, None, None, None, pygame.K_q], monkeypatch)
