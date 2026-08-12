@@ -20,7 +20,7 @@ from shooter.systems.waves import WaveSystem
 from shooter.render import blit_group
 from shooter.ui import dev, menu, settings_screen
 from shooter.settings import Settings
-from shooter.viewport import Viewport
+from shooter.viewport import Viewport, visible_world
 from shooter.ui.layout import LayoutOverflowError
 from shooter.ui.screens import ScreenStack
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
@@ -42,10 +42,6 @@ def collect_powerup(kind, human, zombie_group, gun):
     elif kind == powerup_kinds.INSTAKILL:
         return INSTAKILL_SECONDS
     return 0.0
-
-
-def reset_zombie_pos(zombie):
-    zombie.reset_position()
 
 
 def is_zombie_attacking(human, zombie, dt=config.SIM_DT):
@@ -153,7 +149,9 @@ def game_loop():
     powerups_group = pygame.sprite.Group()
     powerups_group.add(PowerUps())
 
-    wave_system = WaveSystem(window, zombie_group, player_cash)
+    wave_system = WaveSystem(
+        window, zombie_group, player_cash, visible_world((camera_x, camera_y), window)
+    )
 
     mouse_x = pygame.mouse.get_pos()[0]
     mouse_y = pygame.mouse.get_pos()[1]
@@ -329,7 +327,13 @@ def game_loop():
             stun_explosions.update(camera_x, camera_y, config.SIM_DT)
 
             if len(zombie_group) == 0:
-                wave_system.advance(window, zombie_group, player_cash, config.SIM_DT)
+                wave_system.advance(
+                    window,
+                    zombie_group,
+                    player_cash,
+                    config.SIM_DT,
+                    visible_world((camera_x, camera_y), window),
+                )
 
             if instakill_seconds > 0:
                 instakill_seconds = max(0.0, instakill_seconds - config.SIM_DT)

@@ -459,7 +459,7 @@ neither blocks the other.
 
 ---
 
-## AT15 — Zombies spawn around the world origin, not the player — TODO
+## AT15 — Zombies spawn around the world origin, not the player — DONE
 
 **Short description:** `spawn_zombie` places zombies on a ring anchored at world
 `(0, 0)` and sized `1920×1080` — a resolution the game does not use. Found while
@@ -469,8 +469,26 @@ balance change rather than a constant rename.
 **Dependencies:** AT6
 
 **Goals**
-- [ ] Spawn just outside the current viewport rather than around the origin
-- [ ] Retire `config.SPAWN_AREA` once the ring is camera-relative
+- [x] Spawn just outside the current viewport rather than around the origin
+- [x] Retire `config.SPAWN_AREA` once the ring is camera-relative
+
+**The player is the centre of the visible world.** A sprite is drawn at
+`world + camera`, so the world rectangle on screen is `(-camera, window)` and
+the player -- always drawn at screen centre -- stands at its middle.
+`viewport.visible_world` says that once, and the spawn ring is built around it.
+
+**The margin had to grow.** The old ring sat one pixel outside its area, which
+with a 120x111 sprite would pop half a zombie into view the moment it appeared.
+`SPAWN_MARGIN` is 130, enough to clear the sprite.
+
+**Not clamped to the world.** Standing in a corner, the ring extends past the
+map edge and zombies start slightly outside it, then walk in. The original did
+the same -- it spawned at `-1` -- and clamping would trade an invisible
+out-of-bounds spawn for a visible one appearing on screen.
+
+**Two dead functions removed while here:** `game.reset_zombie_pos` and
+`WaveSystem.wave_gui`, neither called from anywhere. The first would otherwise
+have grown a parameter it never receives.
 
 **Why it matters.** The world is 5000×5000 and the camera clamps to
 `-(5000 - window)`, so the player can stand at world x ≈ 4460 while zombies are

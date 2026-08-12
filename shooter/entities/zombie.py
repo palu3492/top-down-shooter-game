@@ -15,7 +15,7 @@ ANIMATIONS = {
 
 
 class Zombie(Interpolated, pygame.sprite.Sprite):
-    def __init__(self, window_size, cash):
+    def __init__(self, window_size, cash, visible=None):
         self.player_cash = cash
         pygame.sprite.Sprite.__init__(self)
         self.zombie_x = self.zombie_y = 0
@@ -36,25 +36,39 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
             True,
         )
         self.rect = self.image.get_rect()
-        self.spawn_zombie()  # calls function that controls Zombie Spawning
+        self.spawn_zombie(visible)
         self.remember_position()
 
     # Spawns zombies out side of screen size
-    def spawn_zombie(self):
-        width, height = config.SPAWN_AREA
-        selection = random.randint(1, 4)
-        if selection == 1:
-            self.zombie_y = -1
-            self.zombie_x = random.randint(0, width)
-        elif selection == 2:
-            self.zombie_y = height + 1
-            self.zombie_x = random.randint(0, width)
-        elif selection == 3:
-            self.zombie_y = random.randint(0, height)
-            self.zombie_x = -1
-        elif selection == 4:
-            self.zombie_y = random.randint(0, height)
-            self.zombie_x = width + 1
+    def spawn_zombie(self, visible=None):
+        """On a ring just outside what the player can see.
+
+        The ring used to be anchored at the world origin, so a player standing
+        at the far side of a 5000x5000 world got waves that started thousands of
+        pixels away and difficulty that depended on where they were standing.
+        """
+        area = self.spawn_area(visible)
+        margin = config.SPAWN_MARGIN
+        side = random.randint(1, 4)
+        if side == 1:
+            self.set_position(random.randint(area.left, area.right), area.top - margin)
+        elif side == 2:
+            self.set_position(
+                random.randint(area.left, area.right), area.bottom + margin
+            )
+        elif side == 3:
+            self.set_position(area.left - margin, random.randint(area.top, area.bottom))
+        else:
+            self.set_position(
+                area.right + margin, random.randint(area.top, area.bottom)
+            )
+
+    def spawn_area(self, visible):
+        """Without a camera the visible world is the window at the origin, which
+        is where it genuinely is before anyone has moved."""
+        if visible is not None:
+            return pygame.Rect(visible)
+        return pygame.Rect(0, 0, self.window_size[0], self.window_size[1])
 
     def update_anim(self, type, dt=1 / config.ANIMATION_FPS):
         if type != "Null":
@@ -114,8 +128,8 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
     def move_x(self, x):
         self.rect.x += x
 
-    def reset_position(self):
-        self.spawn_zombie()
+    def reset_position(self, visible=None):
+        self.spawn_zombie(visible)
 
     def move_position(self, camera_x, camera_y):
         self.rect.x = self.zombie_x + camera_x
