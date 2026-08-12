@@ -91,6 +91,19 @@ def start_level(scenes, window, level, replacing=0):
     )
 
 
+def remember(progress, level):
+    """Note a finished level, and tolerate not being able to write it down.
+
+    A read-only config directory or a full disk must not end the game at the
+    moment the player has just won -- the same rule `open_scene` follows for a
+    screen that will not fit, and the fullscreen toggle for a driver that
+    refuses. The session keeps the progress either way; only the file is lost.
+    """
+    progress.record(level.number)
+    with contextlib.suppress(OSError):
+        progress.save()
+
+
 def show_loading(screen):
     screen.blit(
         pygame.font.Font(None, 40).render("Loading...", True, config.WHITE),
@@ -122,8 +135,7 @@ def route(action, scenes, window, settings, progress=None):
     elif action in (session.LOST, session.WON):
         level = played_level(scenes)
         if action == session.WON and level is not None and progress is not None:
-            progress.record(level.number)
-            progress.save()
+            remember(progress, level)
         open_scene(
             scenes,
             menu.ResultScreen(

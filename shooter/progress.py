@@ -70,10 +70,17 @@ class Progress:
         number = int(number)
         if number not in self.completed:
             self.completed = tuple(sorted((*self.completed, number)))
-        following = number + 1 if unlocks is None else int(unlocks)
+        following = self._unlocked_by(number) if unlocks is None else int(unlocks)
         if self.last_level is not None:
             following = min(following, self.last_level)
         self.reached = max(self.reached, following)
+
+    def _unlocked_by(self, number):
+        """Finishing a level opens the next, up to the last one there is."""
+        following = number + 1
+        if self.last_level is not None:
+            following = min(following, self.last_level)
+        return following
 
     def load(self):
         """Take what the file offers; return the keys it got wrong.
@@ -94,21 +101,36 @@ class Progress:
             rejected.append("completed")
         if not self._take_reached(stored.get("reached", FIRST_LEVEL)):
             rejected.append("reached")
+        self._reconcile()
         return tuple(sorted(rejected))
+
+    def _reconcile(self):
+        """Make the two keys agree.
+
+        A `reached` that is too high is clamped to the last level there is; one
+        that is too low for the levels already finished was being accepted in
+        silence, which offered a player who had beaten level three a CONTINUE
+        that started them at level one.
+        """
+        if self.completed:
+            self.reached = max(self.reached, self._unlocked_by(max(self.completed)))
+
+    def _is_level(self, number):
+        if isinstance(number, bool) or not isinstance(number, int):
+            return False
+        return number >= FIRST_LEVEL and (
+            self.last_level is None or number <= self.last_level
+        )
 
     def _take_completed(self, value):
         if not isinstance(value, list):
             return False
-        numbers = {
-            number
-            for number in value
-            if isinstance(number, int)
-            and not isinstance(number, bool)
-            and number >= FIRST_LEVEL
-            and (self.last_level is None or number <= self.last_level)
-        }
-        self.completed = tuple(sorted(numbers))
-        return len(numbers) == len(value)
+        kept = [number for number in value if self._is_level(number)]
+        self.completed = tuple(sorted(set(kept)))
+        # Counted against what was actually rejected, not against the
+        # de-duplicated result: the same level twice is a repetitive file, not
+        # a wrong one, and saying otherwise would name a key that was fine.
+        return len(kept) == len(value)
 
     def _take_reached(self, value):
         if isinstance(value, bool) or not isinstance(value, int):

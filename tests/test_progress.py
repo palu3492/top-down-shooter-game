@@ -252,3 +252,120 @@ def test_a_game_played_without_progress_still_works(stack):
 
     assert isinstance(stack.top, menu.ResultScreen)
     assert stack.top.outcome == session.WON
+
+
+# ----------------------------------------------------------------------
+# Not being able to write it down
+# ----------------------------------------------------------------------
+
+
+def test_a_win_survives_a_save_that_cannot_be_written(stack, tmp_path, monkeypatch):
+    """A read-only config directory or a full disk must not end the game at the
+    moment the player has just won. The same rule `open_scene` follows for a
+    screen that will not fit, and the fullscreen toggle for a driver that
+    refuses."""
+    progress = Progress(path=tmp_path / "progress.json", last_level=LAST)
+
+    def die(*args, **kwargs):
+        raise OSError("read-only file system")
+
+    monkeypatch.setattr(Progress, "save", die)
+
+    stack.push(title.MainMenuScene(stack.window, stack.manager, progress))
+    route(stack, title.START, progress)
+    stack.top.session.rules.cleared = stack.top.session.rules.level.waves
+
+    route(stack, stack.top.tick(1 / 60), progress)
+
+    assert isinstance(stack.top, menu.ResultScreen)
+    assert stack.top.outcome == session.WON
+
+
+def test_the_session_still_knows_what_the_file_could_not(stack, tmp_path, monkeypatch):
+    """Only the file is lost, not the progress -- CONTINUE still works for the
+    rest of the sitting."""
+    progress = Progress(path=tmp_path / "progress.json", last_level=LAST)
+    monkeypatch.setattr(
+        Progress, "save", lambda self: (_ for _ in ()).throw(OSError("full"))
+    )
+
+    game.remember(progress, levels.LEVELS[0])
+
+    assert progress.completed == (1,)
+    assert progress.reached == 2
+
+
+def test_a_save_failure_that_is_not_about_the_disk_still_surfaces(
+    tmp_path, monkeypatch
+):
+    """Suppressing OSError must not quietly become suppressing everything.
+
+    The failure has to come from `save` rather than from the state handed to
+    it: anything that breaks earlier is raised by `record`, outside the
+    suppressed block, and would pass this whatever the block caught.
+    """
+    progress = Progress(path=tmp_path / "progress.json", last_level=LAST)
+
+    def broken(self):
+        raise ValueError("not a disk problem")
+
+    monkeypatch.setattr(Progress, "save", broken)
+
+    with pytest.raises(ValueError):
+        game.remember(progress, levels.LEVELS[0])
+
+
+# ----------------------------------------------------------------------
+# A file that disagrees with itself
+# ----------------------------------------------------------------------
+
+
+def test_a_repeated_level_is_not_treated_as_rubbish(progress):
+    """The same level twice is a repetitive file, not a wrong one, and naming
+    the key would blame something that was fine."""
+    progress.path.parent.mkdir(parents=True, exist_ok=True)
+    progress.path.write_text(json.dumps({"reached": 3, "completed": [1, 1, 2]}))
+
+    assert progress.load() == ()
+    assert progress.completed == (1, 2)
+
+
+def test_genuine_rubbish_is_still_named(progress):
+    progress.path.parent.mkdir(parents=True, exist_ok=True)
+    progress.path.write_text(json.dumps({"reached": 3, "completed": [1, "two"]}))
+
+    assert progress.load() == ("completed",)
+    assert progress.completed == (1,)
+
+
+def test_reached_is_raised_to_cover_what_was_finished(progress):
+    """A `reached` too high is clamped to the last level; one too low for the
+    levels already beaten was accepted in silence, offering a player who had
+    finished level three a CONTINUE that started them at one."""
+    progress.path.parent.mkdir(parents=True, exist_ok=True)
+    progress.path.write_text(json.dumps({"reached": 1, "completed": [1, 2, 3]}))
+
+    progress.load()
+
+    assert progress.reached == 4
+
+
+def test_reconciling_still_respects_the_last_level(progress):
+    progress.path.parent.mkdir(parents=True, exist_ok=True)
+    progress.path.write_text(
+        json.dumps({"reached": 1, "completed": list(range(1, LAST + 1))})
+    )
+
+    progress.load()
+
+    assert progress.reached == LAST
+
+
+def test_a_file_that_agrees_with_itself_is_left_alone(progress):
+    progress.record(2)
+    progress.save()
+
+    reopened = Progress(path=progress.path, last_level=LAST)
+    reopened.load()
+
+    assert (reopened.reached, reopened.completed) == (3, (2,))

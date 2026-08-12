@@ -837,6 +837,19 @@ level for ever because it had nowhere to end. A campaign ends, so finishing the
 last level now says so. `level_number` still clamps, for a freeplay mode that
 wants to keep going.
 
+**Review fixes.** The save was called with nothing catching it, so a read-only
+config directory or a full disk ended the game at the moment the player had just
+won -- the rule `open_scene` and the fullscreen toggle already follow, not
+applied here. It is suppressed now, and only for `OSError`: the session keeps
+the progress, only the file is lost.
+
+Two smaller ones in the validator. A level recorded twice was reported as a bad
+key although every entry in it was valid, which would have blamed something that
+was fine. And a `reached` too *high* was carefully clamped to the last level
+while one too *low* for the levels already finished was accepted in silence,
+offering a player who had beaten level three a CONTINUE that started them at
+one; the two keys are reconciled now.
+
 **The isolation had to be inherited, not copied.** `progress_path` is named from
 the settings path, so whatever redirects one redirects the other -- but only
 while it is reached through the module. Importing the function by name would
