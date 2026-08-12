@@ -1,4 +1,5 @@
 import pygame
+import pytest
 
 from shooter import config
 from shooter.entities.player import Human
@@ -58,7 +59,9 @@ def test_a_zombie_shows_on_the_radar_where_it_stands(display, window, cash):
 
 
 def test_entities_read_their_tunables_from_config(window, cash):
-    assert Zombie(window, cash).zombie_speed == config.ZOMBIE_SPEED
+    zombie = Zombie(window, cash)
+    assert zombie.zombie_speed == zombie.walking_speed
+    assert zombie.zombie_speed == pytest.approx(config.ZOMBIE_SPEED, rel=0.2)
     assert Zombie(window, cash).zombie_health == config.ZOMBIE_HEALTH
     assert Human(window).health == config.PLAYER_HEALTH
     assert GunData(window).clip_size == config.CLIP_SIZE

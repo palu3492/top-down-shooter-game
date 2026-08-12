@@ -747,6 +747,59 @@ appearing.
 
 ---
 
+## AT36 — Zombies that move like a crowd — DONE
+
+**Short description:** They arrived in rank at one speed, converged until they
+were a single sprite, and faced the same way whatever direction they walked.
+
+**Dependencies:** AT27
+
+**Goals**
+- [x] Each zombie walks at its own pace
+- [x] They push each other apart instead of stacking into one sprite
+- [x] They turn to face whoever they are chasing
+- [x] None of it changes how far a zombie can reach
+
+**Facing must not become reach.** Rotating a sprite puts it on a bigger
+surface: the footprint went from 144x155 to 201x205 on a forty-five degree
+turn, which would have meant a zombie coming in diagonally touching the player
+before one walking straight in. `rect` stays the upright footprint and only the
+drawn image turns, with `image_offset` keeping the two centred -- measured
+before and after rather than assumed.
+
+**Rotation compounds if you let it.** The first version turned `self.image`,
+which is already turned, so every call landed on a surface about forty per cent
+bigger than the last. The game loop hid it because the animation re-chooses the
+frame each step; a test that moved a zombie without animating it grew the
+surface until the run stalled. Turning always starts from `self.upright` now.
+The guard uses five turns rather than fifty, because a guard that exhausts
+memory is worse than one that fails.
+
+**Pushes are worked out before anything moves.** Applying them as the pairs are
+walked would make the result depend on the order a sprite group happens to
+iterate in, which is exactly the kind of thing that holds at sixty frames and
+not at two hundred.
+
+**Review fixes.** Pace quietly broke two things that had been settled
+elsewhere. AT15 made the spawn ring a number of *seconds* rather than pixels, so
+that the warning stays constant however the speed is tuned -- but the margin was
+still read from the shared speed, giving the quickest zombie 2.54s of the 3.0s
+the setting claims. And the shove that pulls zombies out of a pile used the
+crowd's speed, so a stunned one was flung at 3.6 times its stunned pace, undoing
+the stun exactly when it should read most clearly. Both now use the zombie's own
+speed.
+
+The test that was supposed to guard the first divided the margin by the same
+shared constant it came from, so it could not have noticed. It is a per-pace
+check now.
+
+**Pace belongs to the zombie, not the config.** The stun timer used to restore
+`config.ZOMBIE_SPEED`, which would have quietly re-paced every zombie that was
+ever stunned. It restores that zombie's own walking speed now, and the tests
+that compared against the shared constant compare against the zombie instead.
+
+---
+
 ## AT35 — Campaign and persisted progress — TODO
 
 **Short description:** Levels in sequence, checkpoints, and progress that

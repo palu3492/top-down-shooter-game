@@ -42,7 +42,9 @@ def test_a_zombie_covers_the_same_ground(window, cash, rate):
     travelled = pygame.math.Vector2(
         zombie.zombie_x - start[0], zombie.zombie_y - start[1]
     )
-    assert travelled.length() == pytest.approx(config.ZOMBIE_SPEED, rel=0.02)
+    # Its own pace, not the crowd's: what matters here is that a second of
+    # walking covers the same ground however many frames it took.
+    assert travelled.length() == pytest.approx(zombie.zombie_speed, rel=0.02)
 
 
 @pytest.mark.parametrize("rate", RATES)
@@ -79,7 +81,7 @@ def test_a_stun_lasts_the_same_time(window, cash, rate):
     assert zombie.zombie_speed == config.STUN_SPEED
 
     run_for(0.2, rate, zombie.zombie_speed_timer)
-    assert zombie.zombie_speed == config.ZOMBIE_SPEED
+    assert zombie.zombie_speed == zombie.walking_speed
 
 
 @pytest.mark.parametrize("rate", RATES)
@@ -150,4 +152,4 @@ def test_a_long_pause_does_not_bank_time(monkeypatch, window, cash):
     moved = pygame.math.Vector2(
         zombie.zombie_x - before[0], zombie.zombie_y - before[1]
     ).length()
-    assert moved <= config.ZOMBIE_SPEED * config.MAX_FRAME_SECONDS + 1
+    assert moved <= zombie.zombie_speed * config.MAX_FRAME_SECONDS + 1

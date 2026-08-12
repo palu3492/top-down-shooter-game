@@ -65,16 +65,20 @@ def test_a_zombie_never_appears_on_screen(display, camera):
 
 @pytest.mark.parametrize("camera", CORNERS)
 def test_a_zombie_arrives_on_the_ring_not_just_anywhere_outside(display, camera):
+    """Each zombie has its own ring, because each has its own pace."""
     visible = visible_world(camera, WINDOW)
-    ring = visible.inflate(2 * spawn_margin(), 2 * spawn_margin())
 
     for _ in range(60):
-        x, y = Zombie(WINDOW, None, visible).get_position()
+        zombie = Zombie(WINDOW, None, visible)
+        margin = spawn_margin(zombie.walking_speed)
+        x, y = zombie.get_position()
+
         assert not visible.collidepoint(x, y)
-        # compared explicitly: a Rect excludes its own right and bottom edges,
-        # and a spawn at `right + margin` sits exactly on the ring's
-        assert ring.left <= x <= ring.right
-        assert ring.top <= y <= ring.bottom
+        # Bounds in floats rather than an inflated Rect: a margin is a
+        # fractional number of pixels now that it comes from a zombie's own
+        # pace, and Rect.inflate would truncate it and reject its own ring.
+        assert visible.left - margin <= x <= visible.right + margin
+        assert visible.top - margin <= y <= visible.bottom + margin
 
 
 def test_the_margin_clears_a_whole_sprite(display, monkeypatch):
