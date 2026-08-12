@@ -73,24 +73,31 @@ class ResultScreen(MenuScreen):
 
     TITLES = ((session.LOST, "YOU DIED"), (session.WON, "LEVEL COMPLETE"))
 
-    def __init__(self, window, manager, outcome=session.LOST, level=None):
+    def __init__(self, window, manager, outcome=session.LOST, level=None, last=False):
         super().__init__(window, manager)
         self.outcome = outcome
         self.level = level
+        self.last = last
 
     @property
     def title(self):
-        if self.outcome == session.WON and self.level is not None:
+        if self.outcome != session.WON:
+            return dict(self.TITLES).get(self.outcome, "GAME OVER")
+        if self.last:
+            return "CAMPAIGN COMPLETE"
+        if self.level is not None:
             return f"{self.level.title} COMPLETE"
-        return dict(self.TITLES).get(self.outcome, "GAME OVER")
+        return "LEVEL COMPLETE"
 
     @property
     def entries(self):
-        """Winning offers the way onward; losing offers the way back."""
-        if self.outcome == session.WON:
-            first = ("NEXT LEVEL", NEXT_LEVEL)
-        else:
+        """Winning offers the way onward, unless there is nowhere onward to go."""
+        if self.outcome != session.WON:
             first = ("RETRY", RETRY)
+        elif self.last:
+            first = ("PLAY AGAIN", RETRY)
+        else:
+            first = ("NEXT LEVEL", NEXT_LEVEL)
         return (first, ("MAIN MENU", END_GAME), ("QUIT", QUIT))
 
     def handle(self, event):

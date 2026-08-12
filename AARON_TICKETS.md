@@ -800,26 +800,48 @@ that compared against the shared constant compare against the zombie instead.
 
 ---
 
-## AT35 — Campaign and persisted progress — TODO
+## AT35 — Campaign and persisted progress — DONE
 
 **Short description:** Levels in sequence, checkpoints, and progress that
 survives closing the game.
 
 **Dependencies:** AT34
 
-**Two problems, deliberately separated.** *Progress* -- which levels are
-unlocked, the checkpoint reached, best score -- is small, and AT23 already has
-the pattern: validated JSON in the platform config directory with atomic writes.
-*Mid-game serialisation* -- exact zombie positions -- is a much larger
-commitment, and checkpoints do not need it: a checkpoint restarts a segment from
-its definition. Build the first; AT27 kept the seam for the second.
+**Goals**
+- [x] How far the player has reached survives closing the game
+- [x] The menu offers to continue, and where from
+- [x] The campaign ends rather than repeating its hardest level
+- [x] A corrupt or stale save cannot stop the game starting
 
-**Two different problems, deliberately separated.** *Progress* -- which levels
-are unlocked, the checkpoint reached, best score -- is small, and AT23 already
-has the pattern: validated JSON in the platform config directory with atomic
-writes. *Mid-game serialisation* -- exact zombie positions -- is a much larger
-commitment, and checkpoints do not need it: a checkpoint restarts a segment from
-its definition. Build the first; AT27 keeps the seam for the second.
+**Two problems, deliberately separated.** *Progress* -- which levels are
+unlocked, the checkpoint reached -- is a handful of numbers, and AT23 already
+had the pattern: validated JSON in the platform config directory written through
+a temporary file. *Mid-game serialisation* -- exact zombie positions, ammunition,
+where the wave had got to -- is a far bigger commitment and is deliberately not
+here. AT27 kept the seam for it.
+
+**A level is the checkpoint.** Reaching level four means level four can be
+started again from its definition, which is a level number rather than a world.
+That is the whole of what a checkpoint has to mean here, and it is why this
+ticket needed no new machinery beyond a file with two keys in it.
+
+**Nothing earned moves backwards.** Replaying an early level cannot take away a
+level already reached, which is the one rule a progress store has to get right.
+
+**A stale save is clamped, not refused.** A file claiming level nine of a
+five-level game is not a reason to refuse to start; it is a reason to start at
+five, and to say which keys were wrong.
+
+**This supersedes AT34's last-level decision.** Freeplay repeated its hardest
+level for ever because it had nowhere to end. A campaign ends, so finishing the
+last level now says so. `level_number` still clamps, for a freeplay mode that
+wants to keep going.
+
+**The isolation had to be inherited, not copied.** `progress_path` is named from
+the settings path, so whatever redirects one redirects the other -- but only
+while it is reached through the module. Importing the function by name would
+have quietly pointed the test suite at a real player's save file, so a fixture
+now asserts the two stay together.
 
 ---
 

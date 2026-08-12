@@ -203,16 +203,25 @@ def test_retry_replays_the_level_that_was_lost(stack):
     assert stack.top.session.rules.level.number == 2, "retry sent us back to level one"
 
 
-def test_the_last_level_repeats_rather_than_running_out(stack):
+def test_finishing_the_last_level_completes_the_campaign(stack):
+    """AT34 repeated the hardest level for ever, because freeplay had nowhere
+    to end. AT35 made this a campaign, so the last level is the last level --
+    `level_number` still clamps, for a freeplay mode that wants to go on."""
     route(stack, title.START)
     last = levels.LEVELS[-1]
     game.start_level(stack, stack.window, last, replacing=1)
     stack.top.session.rules.cleared = last.waves
 
     route(stack, stack.top.tick(1 / 60))
-    press(stack, menu.NEXT_LEVEL)
 
-    assert stack.top.session.rules.level is last
+    assert stack.top.title == "CAMPAIGN COMPLETE"
+    offered = [action for _, action in stack.top.entries]
+    assert menu.NEXT_LEVEL not in offered, "there is no next level"
+    assert menu.RETRY in offered
+
+
+def test_level_numbers_still_clamp_past_the_last(display):
+    assert levels.level_number(99) is levels.LEVELS[-1]
 
 
 def test_a_level_is_won_by_playing_it(display):

@@ -14,6 +14,7 @@ from shooter import config
 from shooter.assets import load_image
 from shooter.gameplay import PAUSE, GameplayScene
 from shooter.preload import preload
+from shooter.progress import Progress
 from shooter.scenes import SceneStack
 from shooter import session
 from shooter.settings import Settings
@@ -98,7 +99,7 @@ def show_loading(screen):
     pygame.display.update()
 
 
-def route(action, scenes, window, settings):
+def route(action, scenes, window, settings, progress=None):
     """Turn a scene's action into a move on the stack. False means quit.
 
     Every navigation decision the game makes is here, which is the whole of
@@ -112,13 +113,26 @@ def route(action, scenes, window, settings):
         # The splash is replaced rather than covered: there is nothing to come
         # back to once the game has been introduced.
         scenes.pop()
-        open_scene(scenes, title.MainMenuScene(window, scenes.manager))
+        open_scene(scenes, title.MainMenuScene(window, scenes.manager, progress))
     elif action == title.START:
         start_level(scenes, window, levels.FIRST)
+    elif action == title.CONTINUE:
+        reached = progress.reached if progress else levels.FIRST.number
+        start_level(scenes, window, levels.level_number(reached))
     elif action in (session.LOST, session.WON):
+        level = played_level(scenes)
+        if action == session.WON and level is not None and progress is not None:
+            progress.record(level.number)
+            progress.save()
         open_scene(
             scenes,
-            menu.ResultScreen(window, scenes.manager, action, played_level(scenes)),
+            menu.ResultScreen(
+                window,
+                scenes.manager,
+                action,
+                level,
+                last=level is not None and level is levels.LEVELS[-1],
+            ),
         )
     elif action == menu.RETRY:
         start_level(scenes, window, played_level(scenes) or levels.FIRST, replacing=2)
@@ -150,6 +164,9 @@ def game_loop():
     settings = Settings()
     settings.load()
     settings.apply_at_startup()
+
+    progress = Progress(last_level=levels.LEVELS[-1].number)
+    progress.load()
 
     window = Viewport(config.WINDOW)
     screen = open_display(window)
@@ -183,12 +200,13 @@ def game_loop():
                     pygame.display.toggle_fullscreen()
                 screen = pygame.display.get_surface()
                 continue
-            running = route(scenes.handle(event), scenes, window, settings)
+            running = route(scenes.handle(event), scenes, window, settings, progress)
             if not running:
                 break
 
         running = (
-            route(scenes.tick(frame_seconds), scenes, window, settings) and running
+            route(scenes.tick(frame_seconds), scenes, window, settings, progress)
+            and running
         )
 
         if scenes.simulates:
