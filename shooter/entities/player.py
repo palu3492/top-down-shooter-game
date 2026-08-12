@@ -12,17 +12,13 @@ ANIMATIONS = {
 
 
 class Human(pygame.sprite.Sprite):
-    type = "IDLE"
-    current_idle = 0
-    current_move = 0
-    current_shoot = 0
-
-    player_cash = 0
-
-    health = config.PLAYER_HEALTH
-
     def __init__(self, window_size):
         pygame.sprite.Sprite.__init__(self)
+        self.type = "IDLE"
+        self.current_idle = 0
+        self.current_move = 0
+        self.current_shoot = 0
+        self.health = config.PLAYER_HEALTH
         self.frames = {
             name: load_animation(directory, prefix, count, config.PLAYER_SCALE)
             for name, (directory, prefix, count) in ANIMATIONS.items()

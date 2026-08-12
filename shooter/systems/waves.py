@@ -5,10 +5,9 @@ from shooter.entities.zombie import Zombie
 
 
 class WaveSystem:
-    wave_count = 0
-    wave_timer = 0
-
     def __init__(self, window, zombie_group, player_cash):
+        self.wave_count = 0
+        self.wave_timer = 0
         for _ in range(config.WAVE_BASE):
             zombie_group.add(Zombie(window, player_cash))
 
