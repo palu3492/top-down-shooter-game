@@ -2,7 +2,7 @@ import pygame
 
 from shooter.assets import load_animation
 
-MAX_HEALTH = 100.0
+from shooter import config
 
 ANIMATIONS = {
     "IDLE": ("Player Animations/Idle", "survivor-idle_rifle_", 20),
@@ -12,19 +12,15 @@ ANIMATIONS = {
 
 
 class Human(pygame.sprite.Sprite):
-    type = "IDLE"
-    current_idle = 0
-    current_move = 0
-    current_shoot = 0
-
-    player_cash = 0
-
-    health = 100.00
-
     def __init__(self, window_size):
         pygame.sprite.Sprite.__init__(self)
+        self.type = "IDLE"
+        self.current_idle = 0
+        self.current_move = 0
+        self.current_shoot = 0
+        self.health = config.PLAYER_HEALTH
         self.frames = {
-            name: load_animation(directory, prefix, count, 0.5)
+            name: load_animation(directory, prefix, count, config.PLAYER_SCALE)
             for name, (directory, prefix, count) in ANIMATIONS.items()
         }
         self.image = self.frames["IDLE"][0]
@@ -74,7 +70,7 @@ class Human(pygame.sprite.Sprite):
         self.health += repair
 
     def restore_health(self):
-        self.health = MAX_HEALTH
+        self.health = config.PLAYER_HEALTH
 
     def get_health(self):
         if self.health > 0:
@@ -83,5 +79,5 @@ class Human(pygame.sprite.Sprite):
             return 0
 
     def health_regen(self):
-        if self.health < 100:
-            self.health += 0.05
+        if self.health < config.PLAYER_HEALTH:
+            self.health += config.PLAYER_REGEN

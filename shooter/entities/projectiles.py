@@ -3,10 +3,11 @@ from functools import cache
 
 import pygame
 
+from shooter import config
 from shooter.assets import load_image, load_sound
 
-BULLET_DAMAGE = 20
-LETHAL = 1000
+BULLET_DAMAGE = config.BULLET_DAMAGE
+LETHAL = config.LETHAL
 
 GUN_SHOT = ("Sounds/gunAudio.wav", 0.01)
 EXPLOSION = ("Sounds/explosion.wav", 0.01)
@@ -32,17 +33,13 @@ def play(spec):
 
 
 class Shot(pygame.sprite.Sprite):
-    small_change_x = 0
-    small_change_y = 0
-    bullet_x = 0
-    bullet_y = 0
-    bullet_speed = 150
-    continuous = bullet_speed / 14
-    kill_me = False
+    SPEED = config.BULLET_SPEED
+    STEPS = SPEED / config.BULLET_STEP
 
     def __init__(self, start_x, start_y, x, y, damage=BULLET_DAMAGE):
         pygame.sprite.Sprite.__init__(self)
         self.damage = damage
+        self.kill_me = False
         angle = math.atan2(y, x)  # find angle of shot
         self.small_change_x = math.cos(angle)
         self.small_change_y = -math.sin(angle)
@@ -56,7 +53,7 @@ class Shot(pygame.sprite.Sprite):
     def update(self, camera_x, camera_y, zombie_group):
         if not self.kill_me:
             # sub-step the bullet so a fast shot cannot tunnel past a zombie
-            for _ in range(int(self.continuous)):
+            for _ in range(int(self.STEPS)):
                 self.rect.x = self.bullet_x + camera_x
                 self.rect.y = self.bullet_y + camera_y
                 self.bullet_x += 14 * self.small_change_x
@@ -84,19 +81,12 @@ class Shot(pygame.sprite.Sprite):
 
 
 class Grenade(pygame.sprite.Sprite):
-    change_x = 0
-    change_y = 0
-    grenade_x = 0
-    grenade_y = 0
-    x_counter = 0
-    y_counter = 0
-    explode = 30
-
     def __init__(self, start_x, start_y, x, y):
         pygame.sprite.Sprite.__init__(self)
+        self.explode = config.GRENADE_FUSE
         angle = math.atan2(y, x)  # find angle of shot
-        self.change_x = int(50 * math.cos(angle))  # x change amount
-        self.change_y = int(-50 * math.sin(angle))  # Y change amount
+        self.change_x = int(config.GRENADE_SPEED * math.cos(angle))  # x change amount
+        self.change_y = int(-config.GRENADE_SPEED * math.sin(angle))  # Y change amount
         if self.change_x == 0:
             self.change_x += 1
         if self.change_y == 0:
@@ -110,7 +100,7 @@ class Grenade(pygame.sprite.Sprite):
 
     def update(self, camera_x, camera_y, screen, explosions):
         # print self.x_counter, self.y_counter
-        if self.explode == 30:
+        if self.explode == config.GRENADE_FUSE:
             if self.x_counter > 0:
                 self.rect.x = self.grenade_x + camera_x
                 self.grenade_x += self.change_x
@@ -138,12 +128,9 @@ class Grenade(pygame.sprite.Sprite):
 
 
 class GrenadeDetonation(pygame.sprite.Sprite):
-    explosion_x = 0
-    explosion_y = 0
-    counter = 1
-
     def __init__(self, start_x, start_y):
         pygame.sprite.Sprite.__init__(self)
+        self.counter = 1
         self.image = load_image("Effects/explosion.png", True)
         self.rect = self.image.get_rect()
         self.explosion_x = start_x - (self.rect.size[0] / 2)  # -half of explosion size
@@ -161,19 +148,12 @@ class GrenadeDetonation(pygame.sprite.Sprite):
 
 
 class StunGrenade(pygame.sprite.Sprite):
-    change_x = 0
-    change_y = 0
-    grenade_x = 0
-    grenade_y = 0
-    x_counter = 0
-    y_counter = 0
-    explode = 30
-
     def __init__(self, start_x, start_y, x, y):
         pygame.sprite.Sprite.__init__(self)
+        self.explode = config.GRENADE_FUSE
         angle = math.atan2(y, x)  # find angle of shot
-        self.change_x = int(50 * math.cos(angle))  # x change amount
-        self.change_y = int(-50 * math.sin(angle))  # Y change amount
+        self.change_x = int(config.GRENADE_SPEED * math.cos(angle))  # x change amount
+        self.change_y = int(-config.GRENADE_SPEED * math.sin(angle))  # Y change amount
         if self.change_x == 0:
             self.change_x += 1
         if self.change_y == 0:
@@ -186,7 +166,7 @@ class StunGrenade(pygame.sprite.Sprite):
         self.y_counter = -y / self.change_y
 
     def update(self, camera_x, camera_y, screen, explosions):
-        if self.explode == 30:
+        if self.explode == config.GRENADE_FUSE:
             if self.x_counter > 0:
                 self.rect.x = self.grenade_x + camera_x
                 self.grenade_x += self.change_x
@@ -213,12 +193,9 @@ class StunGrenade(pygame.sprite.Sprite):
 
 
 class StunDetonation(pygame.sprite.Sprite):
-    explosion_x = 0
-    explosion_y = 0
-    counter = 1
-
     def __init__(self, start_x, start_y):
         pygame.sprite.Sprite.__init__(self)
+        self.counter = 1
         self.image = load_image("Effects/stunexplosion.png", True)
         self.rect = self.image.get_rect()
         self.explosion_x = start_x - (self.rect.size[0] / 2)  # -half of explosion size

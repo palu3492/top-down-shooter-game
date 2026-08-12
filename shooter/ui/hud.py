@@ -1,11 +1,10 @@
 import pygame
 
+from shooter import config
 from shooter.assets import load_image
 
 
 class HealthBar:
-    lives = 0
-
     def __init__(self, window_size):
         self.window_size = window_size
 
@@ -13,11 +12,13 @@ class HealthBar:
         health_value = str(health_update)
         health_text = pygame.font.Font(None, 55)
         screen.blit(
-            health_text.render(health_value, True, (255, 255, 255)),
+            health_text.render(health_value, True, config.WHITE),
             (70, self.window_size[1] - 77),
         )
-        pygame.draw.rect(screen, (66, 255, 66), (480, 10, health_update * 2.2, 22))
-        pygame.draw.rect(screen, (96, 96, 96), (480, 10, 100 * 2.2, 22), 4)
+        pygame.draw.rect(
+            screen, config.HEALTH_GREEN, (480, 10, health_update * 2.2, 22)
+        )
+        pygame.draw.rect(screen, config.HEALTH_GREY, (480, 10, 100 * 2.2, 22), 4)
 
 
 class HUD:
@@ -34,15 +35,14 @@ class HUD:
 
 
 class GunData:
-    CLIP = 60
-    RESERVE = 120
-
-    clip_size = CLIP
-    ammo_amount = RESERVE
-    reload_time = 60
+    CLIP = config.CLIP_SIZE
+    RESERVE = config.RESERVE_SIZE
 
     def __init__(self, window):
         self.window = window
+        self.clip_size = self.CLIP
+        self.ammo_amount = self.RESERVE
+        self.reload_time = config.RELOAD_FRAMES
         self.gun_type = load_image("HUD/gunShotty.png")
 
     def shooting_bullet(self):
@@ -89,19 +89,17 @@ class GunData:
             return "reload"
         else:
             # return nothing so it knows that its not still "reloading"
-            self.reload_time = 60
+            self.reload_time = config.RELOAD_FRAMES
             return
 
     def update(self, screen):
         screen.blit(
-            pygame.font.Font(None, 55).render(
-                str(self.clip_size), True, (255, 255, 255)
-            ),
+            pygame.font.Font(None, 55).render(str(self.clip_size), True, config.WHITE),
             (self.window[0] - 250, self.window[1] - 105),
         )
         screen.blit(
             pygame.font.Font(None, 44).render(
-                str(self.ammo_amount), True, (255, 255, 255)
+                str(self.ammo_amount), True, config.WHITE
             ),
             (self.window[0] - 170, self.window[1] - 102),
         )
@@ -109,15 +107,14 @@ class GunData:
 
 
 class GrenadeData:
-    grenade_amount = 5
-    stun_grenade_amount = 5
-
     def __init__(self):
-        pass
+        self.grenade_amount = config.STARTING_GRENADES
+        self.stun_grenade_amount = config.STARTING_STUN_GRENADES
 
 
 class Cash:
-    cash_amount = 0
+    def __init__(self):
+        self.cash_amount = 0
 
     # Method used when zombie dies
     def increase_cash(self, amount):
@@ -135,7 +132,7 @@ class Cash:
     def update(self, screen):
         screen.blit(
             pygame.font.Font(None, 40).render(
-                "$" + str(self.cash_amount), True, (255, 255, 255)
+                "$" + str(self.cash_amount), True, config.WHITE
             ),
             (400, 7),
         )

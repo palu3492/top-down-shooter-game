@@ -2,21 +2,17 @@ import random
 
 import pygame
 
+from shooter import config
 from shooter.assets import load_image
 
 INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH = 1, 2, 3, 4
 EXPIRED = "EXPIRED"
-LIFETIME = 1200
+LIFETIME = config.POWERUP_LIFETIME_FRAMES
 
 
 class PowerUps(pygame.sprite.Sprite):
-    powerup_selected = 0
-
-    timer_count = 0
-
     def spawning_location(self):
-        self.rect.y = 500
-        self.rect.x = 800
+        self.rect.x, self.rect.y = config.POWERUP_SPAWN
 
     def move_with_camera(self, x, y):
         self.rect.y = self.rect.y + y
@@ -57,7 +53,7 @@ class PowerUps(pygame.sprite.Sprite):
         if self.timer_count == 0:
             self.og_image = self.image
             self.blank_image = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
-        if self.timer_count >= 400:
+        if self.timer_count >= config.POWERUP_BLINK_AFTER:
             if (
                 (self.timer_count >= 400 and self.timer_count <= 500)
                 or (self.timer_count >= 600 and self.timer_count <= 650)
@@ -87,6 +83,10 @@ class PowerUps(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
+        self.powerup_selected = 0
+        self.timer_count = 0
+        self.og_image = None
+        self.blank_image = None
         self.select_powerup()
         self.image = pygame.transform.scale(
             self.image,

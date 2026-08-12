@@ -3,6 +3,7 @@ import random
 
 import pygame
 
+from shooter import config
 from shooter.assets import load_animation, load_sized
 
 ANIMATIONS = {
@@ -13,43 +14,44 @@ ANIMATIONS = {
 
 
 class Zombie(pygame.sprite.Sprite):
-    zombie_x = zombie_y = 0
-    type = "MOVE"
-    current_idle, current_move, current_attack = 0, 0, 0
-    zombie_speed = 6
-    stun_timer = 0
-
-    zombie_health = 100.00
-
     def __init__(self, window_size, cash):
         self.player_cash = cash
         pygame.sprite.Sprite.__init__(self)
+        self.zombie_x = self.zombie_y = 0
+        self.type = "MOVE"
+        self.current_idle = self.current_move = self.current_attack = 0
+        self.zombie_speed = config.ZOMBIE_SPEED
+        self.stun_timer = 0
+        self.zombie_health = config.ZOMBIE_HEALTH
         self.window_size = window_size
         self.frames = {
-            name: load_animation(directory, prefix, count, 0.5, True)
+            name: load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
             for name, (directory, prefix, count) in ANIMATIONS.items()
         }
         self.image = load_sized(
-            "Zombie Animations/zombie_idle/skeleton-idle_0.png", 120, 111, True
+            "Zombie Animations/zombie_idle/skeleton-idle_0.png",
+            *config.ZOMBIE_SIZE,
+            True,
         )
         self.rect = self.image.get_rect()
         self.spawn_zombie()  # calls function that controls Zombie Spawning
 
     # Spawns zombies out side of screen size
     def spawn_zombie(self):
+        width, height = config.SPAWN_AREA
         selection = random.randint(1, 4)
         if selection == 1:
             self.zombie_y = -1
-            self.zombie_x = random.randint(1, 192) * 10
+            self.zombie_x = random.randint(0, width)
         elif selection == 2:
-            self.zombie_y = 1081
-            self.zombie_x = random.randint(1, 192) * 10
+            self.zombie_y = height + 1
+            self.zombie_x = random.randint(0, width)
         elif selection == 3:
-            self.zombie_y = random.randint(1, 108) * 10
+            self.zombie_y = random.randint(0, height)
             self.zombie_x = -1
         elif selection == 4:
-            self.zombie_y = random.randint(1, 108) * 10
-            self.zombie_x = 1921
+            self.zombie_y = random.randint(0, height)
+            self.zombie_x = width + 1
 
     def update_anim(self, type):
         if type == "Null":
@@ -116,11 +118,14 @@ class Zombie(pygame.sprite.Sprite):
     def health_bar(self, screen):
         pygame.draw.rect(
             screen,
-            (244, 66, 66),
+            config.HEALTH_RED,
             (self.rect.x + 75, self.rect.y, self.zombie_health * 1.2, 22),
         )
         pygame.draw.rect(
-            screen, (96, 96, 96), (self.rect.x + 75, self.rect.y, 100 * 1.2, 22), 4
+            screen,
+            config.HEALTH_GREY,
+            (self.rect.x + 75, self.rect.y, 100 * 1.2, 22),
+            4,
         )
 
     def remove_health(self, damage):
@@ -128,7 +133,7 @@ class Zombie(pygame.sprite.Sprite):
             return False
         self.zombie_health -= damage
         if self.zombie_health <= 0:
-            self.player_cash.increase_cash(50)
+            self.player_cash.increase_cash(config.KILL_REWARD)
             return True
         return False
 
@@ -137,10 +142,10 @@ class Zombie(pygame.sprite.Sprite):
 
     def remove_speed(self, stun_amount):
         self.zombie_speed = stun_amount
-        self.stun_timer = 200
+        self.stun_timer = config.STUN_FRAMES
 
     def zombie_speed_timer(self):
         if self.stun_timer > 0:
             self.stun_timer -= 1
         else:
-            self.zombie_speed = 6
+            self.zombie_speed = config.ZOMBIE_SPEED

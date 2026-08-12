@@ -367,36 +367,80 @@ one** — a timed buff with no feedback leaves the player guessing. Red
 
 ---
 
-## AT6 — Coordinate system and magic numbers — TODO
+## AT6 — Coordinate system and magic numbers — DONE
 
-**Short description:** The window is 1080×720, but the code is littered with
-constants from a 1920×1080 build that was never fully migrated.
+**Short description:** The window is 1080×720, but constants from an abandoned
+1920×1080 build were still scattered through the code.
 
 **Dependencies:** AT5
 
 **Goals**
-- [ ] `Zombie.spawn_zombie` spawns against a 1920×1080 frame (`1081`, `1921`, `randint(1,192)*10`) — zombies appear at the wrong offsets
-- [ ] `RadarScreen.draw` is called with `-camera_x+960, -camera_y+540` — hardcoded 1920/2, 1080/2
-- [ ] ~~`Data.width` / `height` globals~~ — already deleted in AT8
-- [ ] World bounds `-5000+window[…]` are inlined in the camera clamp
-- [ ] Centralize in `shooter/config.py`: window size, world size, speeds, damage, costs, wave scaling, colors
-- [ ] Radar scale derives from world size instead of a hardcoded `/50`
+- [x] `shooter/config.py` holding window, world, speeds, damage, rewards, wave scaling, timers, colours
+- [x] Camera clamp derives from `WORLD` instead of an inlined `-5000 + window[…]`
+- [x] Radar centre and scale derive from window and world
+- [x] Spawn area named rather than inlined
+- [x] No resolution literal survives outside `config.py`
+
+**A real bug fixed: the radar was lying.** It was called with
+`-camera_x + 960, -camera_y + 540` — half of 1920×1080 — so in a 1080×720 window
+the player blip sat about 8 radar pixels off its true position. It now derives
+from the actual window centre, and tests pin the mapping at the origin, the far
+corner, and an arbitrary point.
+
+**The radar scale was already right.** `/50` happens to equal
+`WORLD // RADAR_SIZE` (5000 ÷ 100). It is derived now rather than coincidental.
 
 ---
 
-## AT7 — Class attributes used as mutable instance state — TODO
+## AT15 — Zombies spawn around the world origin, not the player — TODO
 
-**Short description:** Nearly every class declares its mutable state on the class
-body (`health = 100.00`, `cash_amount = 0`, `zombie_speed = 6`). It works only
-because `+=` on an int rebinds to the instance — a genuine landmine the moment
-anyone introduces a list, dict, or a second instance that reads before writing.
+**Short description:** `spawn_zombie` places zombies on a ring anchored at world
+`(0, 0)` and sized `1920×1080` — a resolution the game does not use. Found while
+doing AT6; **not** fixed there because it changes spawn distances, which is a
+balance change rather than a constant rename.
 
 **Dependencies:** AT6
 
 **Goals**
-- [ ] Move all mutable state into `__init__` across `Human`, `Zombie`, `GunData`, `Cash`, `GrenadeData`, `PowerUps`, `WaveSystem`, `Shot`, `Grenade`, `StunGrenade`, and both detonation classes
-- [ ] ~~Drop `Human.player` / `Zombie.player`~~ — already removed in AT3
-- [ ] `Zombie.zombie_speed` reset in `zombie_speed_timer` re-reads a class constant — make it an instance default
+- [ ] Spawn just outside the current viewport rather than around the origin
+- [ ] Retire `config.SPAWN_AREA` once the ring is camera-relative
+
+**Why it matters.** The world is 5000×5000 and the camera clamps to
+`-(5000 - window)`, so the player can stand at world x ≈ 4460 while zombies are
+still being placed within x ∈ [0, 1920]. They do converge — `move_toward_center`
+homes on the player wherever they are — but they can start thousands of pixels
+away, so wave difficulty varies with where the player happens to be standing.
+Not fatal, which is why it is its own ticket rather than a hotfix.
+
+---
+
+## AT7 — Class attributes used as mutable instance state — DONE
+
+**Short description:** Nearly every class declared its mutable state on the
+class body. It worked only because `+=` on an int rebinds to the instance.
+
+**Dependencies:** AT6
+
+**Goals**
+- [x] Move all mutable state into `__init__` across all 13 classes
+- [x] Drop the dead `HealthBar.lives` and `Human.player_cash`
+- [x] `Zombie.zombie_speed` resets from `config`, not a class attribute
+
+**52 class attributes → 4**, and the four that remain are genuine read-only
+constants: `GunData.CLIP`, `GunData.RESERVE`, `Shot.SPEED`, `Shot.STEPS`. The
+last two were `bullet_speed` and `continuous` — renamed to caps so they stop
+reading like state.
+
+**The old isolation tests passed by accident.** Demonstrated before touching
+anything: after `a.increase_cash(50)`, `'cash_amount' in vars(a)` is `True` but
+`vars(b)` is empty — `b` was reading the class attribute and merely looked
+correct. The five "two instances do not share" tests written in AT11 could not
+have caught a genuine sharing bug involving a list or a dict.
+
+**A structural guard replaces the accident.** `test_no_class_body_still_declares
+_mutable_state` walks the AST of every module and fails on any non-`ALL_CAPS`
+assignment in a class body. Mutation-tested: reintroducing `cash_amount = 0` on
+`Cash` turns it red.
 
 ---
 
