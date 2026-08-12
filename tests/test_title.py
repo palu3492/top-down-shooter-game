@@ -209,3 +209,103 @@ def test_the_whole_scene_survives_the_aspect_difference(display):
         sky[:3]
         == pygame.transform.smoothscale(art, (WINDOW[0], 540)).get_at((0, 0))[:3]
     )
+
+
+# ----------------------------------------------------------------------
+# Pixel art
+# ----------------------------------------------------------------------
+
+
+def test_the_backdrop_is_a_baked_asset_not_a_computed_one(display):
+    """Mapping the painting to a palette is a nearest-colour search per pixel
+    -- about a second, which AT28 spent a whole ticket making sure nothing does
+    at startup. `tools/make_menu_art.py` does it once, offline."""
+    art = title.load_image(title.ART)
+    assert art.get_size() == (135, 90), "the source is small on purpose"
+    assert title.ART.endswith("menu_pixel.png")
+
+
+def test_the_art_uses_a_small_palette(display):
+    """What makes it read as pixel art rather than a photograph shown too
+    small. Pixelating alone leaves soft blocks, because they are soft blocks."""
+    art = title.load_image(title.ART)
+    colours = {art.get_at((x, y))[:3] for x in range(135) for y in range(90)}
+    assert len(colours) <= 8, sorted(colours)
+
+
+def test_the_backdrop_keeps_its_pixels_square(display):
+    """Interpolating pixel art is precisely what stops it looking like pixel
+    art, so this scales with nearest-neighbour."""
+    art = title.load_image(title.ART)
+    blown = title.backdrop((1080, 720))
+
+    assert blown.get_size() == (1080, 720)
+    assert {blown.get_at((x, y))[:3] for x in range(1080) for y in (0, 400, 719)} <= {
+        art.get_at((x, y))[:3] for x in range(135) for y in range(90)
+    }
+
+
+def test_the_default_resolution_gets_whole_blocks(display):
+    """135x90 is exactly an eighth of 1080x720."""
+    art = title.load_image(title.ART)
+    assert 1080 % art.get_width() == 0
+    assert 720 % art.get_height() == 0
+
+
+def test_pixel_text_has_no_antialiasing_ramp(display):
+    """Rendered small with antialiasing off, then blown up square.
+
+    The ramp a smoothed font leaves lives in the alpha channel, so both have to
+    be laid on something opaque before the shades can be counted.
+    """
+
+    def shades(text):
+        plate = pygame.Surface(text.get_size())
+        plate.fill((0, 0, 0))
+        plate.blit(text, (0, 0))
+        return {
+            plate.get_at((x, y))[:3]
+            for x in range(plate.get_width())
+            for y in range(plate.get_height())
+        }
+
+    chunky = shades(title.pixel_text("ABC", 64, title.INK))
+    smooth = shades(pygame.font.Font(None, 64).render("ABC", True, title.INK))
+
+    assert len(chunky) == 2, f"ink and background, nothing between: {chunky}"
+    assert len(smooth) > 10, "the smooth one ramps, which is the point"
+
+
+def test_pixel_text_stays_the_size_it_was_asked_for(display):
+    """The scale changes how chunky the letters are, not how big they come out."""
+    fine = title.pixel_text("ABC", 64, title.INK, 2)
+    chunky = title.pixel_text("ABC", 64, title.INK, 8)
+    assert abs(fine.get_width() - chunky.get_width()) < fine.get_width() // 3
+
+
+def test_pixel_text_is_cached(display):
+    assert title.pixel_text("HELLO", 40, title.INK) is title.pixel_text(
+        "HELLO", 40, title.INK
+    )
+
+
+def test_the_interface_font_is_not_antialiased(display):
+    """The buttons sit on pixel art; a smoothed font fights it."""
+    from shooter.scenes import build_manager
+
+    theme = build_manager((1080, 720)).get_theme()
+    for element in ("button", "label", "check_box"):
+        assert theme.get_font_info([element])["antialiased"] is False, element
+
+
+def test_the_theme_still_loads_without_complaint(display):
+    """pygame_gui warns rather than raises on a malformed block -- a font
+    without a size, an object id it cannot resolve -- so the warnings are the
+    assertion."""
+    import warnings
+
+    from shooter.scenes import build_manager
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        build_manager((1080, 720))
