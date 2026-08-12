@@ -1209,7 +1209,7 @@ events raised before the screen's first draw.
 
 ---
 
-## AT24 — Settings screen — TODO
+## AT24 — Settings screen — DONE
 
 **Short description:** The form. Reads and writes the AT23 store, saves only on
 an explicit Save, and warns before anything that needs a restart.
@@ -1217,12 +1217,36 @@ an explicit Save, and warns before anything that needs a restart.
 **Dependencies:** AT22, AT23
 
 **Goals**
-- [ ] Form-based, built on `UIForm`, laid out with the AT22 grid
-- [ ] Nothing persists until Save is clicked; leaving without saving discards
-- [ ] Boot-only settings show a `UIConfirmationDialog` before being accepted
-- [ ] Settings marked "new entities only" say so in the UI rather than appearing broken
-- [ ] Display section: vsync, frame cap, resolution
-- [ ] Gameplay section: whatever we decide is player-facing
+- [x] Form-based, laid out with the AT22 grid
+- [x] Nothing persists until Save is clicked; leaving without saving discards
+- [x] Boot-only settings show a `UIConfirmationDialog` before being accepted
+- [x] Settings marked "new entities only" say so in the UI rather than appearing broken
+- [x] Display section: vsync, frame cap, resolution
+- [x] Gameplay section: none — the tunables are debug, see below
+
+**Answered: the tunables are debug, not difficulty.** So the settings screen is
+Display only and the tunables moved to the dev screen, under LIVE and NEW SPAWNS
+headings that say when a change lands. A difficulty preset for players is a
+later ticket if we want one.
+
+**Controls are derived, not configured.** A setting already declares its type
+and bounds, so the control follows: a switch is a checkbox, a fixed set of
+options is a dropdown, a bounded number is a slider. Adding a setting to a
+screen is adding its name to a tuple.
+
+**Not `UIForm`.** The goal named it, but `UIForm` builds its own layout from a
+dict of field types, which fights the AT22 grid and would have meant a second
+way of positioning things. `Form` here is a list of `Field`s the grid places.
+
+**`VSYNC` became a bool.** It was `1`, which rendered as a two-position slider.
+`set_mode` takes a bool, so the setting is a switch and reads as one.
+
+**`DEV_TOOLS` is on neither screen.** Turning it off from the dev screen would
+remove the only way back to the dev screen.
+
+**Controls are populated at construction, never through setters.** That is what
+keeps the AT22 checkbox landmine defused, and a test asserts opening a form
+raises no events.
 
 **Save semantics matter more than they look.** Applying live while the user is
 still dragging a slider means a half-configured game and no way to cancel. An

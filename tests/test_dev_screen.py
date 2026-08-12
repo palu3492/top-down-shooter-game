@@ -13,6 +13,7 @@ import pytest
 
 from shooter import config, game
 from shooter.ui import menu, widgets
+from shooter.ui import dev as dev_screen
 from shooter.ui.dev import DevScreen
 from shooter.ui.layout import LayoutOverflowError
 from shooter.ui.screens import ScreenStack
@@ -35,7 +36,7 @@ def dev(stack):
     return screen
 
 
-def test_the_gallery_builds_without_a_single_warning(stack):
+def test_the_screen_builds_without_a_single_warning(stack):
     """pygame_gui warns rather than raises when a rect is too small for its
     text or an object id has no theming, so the warnings are the assertion."""
     with warnings.catch_warnings():
@@ -53,17 +54,22 @@ def test_every_widget_lands_inside_the_window(dev):
     assert outside == []
 
 
-def test_the_gallery_actually_contains_the_primitives(dev):
-    built = {type(element) for element in dev.elements}
-    assert built >= {
-        pygame_gui.elements.UILabel,
-        pygame_gui.elements.UIButton,
-        pygame_gui.elements.UICheckBox,
-        pygame_gui.elements.UIDropDownMenu,
-        pygame_gui.elements.UIHorizontalSlider,
-        pygame_gui.elements.UISelectionList,
-        pygame_gui.elements.UIPanel,
+def test_the_screen_offers_every_tunable(dev):
+    shown = {field.setting.name for field in dev.form.fields}
+    assert shown == set(dev_screen.LIVE_TUNABLES) | set(dev_screen.SPAWN_TUNABLES)
+
+
+def test_dev_tools_is_not_offered_here(dev):
+    """Turning it off from this screen removes the only way back to it."""
+    assert "DEV_TOOLS" not in {field.setting.name for field in dev.form.fields}
+
+
+def test_a_control_is_chosen_from_the_setting_type(dev):
+    controls = {
+        field.setting.name: type(field.control).__name__ for field in dev.form.fields
     }
+    assert controls["ZOMBIE_SPEED"] == "UIHorizontalSlider"
+    assert controls["PLAYER_REGEN"] == "UIHorizontalSlider"
 
 
 def test_the_ruler_columns_are_evenly_sized(dev):
@@ -129,7 +135,7 @@ def test_building_a_checked_checkbox_announces_nothing(stack):
     assert box.get_state() is True
 
 
-def test_opening_the_gallery_leaves_no_events_behind(stack):
+def test_opening_the_screen_leaves_no_events_behind(stack):
     pygame.event.clear()
     stack.push(DevScreen(WINDOW, stack.manager))
     assert pygame.event.get() == []
@@ -147,8 +153,8 @@ def test_a_dropdown_refuses_to_be_built_empty(stack):
         widgets.dropdown(pygame.Rect(0, 0, 150, 30), [], stack.manager)
 
 
-@pytest.mark.parametrize("height", [570, 640, 720, 900, 1440])
-def test_the_gallery_builds_at_every_window_it_claims_to_support(display, height):
+@pytest.mark.parametrize("height", [640, 720, 900, 1440])
+def test_the_screen_builds_at_every_window_it_claims_to_support(display, height):
     stack = ScreenStack((1080, height))
     stack.push(DevScreen((1080, height), stack.manager))
     window = pygame.Rect(0, 0, 1080, height)

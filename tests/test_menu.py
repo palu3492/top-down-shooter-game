@@ -9,6 +9,7 @@ import pytest
 
 from shooter import config, game
 from shooter.ui import menu
+from shooter.ui.settings_screen import SettingsScreen
 from shooter.ui.dev import DevScreen
 from shooter.ui.screens import Screen, ScreenStack
 
@@ -53,7 +54,7 @@ def test_pushing_opens_a_screen(stack, window):
 
 def test_settings_stacks_on_top_of_pause(stack, window):
     stack.push(menu.PauseScreen(window, stack.manager))
-    stack.push(menu.SettingsScreen(window, stack.manager))
+    stack.push(SettingsScreen(window, stack.manager))
 
     assert len(stack) == 2
     assert stack.top.title == "SETTINGS"
@@ -62,7 +63,7 @@ def test_settings_stacks_on_top_of_pause(stack, window):
 def test_closing_settings_returns_to_pause(stack, window):
     """The reason this is a stack: back has somewhere to go."""
     stack.push(menu.PauseScreen(window, stack.manager))
-    stack.push(menu.SettingsScreen(window, stack.manager))
+    stack.push(SettingsScreen(window, stack.manager))
 
     stack.pop()
 
@@ -98,12 +99,6 @@ def test_escape_resumes_from_pause(stack, window):
     stack.push(menu.PauseScreen(window, stack.manager))
 
     assert stack.handle(press(pygame.K_ESCAPE)[0]) == menu.RESUME
-
-
-def test_escape_goes_back_from_a_stub(stack, window):
-    stack.push(menu.SettingsScreen(window, stack.manager))
-
-    assert stack.handle(press(pygame.K_ESCAPE)[0]) == menu.BACK
 
 
 def test_the_pause_buttons_report_their_actions(stack, window):
@@ -142,7 +137,7 @@ def test_the_pointer_comes_back_for_menus_and_leaves_again(stack, window):
     stack.push(menu.PauseScreen(window, stack.manager))
     assert pygame.mouse.get_visible() is True
 
-    stack.push(menu.SettingsScreen(window, stack.manager))
+    stack.push(SettingsScreen(window, stack.manager))
     assert pygame.mouse.get_visible() is True
 
     stack.pop()

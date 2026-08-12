@@ -55,23 +55,3 @@ class PauseScreen(MenuScreen):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return RESUME
         return super().handle(event)
-
-
-class StubScreen(MenuScreen):
-    """A placeholder full screen. AT22 and AT24 replace these with real ones."""
-
-    entries = (("BACK", BACK),)
-
-    def open(self):
-        super().open()
-        hint_rect = pygame.Rect(0, self.title_rect.bottom + 6, self.window[0], 26)
-        self.add(widgets.hint(hint_rect, "nothing here yet", self.manager))
-
-    def handle(self, event):
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            return BACK
-        return super().handle(event)
-
-
-class SettingsScreen(StubScreen):
-    title = "SETTINGS"

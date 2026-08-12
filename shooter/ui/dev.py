@@ -1,117 +1,85 @@
-"""The dev screen: every widget, arranged by the grid, with nothing at stake.
+"""The dev screen: the tunables, and a ruler to check the grid against.
 
-This is where theming and spacing get argued out. It is reachable only while
-`config.DEV_TOOLS` is on, and none of the controls here are wired to anything --
-AT23 gives them a settings store to write to.
+These are a debug affordance, not a difficulty feature -- that is why they are
+here rather than on the settings screen. Each row says when its change lands, so
+"new spawns" reads as a caveat rather than a control that does nothing.
+
+`DEV_TOOLS` is deliberately absent. Turning it off from here would remove the
+only way back to this screen.
 """
 
 import pygame
 import pygame_gui
 
 from shooter.ui import widgets
+from shooter.ui.form import FormScreen
 from shooter.ui.layout import Grid
 from shooter.ui.menu import BACK
-from shooter.ui.screens import Screen
+
+LIVE_TUNABLES = (
+    "PLAYER_SPEED",
+    "PLAYER_HEALTH",
+    "PLAYER_REGEN",
+    "ZOMBIE_DAMAGE",
+    "KILL_REWARD",
+    "WAVE_BASE",
+    "WAVE_INTERVAL_SECONDS",
+)
+SPAWN_TUNABLES = (
+    "ZOMBIE_SPEED",
+    "ZOMBIE_HEALTH",
+    "RELOAD_SECONDS",
+    "STARTING_GRENADES",
+    "STARTING_STUN_GRENADES",
+)
 
 PADDING = 40
 TITLE_HEIGHT = 52
 HINT_HEIGHT = 26
-RULER_HEIGHT = 16
-SPAN_HEIGHT = 32
-SETTING_HEIGHT = 34
-CAPTION_HEIGHT = 24
-SELECTOR_HEIGHT = 150
-MIN_SELECTOR_HEIGHT = 64
-MIN_NESTED_HEIGHT = 40
+RULER_HEIGHT = 14
 BUTTON_HEIGHT = 54
-
-HINT = "twelve columns, every rectangle below measured in them"
-SPAN_DEMOS = ((6, 3, 3), (4, 4, 4), (2, 2, 2, 2, 2, 2))
-NESTED_SPLITS = (2, 4)
-NESTED_PADDING = 6
-RESOLUTIONS = ("1280 x 720", "1600 x 900", "1920 x 1080", "2560 x 1440")
-DIFFICULTIES = ("EASY", "NORMAL", "HARD")
-ZOMBIE_SPEED_RANGE = (60, 900)
+HALF_SPAN = 6
+HINT = "twelve columns; every rectangle below is measured in them"
 
 
-class DevScreen(Screen):
+class DevScreen(FormScreen):
     title = "DEV"
 
     def open(self):
         grid = Grid(pygame.Rect((0, 0), self.window), padding=PADDING)
-
         self.add(widgets.title(grid.row(TITLE_HEIGHT).rest(), self.title, self.manager))
-        self.add(widgets.hint(grid.row(HINT_HEIGHT).rest(), HINT, self.manager))
-
+        self.hint = self.add(
+            widgets.hint(grid.row(HINT_HEIGHT).rest(), HINT, self.manager)
+        )
         self._build_ruler(grid)
-        for spans in SPAN_DEMOS:
-            self._build_span_demo(grid, spans)
 
         body = grid.row(grid.free_height - BUTTON_HEIGHT - grid.gutter)
-        self._build_controls(body.cell(7))
-        self._build_selector(body.rest())
+        self.build_form(Grid(body.cell(HALF_SPAN)), LIVE_TUNABLES, title="LIVE")
+        self.build_form(Grid(body.rest()), SPAWN_TUNABLES, title="NEW SPAWNS")
 
-        self.back = self.add(
-            widgets.button(grid.rest().skip(4).cell(4), "BACK", self.manager)
+        buttons = grid.row(BUTTON_HEIGHT)
+        buttons.skip(2)
+        self.save_button = self.add(
+            widgets.button(buttons.cell(4), "SAVE", self.manager)
         )
+        self.back = self.add(widgets.button(buttons.cell(4), "BACK", self.manager))
 
     def _build_ruler(self, grid):
         row = grid.row(RULER_HEIGHT)
         for _ in range(row.columns):
             self.add(widgets.panel(row.cell(1), self.manager))
 
-    def _build_span_demo(self, grid, spans):
-        row = grid.row(SPAN_HEIGHT)
-        for span in spans:
-            self.add(widgets.caption(row.cell(span), f"span {span}", self.manager))
-
-    def _build_controls(self, area):
-        grid = Grid(area)
-        self._add_caption(grid, "CONTROLS")
-
-        row = self._setting_row(grid, "vsync")
-        self.add(widgets.checkbox(row.rest(), "", self.manager, checked=True))
-
-        row = self._setting_row(grid, "difficulty")
-        self.add(widgets.dropdown(row.rest(), DIFFICULTIES, self.manager))
-
-        row = self._setting_row(grid, "zombie speed")
-        self.add(widgets.slider(row.rest(), self.manager, 360, ZOMBIE_SPEED_RANGE))
-
-    def _build_selector(self, area):
-        grid = Grid(area)
-        self._add_caption(grid, "RESOLUTION")
-
-        nested_demo = CAPTION_HEIGHT + MIN_NESTED_HEIGHT + 2 * grid.gutter
-        if grid.free_height < nested_demo + MIN_SELECTOR_HEIGHT:
-            self.add(widgets.selector(grid.rest().rest(), RESOLUTIONS, self.manager))
-            return
-
-        height = min(SELECTOR_HEIGHT, grid.free_height - nested_demo)
-        self.add(widgets.selector(grid.row(height).rest(), RESOLUTIONS, self.manager))
-        self._add_caption(grid, "NESTED GRID")
-        self._build_nested_demo(grid.rest().rest())
-
-    def _build_nested_demo(self, area):
-        halves = Grid(area, columns=len(NESTED_SPLITS)).rest()
-        for columns in NESTED_SPLITS:
-            row = Grid(halves.cell(1), columns=columns, padding=NESTED_PADDING).rest()
-            for _ in range(columns):
-                self.add(widgets.panel(row.cell(1), self.manager))
-
-    def _add_caption(self, grid, text):
-        return self.add(
-            widgets.caption(grid.row(CAPTION_HEIGHT).rest(), text, self.manager)
-        )
-
-    def _setting_row(self, grid, label):
-        row = grid.row(SETTING_HEIGHT)
-        self.add(widgets.caption(row.cell(7), label, self.manager))
-        return row
-
     def handle(self, event):
+        if self.handle_dialog(event):
+            return None
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return BACK
-        if event.type == pygame_gui.UI_BUTTON_PRESSED and event.ui_element is self.back:
-            return BACK
+        if self.form.handle(event):
+            self.announce(HINT)
+            return None
+        if event.type == pygame_gui.UI_BUTTON_PRESSED:
+            if event.ui_element is self.back:
+                return BACK
+            if event.ui_element is self.save_button:
+                self.save()
         return None

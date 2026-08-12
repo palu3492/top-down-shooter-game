@@ -14,7 +14,7 @@ SIM_DT = 1 / SIM_HZ
 DEV_TOOLS = True
 
 WINDOW = (1080, 720)  # the logical render size; SCALED stretches it to the window
-VSYNC = 1
+VSYNC = True  # set_mode takes a bool here, so the setting is a switch
 WORLD = (5000, 5000)
 
 PLAYER_SPEED = 600

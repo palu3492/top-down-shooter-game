@@ -51,9 +51,14 @@ def dropdown(rect, options, manager, container=None, selected=None):
     )
 
 
-def slider(rect, manager, value, value_range, container=None):
+def slider(rect, manager, value, value_range, container=None, increment=1):
     return UIHorizontalSlider(
-        rect, value, value_range, manager, container=container, click_increment=1
+        rect,
+        value,
+        value_range,
+        manager,
+        container=container,
+        click_increment=increment,
     )
 
 
