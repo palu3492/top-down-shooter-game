@@ -16,7 +16,7 @@ from shooter.ui import menu, widgets
 from shooter.ui import dev as dev_screen
 from shooter.ui.dev import DevScreen
 from shooter.ui.layout import LayoutOverflowError
-from shooter.ui.screens import ScreenStack
+from shooter.scenes import SceneStack
 
 WINDOW = (1080, 720)
 TINY = (1080, 300)
@@ -24,7 +24,7 @@ TINY = (1080, 300)
 
 @pytest.fixture
 def stack(display):
-    made = ScreenStack(WINDOW)
+    made = SceneStack(WINDOW)
     yield made
     made.clear()
 
@@ -107,7 +107,7 @@ def test_closing_leaves_no_widgets_behind(stack, dev):
 
 
 def test_the_dev_screen_replaces_the_game_rather_than_veiling_it(dev):
-    assert dev.covers_game is True
+    assert dev.opaque is True
 
 
 def test_dev_is_only_reachable_while_dev_tools_are_on(monkeypatch, window):
@@ -155,7 +155,7 @@ def test_a_dropdown_refuses_to_be_built_empty(stack):
 
 @pytest.mark.parametrize("height", [640, 720, 900, 1440])
 def test_the_screen_builds_at_every_window_it_claims_to_support(display, height):
-    stack = ScreenStack((1080, height))
+    stack = SceneStack((1080, height))
     stack.push(DevScreen((1080, height), stack.manager))
     window = pygame.Rect(0, 0, 1080, height)
     assert all(window.contains(e.get_abs_rect()) for e in stack.top.elements)
@@ -165,7 +165,7 @@ def test_the_screen_builds_at_every_window_it_claims_to_support(display, height)
 def test_a_screen_too_big_for_the_window_leaves_the_stack_alone(display):
     """Building the new screen before tearing down the old one is what makes
     a failure a no-op rather than a menu that has already been destroyed."""
-    stack = ScreenStack(TINY)
+    stack = SceneStack(TINY)
     stack.push(menu.PauseScreen(TINY, stack.manager))
     survivors = list(stack.top.elements)
 
@@ -180,9 +180,9 @@ def test_a_screen_too_big_for_the_window_leaves_the_stack_alone(display):
 
 
 def test_the_game_stays_up_when_a_screen_will_not_fit(display):
-    stack = ScreenStack(TINY)
+    stack = SceneStack(TINY)
     stack.push(menu.PauseScreen(TINY, stack.manager))
-    game.open_screen(stack, DevScreen(TINY, stack.manager))
+    game.open_scene(stack, DevScreen(TINY, stack.manager))
     assert isinstance(stack.top, menu.PauseScreen)
     stack.clear()
 

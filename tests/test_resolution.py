@@ -13,10 +13,10 @@ import pytest
 from shooter import config, game
 from shooter.entities.player import Human
 from shooter.entities.zombie import Zombie
-from shooter.session import Session
+from shooter.gameplay import GameplayScene
 from shooter.settings import CATALOGUE, LIVE, Settings
 from shooter.ui.hud import HUD, Cash, GunData, HealthBar
-from shooter.ui.screens import ScreenStack
+from shooter.scenes import SceneStack
 from shooter.ui.settings_screen import SettingsScreen
 from shooter.viewport import Viewport
 
@@ -112,7 +112,7 @@ def test_re_centring_does_not_touch_health(display, viewport):
 
 
 def test_the_screen_stack_rebuilds_against_the_new_size(display, tmp_path):
-    stack = ScreenStack(SMALL)
+    stack = SceneStack(SMALL)
     stack.push(SettingsScreen(SMALL, stack.manager, Settings(path=tmp_path / "s.json")))
     before = stack.top.elements[0].get_abs_rect().width
 
@@ -125,7 +125,7 @@ def test_the_screen_stack_rebuilds_against_the_new_size(display, tmp_path):
 
 
 def test_a_rebuilt_form_does_not_stack_duplicate_fields(display, tmp_path):
-    stack = ScreenStack(SMALL)
+    stack = SceneStack(SMALL)
     stack.push(SettingsScreen(SMALL, stack.manager, Settings(path=tmp_path / "s.json")))
     before = len(stack.top.form.fields)
 
@@ -136,7 +136,7 @@ def test_a_rebuilt_form_does_not_stack_duplicate_fields(display, tmp_path):
 
 
 def test_everything_rebuilt_stays_inside_the_new_window(display, tmp_path):
-    stack = ScreenStack(SMALL)
+    stack = SceneStack(SMALL)
     stack.push(SettingsScreen(SMALL, stack.manager, Settings(path=tmp_path / "s.json")))
     stack.resize(LARGE)
 
@@ -152,9 +152,9 @@ def test_resolution_is_a_live_setting_now():
 
 def test_nothing_happens_while_the_setting_matches(display, viewport, monkeypatch):
     monkeypatch.setattr(config, "WINDOW", SMALL)
-    stack = ScreenStack(SMALL)
+    stack = SceneStack(SMALL)
 
-    assert game.match_resolution(viewport, stack, Session(viewport)) is None
+    assert game.match_resolution(viewport, stack) is None
     stack.clear()
 
 
@@ -211,13 +211,13 @@ def test_the_game_changes_resolution_without_losing_the_world(
         real_human(self, window_size)
         seen["human"] = self
 
-    real_stack = ScreenStack.__init__
+    real_stack = SceneStack.__init__
 
     def stack_made(self, window):
         real_stack(self, window)
         seen["stack"] = self
 
-    monkeypatch.setattr(ScreenStack, "__init__", stack_made)
+    monkeypatch.setattr(SceneStack, "__init__", stack_made)
     monkeypatch.setattr(Human, "__init__", human_made)
     monkeypatch.setattr(Zombie, "__init__", remember(Zombie.__init__, "zombies"))
     monkeypatch.setattr(pygame.display, "flip", flip)
@@ -235,7 +235,7 @@ def test_the_game_changes_resolution_without_losing_the_world(
 
 def test_saving_a_new_resolution_no_longer_asks_for_a_restart(display, tmp_path):
     store = Settings(path=tmp_path / "s.json")
-    stack = ScreenStack(SMALL)
+    stack = SceneStack(SMALL)
     screen = SettingsScreen(SMALL, stack.manager, store)
     stack.push(screen)
     screen.draft.apply_at_startup(config)
@@ -260,13 +260,13 @@ def test_many_resolution_changes_do_not_bring_the_process_down(display, monkeypa
     behind a settings screen, so this walks the sizes a player could actually
     pick. Reaching the end is the assertion.
     """
-    stack = ScreenStack(SMALL)
+    stack = SceneStack(SMALL)
     viewport = Viewport(SMALL)
-    session = Session(viewport)
+    stack.push(GameplayScene(viewport, stack.manager))
 
     for size in RESOLUTION_WALK:
         monkeypatch.setattr(config, "WINDOW", size)
-        assert game.match_resolution(viewport, stack, session) is not None
+        assert game.match_resolution(viewport, stack) is not None
         assert viewport == size
 
     stack.clear()

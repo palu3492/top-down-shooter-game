@@ -16,7 +16,7 @@ import pygame_gui
 
 from shooter.settings import BOOT, Settings
 from shooter.ui import widgets
-from shooter.ui.screens import Screen
+from shooter.scenes import Scene
 
 LABEL_SPAN = 5
 CONTROL_SPAN = 5
@@ -158,7 +158,7 @@ def height_for(names, per_row=ROW_HEIGHT, gutter=12):
     return len(names) * (per_row + gutter)
 
 
-class FormScreen(Screen):
+class FormScreen(Scene):
     """A screen whose edits live in a draft until Save.
 
     The real store is untouched while the player is still dragging, so leaving

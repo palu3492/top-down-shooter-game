@@ -37,7 +37,6 @@ from shooter.viewport import visible_world
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 INSTAKILL_TOP = 40
 RELOADING_TOP = 100
-FPS_READOUT = (0, 0)
 BACKGROUND = "Backgrounds/background_0.jpg"
 
 NO_AMMO = "no ammo"
@@ -278,7 +277,7 @@ class Session:
     # Render: once per frame, between steps.
     # ------------------------------------------------------------------
 
-    def draw(self, screen, alpha, fps=None):
+    def draw(self, screen, alpha):
         draw_x, draw_y = self._interpolated_camera(alpha)
 
         screen.blit(
@@ -306,7 +305,7 @@ class Session:
         ):
             blit_group(screen, group, draw_x, draw_y, alpha)
 
-        self._draw_overlays(screen, fps)
+        self._draw_overlays(screen)
 
     def _interpolated_camera(self, alpha):
         return (
@@ -314,7 +313,7 @@ class Session:
             self.previous_camera[1] + (self.camera_y - self.previous_camera[1]) * alpha,
         )
 
-    def _draw_overlays(self, screen, fps):
+    def _draw_overlays(self, screen):
         self.radar.draw(
             screen,
             -self.camera_x + self.window[0] / 2,
@@ -340,9 +339,3 @@ class Session:
 
         if self.ammo_count == RELOAD:
             centred_text(screen, self.window, "Reloading", RELOADING_TOP, size=30)
-
-        if fps is not None:
-            screen.blit(
-                pygame.font.Font(None, 20).render(str(fps), True, config.WHITE),
-                FPS_READOUT,
-            )
