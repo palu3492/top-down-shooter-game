@@ -7,7 +7,8 @@ os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 import pygame
 import pytest
 
-from shooter import config, settings
+from shooter import config, game, settings
+from shooter.ui import title
 
 
 class RecordingCash:
@@ -21,6 +22,28 @@ class RecordingCash:
 @pytest.fixture(scope="session")
 def window():
     return (1080, 720)
+
+
+@pytest.fixture
+def straight_to_game(monkeypatch):
+    """Boot past the splash.
+
+    game_loop starts at a title card now, so a test that wants a game running
+    has to say so. Zeroing the timings makes the first frame's tick hand over
+    to the menu; `route` then starts a game as though START had been clicked.
+    """
+    for name in ("FADE_IN", "HOLD", "SKIPPABLE_AFTER"):
+        monkeypatch.setattr(title, name, 0.0)
+
+    real_route = game.route
+
+    def routed(action, scenes, window, settings):
+        keep = real_route(action, scenes, window, settings)
+        if action == title.MENU:
+            keep = real_route(title.START, scenes, window, settings) and keep
+        return keep
+
+    monkeypatch.setattr(game, "route", routed)
 
 
 @pytest.fixture(autouse=True)

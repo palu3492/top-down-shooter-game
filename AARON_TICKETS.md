@@ -536,12 +536,42 @@ just opacity.
 
 ---
 
-## AT30 — Splash, main menu, and ending a game — TODO
+## AT30 — Splash, main menu, and ending a game — DONE
 
 **Short description:** The flow: animated splash, main menu, start game, pause,
 end game back to the menu.
 
 **Dependencies:** AT28, AT29
+
+**Goals**
+- [x] An animated splash that hands over on its own and can be skipped
+- [x] A main menu to start a game from
+- [x] Pause gains END GAME, returning to the menu
+- [x] Starting a second game owes nothing to the first
+
+**The art was already in the repository.** `menu_1.jpg` has sat unused in
+`Assets/Backgrounds` since 2019 -- a sunset, a shooter, a zombie and a
+deliberately blank signpost, drawn for a menu that never got written. It is a
+2:1 banner against a 3:2 window, so it is scaled to the width and sat on the
+ground line with its own sky colour continued above. Cropping to fill would cut
+the shooter off the left edge.
+
+**Ending a game is a pop because the menu never left.** `START` pushes gameplay
+*on top of* the main menu rather than replacing it, so END GAME drops the pause
+screen and the game and finds the menu exactly where it was. Nothing has to be
+rebuilt or remembered.
+
+**Wall time is not the simulation clock.** An interface scene never gets
+`update`, so a splash driven by it would sit on its first frame forever. Scenes
+gained `tick(seconds)` -- real elapsed time, every frame, whatever is on top.
+That also fixed something quietly wrong since AT21: `pygame_gui` was handed a
+constant `1/60` from inside `draw`, so its own animations ran at the wrong rate
+on any machine not managing exactly sixty frames.
+
+**The splash ignores input for its first moment.** A key already held down when
+the game launches should not blow straight through the title card.
+
+---
 
 ---
 

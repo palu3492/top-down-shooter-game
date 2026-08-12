@@ -16,7 +16,7 @@ from shooter.gameplay import PAUSE, GameplayScene
 from shooter.preload import preload
 from shooter.scenes import SceneStack
 from shooter.settings import Settings
-from shooter.ui import dev, menu, settings_screen
+from shooter.ui import dev, menu, settings_screen, title
 from shooter.ui.layout import LayoutOverflowError
 from shooter.viewport import Viewport
 
@@ -74,9 +74,27 @@ def show_loading(screen):
 
 
 def route(action, scenes, window, settings):
-    """Turn a scene's action into a move on the stack. False means quit."""
+    """Turn a scene's action into a move on the stack. False means quit.
+
+    Every navigation decision the game makes is here, which is the whole of
+    what "start a game" and "end a game" turned out to be.
+    """
+    if action is None:
+        return True
     if action == PAUSE:
         open_scene(scenes, menu.PauseScreen(window, scenes.manager))
+    elif action == title.MENU:
+        # The splash is replaced rather than covered: there is nothing to come
+        # back to once the game has been introduced.
+        scenes.pop()
+        open_scene(scenes, title.MainMenuScene(window, scenes.manager))
+    elif action == title.START:
+        open_scene(scenes, GameplayScene(window, scenes.manager))
+    elif action == menu.END_GAME:
+        # The main menu is still underneath, so ending a game is dropping the
+        # pause screen and the game and finding it where it was left.
+        scenes.pop()
+        scenes.pop()
     elif action in (menu.RESUME, menu.BACK):
         scenes.pop()
     elif action == menu.SETTINGS:
@@ -103,10 +121,11 @@ def game_loop():
 
     cursor = load_image("cursor.png")
     scenes = SceneStack(window)
-    scenes.push(GameplayScene(window, scenes.manager))
+    scenes.push(title.SplashScene(window, scenes.manager))
 
     clock = pygame.time.Clock()
     accumulator = 0.0
+    frame_seconds = 0.0
     running = True
 
     while running:
@@ -131,6 +150,10 @@ def game_loop():
             if not running:
                 break
 
+        running = (
+            route(scenes.tick(frame_seconds), scenes, window, settings) and running
+        )
+
         if scenes.simulates:
             while accumulator >= config.SIM_DT:
                 accumulator -= config.SIM_DT
@@ -140,7 +163,7 @@ def game_loop():
             # the whole pause in a single step.
             accumulator = 0.0
 
-        scenes.draw(screen, accumulator / config.SIM_DT, 1 / config.SIM_HZ)
+        scenes.draw(screen, accumulator / config.SIM_DT)
 
         if scenes.simulates:
             screen.blit(cursor, pygame.Vector2(pointer) + CURSOR_OFFSET)
@@ -149,6 +172,10 @@ def game_loop():
             FPS_READOUT,
         )
         pygame.display.flip()
-        accumulator += min(clock.tick(config.FPS) / 1000.0, config.MAX_FRAME_SECONDS)
+        frame_seconds = min(clock.tick(config.FPS) / 1000.0, config.MAX_FRAME_SECONDS)
+        accumulator += frame_seconds
+
+        if not scenes:
+            running = False
 
     pygame.quit()

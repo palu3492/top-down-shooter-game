@@ -212,7 +212,9 @@ def test_the_origin_anchored_spawn_area_is_gone():
     assert not hasattr(config, "SPAWN_AREA")
 
 
-def test_the_loop_always_tells_the_spawner_where_the_player_is(monkeypatch):
+def test_the_loop_always_tells_the_spawner_where_the_player_is(
+    straight_to_game, monkeypatch
+):
     """Wiring, not arithmetic: every zombie the running game creates must be
     given the visible world, or it falls back to the ring at the origin."""
     given = []

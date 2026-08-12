@@ -156,7 +156,7 @@ def test_the_pointer_is_hidden_only_while_playing(stack, playing):
 
 
 def test_drawing_an_empty_stack_is_harmless(stack):
-    stack.draw(pygame.Surface(WINDOW), 0.0, 1 / 60)
+    stack.draw(pygame.Surface(WINDOW), 0.0)
 
 
 def test_a_bare_scene_refuses_to_be_used_directly(stack):

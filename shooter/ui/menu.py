@@ -8,6 +8,7 @@ from shooter.ui import widgets
 from shooter.scenes import Scene
 
 RESUME, SETTINGS, DEV, QUIT, BACK = "RESUME", "SETTINGS", "DEV", "QUIT", "BACK"
+END_GAME = "END_GAME"
 
 BUTTON_SIZE = (280, 54)
 BUTTON_GAP = 14
@@ -48,6 +49,7 @@ class PauseScreen(MenuScreen):
         listed = [("RESUME", RESUME), ("SETTINGS", SETTINGS)]
         if config.DEV_TOOLS:
             listed.append(("DEV", DEV))
+        listed.append(("END GAME", END_GAME))
         listed.append(("QUIT", QUIT))
         return tuple(listed)
 
