@@ -11,6 +11,7 @@ import pygame
 
 from shooter import config
 from shooter.assets import load_image
+from shooter.preload import preload
 from shooter.session import Session
 from shooter.settings import Settings
 from shooter.ui import dev, menu, settings_screen
@@ -75,6 +76,7 @@ def game_loop():
     window = Viewport(config.WINDOW)
     screen = open_display(window)
     show_loading(screen)
+    preload()
 
     screens = ScreenStack(window)
     cursor = load_image("cursor.png")

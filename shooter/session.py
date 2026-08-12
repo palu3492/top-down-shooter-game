@@ -17,7 +17,6 @@ import math
 import pygame
 
 from shooter import config
-from shooter.assets import asset_path
 from shooter.background import BackgroundSheet
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
@@ -106,7 +105,7 @@ class Session:
         self.shooting = False
         self.ammo_count = ""
 
-        self.background = BackgroundSheet(asset_path(BACKGROUND))
+        self.background = BackgroundSheet(BACKGROUND)
         self.human = Human(window)
         self.human_group = pygame.sprite.Group(self.human)
         self.zombies = pygame.sprite.Group()

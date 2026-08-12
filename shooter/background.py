@@ -1,9 +1,18 @@
 import pygame
 
+from shooter.assets import load_sheet
+
 
 class BackgroundSheet:
-    def __init__(self, filename):
-        self.sheet = pygame.image.load(filename).convert()
+    """A window onto one large image.
+
+    The sheet is shared rather than owned: `image_at` only ever reads from it,
+    so every session can sample the same surface instead of each paying 180ms
+    to load its own copy.
+    """
+
+    def __init__(self, relative):
+        self.sheet = load_sheet(relative)
 
     def image_at(self, rectangle, colorkey=None):
         "Loads image from x,y,x+offset,y+offset"
