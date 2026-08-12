@@ -1,13 +1,31 @@
-import pygame
 import math
+from functools import cache
+
+import pygame
 
 from shooter.assets import load_image, load_sound
 
-pygame.mixer.init()
-gun_shot_sound = load_sound('Sounds/gunAudio.wav')
-gun_shot_sound.set_volume(.01)
-explosion_sound = load_sound('Sounds/explosion.wav')
-explosion_sound.set_volume(.01)
+GUN_SHOT = ("Sounds/gunAudio.wav", .01)
+EXPLOSION = ("Sounds/explosion.wav", .01)
+
+
+@cache
+def _load(name, volume):
+    sound = load_sound(name)
+    sound.set_volume(volume)
+    return sound
+
+
+def play(spec):
+    """Play a sound, or do nothing if there is no usable audio device.
+
+    Loading is deferred to first use so that importing this module has no side
+    effects -- pygame.mixer.init() at import time took the whole game down on
+    machines without audio.
+    """
+    if not pygame.mixer.get_init():
+        return
+    _load(*spec).play()
 
 class Shot(pygame.sprite.Sprite):
     smallChangeX=0
@@ -33,7 +51,7 @@ class Shot(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.bulletX = startX - (self.rect[0] / 2)
         self.bulletY = startY - (self.rect[1] / 2)
-        gun_shot_sound.play()
+        play(GUN_SHOT)
 
     # def update(self,cameraX,cameraY,zombie_group):
     #     self.rect.x=self.bulletX+cameraX
@@ -136,7 +154,7 @@ class grenadeDetonate(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.explosionX = startX - (self.rect.size[0] / 2) #-half of explosion size
         self.explosionY = startY - (self.rect.size[1] / 2)
-        explosion_sound.play()
+        play(EXPLOSION)
 
     def update(self, cameraX, cameraY):
         #times before kill
@@ -211,7 +229,7 @@ class stunDetonate(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.explosionX = startX - (self.rect.size[0] / 2) #-half of explosion size
         self.explosionY = startY - (self.rect.size[1] / 2)
-        explosion_sound.play()
+        play(EXPLOSION)
 
     def update(self, cameraX, cameraY):
         #times before kill

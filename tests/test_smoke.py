@@ -51,25 +51,19 @@ def test_assets_resolve_independently_of_the_working_directory():
     assert ASSETS_DIR.is_dir()
 
 
-def test_game_loop_runs_without_raising(monkeypatch):
+def test_game_loop_runs_600_frames_then_exits_cleanly(monkeypatch):
     frames = itertools.count(1)
     real_flip = pygame.display.flip
 
-    class FrameLimitError(Exception):
-        pass
-
     def flip():
         if next(frames) >= 600:
-            raise FrameLimitError
+            pygame.event.post(pygame.event.Event(pygame.QUIT))
         real_flip()
 
     monkeypatch.setattr(pygame.display, "flip", flip)
 
     from shooter.game import game_loop
 
-    try:
-        game_loop()
-    except FrameLimitError:
-        pass
-    else:
-        raise AssertionError("game_loop exited on its own")
+    game_loop()
+
+    assert pygame.display.get_init() is False

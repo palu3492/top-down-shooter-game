@@ -11,8 +11,6 @@ class PowerUps(pygame.sprite.Sprite):
     # 4 == MaxHealth
     powerup_selected = 0
 
-    og_image = load_image("Power Ups/MaxHealth.png")
-
     timer_count = 0
 
     def Spawning_Location(self):
