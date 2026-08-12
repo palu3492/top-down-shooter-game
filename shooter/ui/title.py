@@ -1,12 +1,17 @@
 """The splash and the main menu -- what the game is before a game starts.
 
-Both are painted on `menu_1.jpg`, which has been sitting unused in the assets
-folder since 2019. It was drawn for a menu that never got written: a sunset, a
-shooter, a zombie, and a deliberately blank signpost waiting for a title.
+Both are painted on `menu_pixel.png`, baked by `tools/make_menu_art.py` from
+`menu_1.jpg`, which had been sitting unused in the assets folder since 2019: a
+sunset, a shooter, a zombie, and a deliberately blank signpost waiting for a
+title.
 
-The art is a 2:1 banner and the window is 3:2, so it is scaled to the width and
-sat on the ground line, with the sky above it continued in the colour sampled
-from its own top edge. Cropping to fill would cut the shooter off the left.
+It is stored at 135x90 and scaled with nearest-neighbour, which is what keeps
+the pixels square instead of smearing them. An eighth of the 1080x720 render
+surface exactly, so the default resolution gets whole blocks.
+
+Reducing the palette is what makes this read as pixel art rather than as a
+photograph shown too small -- simply pixelating the painting leaves soft blocks
+that look like a low-resolution image, because they are one.
 """
 
 from functools import cache
@@ -20,7 +25,7 @@ from shooter.scenes import Scene
 from shooter.ui import menu, widgets
 from shooter.ui.anchor import CENTRE, TOP, place
 
-ART = "Backgrounds/menu_1.jpg"
+ART = "Backgrounds/menu_pixel.png"
 GAME_TITLE = "TOP DOWN SHOOTER"
 
 MENU, START = "MENU", "START"
@@ -37,21 +42,12 @@ SUBTITLE = "press any key"
 
 @cache
 def backdrop(size):
-    """The art at window width, resting on the bottom, sky filled above it.
+    """The art blown up to the window with square pixels.
 
-    Cached: this smoothscales a 4961x2481 image, which is a fifth of a second
-    and unthinkable once a frame.
+    `scale` rather than `smoothscale`: interpolating pixel art is exactly the
+    thing that stops it looking like pixel art.
     """
-    window = size
-    art = load_image(ART)
-    width = window[0]
-    height = round(art.get_height() * width / art.get_width())
-    scaled = pygame.transform.smoothscale(art, (width, height))
-
-    surface = pygame.Surface(tuple(window))
-    surface.fill(scaled.get_at((0, 0)))
-    surface.blit(scaled, (0, window[1] - height))
-    return surface
+    return pygame.transform.scale(load_image(ART), tuple(size))
 
 
 class TitleScene(Scene):
@@ -144,12 +140,27 @@ class MainMenuScene(TitleScene):
         _title_text(surface, self.window, GAME_TITLE, TITLE_INSET, 64)
 
 
+PIXEL_SCALE = 4
+INK = (240, 232, 200)
+SHADOW = (20, 16, 12)
+
+
+@cache
+def pixel_text(message, size, colour, scale=PIXEL_SCALE):
+    """Rendered small with antialiasing off, then blown up square.
+
+    A bitmap look out of a vector font, so there is no pixel font to ship and
+    the letters keep their blocks at any resolution.
+    """
+    small = pygame.font.Font(None, max(6, size // scale)).render(message, False, colour)
+    return pygame.transform.scale(
+        small, (small.get_width() * scale, small.get_height() * scale)
+    )
+
+
 def _title_text(surface, window, message, inset, size):
-    """Drawn rather than laid out as a widget: it sits on the signpost, which
-    is part of the picture rather than part of the interface."""
-    font = pygame.font.Font(None, size)
-    shadow = font.render(message, True, (0, 0, 0))
-    text = font.render(message, True, (232, 226, 205))
+    """Drawn rather than laid out as a widget: it belongs to the picture."""
+    text = pixel_text(message, size, INK)
     rect = place(text.get_size(), window, CENTRE, TOP, inset)
-    surface.blit(shadow, (rect.left + 2, rect.top + 2))
+    surface.blit(pixel_text(message, size, SHADOW), (rect.left + 4, rect.top + 4))
     surface.blit(text, rect.topleft)

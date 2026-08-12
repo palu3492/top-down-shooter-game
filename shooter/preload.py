@@ -34,7 +34,7 @@ SPRITES = (
 )
 
 SHEETS = ("Backgrounds/background_0.jpg",)
-MENU_ART = "Backgrounds/menu_1.jpg"
+MENU_ART = "Backgrounds/menu_pixel.png"
 
 ZOMBIE_STILL = "Zombie Animations/zombie_idle/skeleton-idle_0.png"
 

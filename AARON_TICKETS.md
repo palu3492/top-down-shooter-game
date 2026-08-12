@@ -575,6 +575,82 @@ the game launches should not blow straight through the title card.
 
 ---
 
+## AT32 — Pixel-art menu theming — DONE
+
+**Short description:** Rework the title art as 8-bit pixel art with a reduced
+palette, and stop the interface font fighting it.
+
+**Dependencies:** AT30
+
+**Goals**
+- [x] The menu and splash read as pixel art rather than a shrunken painting
+- [x] A pixel title that needs no font file
+- [x] Interface text stops being antialiased
+- [x] Nothing expensive happens at load
+
+**Palette, not pixel size.** Five directions were mocked up against the real
+menu layout. Simply pixelating the painting reads as a low-resolution
+photograph, because that is what it is -- the blocks stay soft. Naive
+per-channel posterising gives hard edges but turns the teal-to-orange gradient
+into a muddy grey step. Mapping every pixel to a *hand-picked* six-colour ramp
+is what produces clean bands and flat silhouettes.
+
+**Baked, not computed.** The mapping is a nearest-colour search per pixel --
+about a second, which is nothing offline and exactly what AT28 spent a whole
+ticket making sure never happens at startup. `tools/make_menu_art.py` writes
+`menu_pixel.png` at 135x90, an eighth of the render surface, so the default
+resolution gets whole square blocks. Building the backdrop went from ~200ms to
+0.5ms as a side effect.
+
+**Scaled with nearest-neighbour.** Interpolating pixel art is precisely the
+thing that stops it looking like pixel art.
+
+**A pixel font out of a vector one.** Text is rendered at a quarter size with
+antialiasing off and blown up square, so there is no bitmap font to ship and the
+letters keep their blocks at any resolution.
+
+**The prose is left alone.** Turning antialiasing off across the theme made
+`pygame_gui` warn about a font the confirmation dialog asks for through its HTML
+parser, which the theme cannot reach by element id. The dialog body is prose
+rather than a label, so it keeps the smooth font and the theme stays
+warning-free -- a test asserts that, since `pygame_gui` warns where it might
+have raised.
+
+---
+
+## AT33 — Bring the menu background to life — TODO
+
+**Short description:** Animate the title art. Polish, deliberately separate from
+the theming that established the look.
+
+**Dependencies:** AT32
+
+**Goals**
+- [ ] The sky moves without the art being redrawn
+- [ ] Something happens on a slow cycle, so the menu is not static while read
+- [ ] No per-frame cost worth measuring
+
+**Palette cycling is the period-correct technique.** The background is six
+colours mapped from a painting; shifting *what those six colours are* over time
+animates the whole sky at the cost of a palette swap, rather than moving
+sprites. Cheap, and exactly how the era this is imitating did it.
+
+**Candidates, cheapest first.** A slow warm-to-cool drift in the sky bands; the
+sun creeping up or down a few pixels; stars fading in across the dark band as it
+cools; grass along the bottom edge shifting by a pixel; the shooter's muzzle
+flashing on a long random interval.
+
+**`tick` already exists.** AT30 gave scenes real elapsed time every frame,
+whatever is on top, which is precisely what this needs and why it is a small
+ticket rather than a structural one.
+
+**Watch the backdrop cache.** `backdrop()` is memoised per window size on the
+assumption that it never changes. Anything that animates it has to own that
+decision rather than quietly defeating it -- a test asserting the build is not
+per-frame is already there.
+
+---
+
 ## AT31 — Game modes: freeplay levels and campaign progress — TODO
 
 **Short description:** Freeplay as levelled endless waves; campaign as levels
