@@ -24,6 +24,7 @@ from shooter.assets import load_image
 from shooter.scenes import Scene
 from shooter.ui import menu, widgets
 from shooter.ui.anchor import CENTRE, TOP, place
+from shooter.ui.sky import Sky
 
 ART = "Backgrounds/menu_pixel.png"
 GAME_TITLE = "TOP DOWN SHOOTER"
@@ -42,31 +43,40 @@ SUBTITLE = "press any key"
 
 @cache
 def backdrop(size):
-    """The art blown up to the window with square pixels.
+    """The art blown up to the window with square pixels, as painted.
 
-    `scale` rather than `smoothscale`: interpolating pixel art is exactly the
-    thing that stops it looking like pixel art.
+    Kept for the palette the art was baked with. Anything on screen goes
+    through `Sky`, which is the same picture recoloured over the cycle.
     """
     return pygame.transform.scale(load_image(ART), tuple(size))
 
 
 class TitleScene(Scene):
-    """Shared backdrop for everything shown before a game exists."""
+    """Shared backdrop for everything shown before a game exists.
+
+    The sky drifts from dusk through night to dawn on a slow cycle, so the menu
+    is not a still image while it is being read.
+    """
 
     opaque = True
 
+    def __init__(self, window, manager):
+        super().__init__(window, manager)
+        self.elapsed = 0.0
+        self.sky = Sky(tuple(window))
+
+    def tick(self, seconds):
+        self.elapsed += seconds
+        return None
+
     def draw_backdrop(self, surface):
-        surface.blit(backdrop(tuple(self.window)), (0, 0))
+        surface.blit(self.sky.at(self.elapsed), (0, 0))
 
 
 class SplashScene(TitleScene):
     """The title card. Fades up, holds, then hands over to the menu."""
 
     title = "SPLASH"
-
-    def __init__(self, window, manager):
-        super().__init__(window, manager)
-        self.elapsed = 0.0
 
     def open(self):
         """Painted rather than built: the fade has to reach the text too, and a
@@ -81,7 +91,7 @@ class SplashScene(TitleScene):
         return min(1.0, self.elapsed / FADE_IN) if FADE_IN else 1.0
 
     def tick(self, seconds):
-        self.elapsed += seconds
+        super().tick(seconds)
         return MENU if self.finished else None
 
     def handle(self, event):
