@@ -11,6 +11,8 @@ FPS = 240
 SIM_HZ = 60
 SIM_DT = 1 / SIM_HZ
 
+DEV_TOOLS = True
+
 WINDOW = (1080, 720)  # the logical render size; SCALED stretches it to the window
 VSYNC = 1
 WORLD = (5000, 5000)

@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A top-down zombie wave shooter built with pygame"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["pygame-ce>=2.5.5,<3"]
+dependencies = ["pygame-ce>=2.5.5,<3", "pygame_gui>=0.6.14,<0.7"]
 
 [dependency-groups]
 dev = ["pytest>=9,<10", "ruff>=0.16,<0.17"]

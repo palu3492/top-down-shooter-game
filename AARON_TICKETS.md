@@ -1031,7 +1031,7 @@ and whether they need to be safe mid-game.
 
 ---
 
-## AT21 — Screen stack, theme, and a navigable pause menu — TODO
+## AT21 — Screen stack, theme, and a navigable pause menu — DONE
 
 **Short description:** The foundation the menus need: adopt `pygame_gui`, add a
 base theme, turn the flat screen state into a stack, and give the pause overlay
@@ -1040,12 +1040,15 @@ real navigation to Settings and Dev.
 **Dependencies:** AT17
 
 **Goals**
-- [ ] Adopt `pygame_gui` and a `UIManager` owned by the screen layer
-- [ ] A base theme file, so everything after this inherits a look rather than inventing one
-- [ ] Screen **stack**, not a flat enum
-- [ ] Screens declare whether they overlay the game or replace it
-- [ ] Pause overlay gains buttons: Resume, Settings, Dev, Quit
-- [ ] Settings and Dev exist as stubs, reachable and dismissable
+- [x] Adopt `pygame_gui` and a `UIManager` owned by the screen layer
+- [x] A base theme file, so everything after this inherits a look rather than inventing one
+- [x] Screen **stack**, not a flat enum
+- [x] Screens declare whether they overlay the game or replace it
+- [x] Pause overlay gains buttons: Resume, Settings, Dev, Quit
+- [x] Settings and Dev exist as stubs, reachable and dismissable
+
+**Dev is gated on `config.DEV_TOOLS`.** The entry is built only when the flag is
+on, so a release build drops the button without a second pause menu existing.
 
 **Why a stack rather than more names.** AT14 introduced `PLAYING | PAUSED` as a
 named state so more screens could be added by adding names. That holds for

@@ -140,8 +140,6 @@ def test_a_long_pause_does_not_bank_time(monkeypatch, window, cash):
     The loop resets dt on every paused frame and clamps it in any case, so the
     world cannot leap forward when play resumes.
     """
-    from shooter import game
-
     zombie = Zombie(window, cash)
     zombie.set_position(2000, 2000)
     before = (zombie.zombie_x, zombie.zombie_y)
@@ -153,4 +151,3 @@ def test_a_long_pause_does_not_bank_time(monkeypatch, window, cash):
         zombie.zombie_x - before[0], zombie.zombie_y - before[1]
     ).length()
     assert moved <= config.ZOMBIE_SPEED * config.MAX_FRAME_SECONDS + 1
-    assert game.PLAYING != game.PAUSED
