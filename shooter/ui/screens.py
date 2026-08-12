@@ -38,6 +38,12 @@ class Screen:
     def open(self):
         raise NotImplementedError
 
+    def add(self, element):
+        """Every widget a screen builds goes through here, so closing the
+        screen is what kills it rather than whoever remembered to say so."""
+        self.elements.append(element)
+        return element
+
     def close(self):
         for element in self.elements:
             element.kill()

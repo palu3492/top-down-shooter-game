@@ -2,9 +2,9 @@
 
 import pygame
 import pygame_gui
-from pygame_gui.elements import UIButton, UILabel
 
 from shooter import config
+from shooter.ui import widgets
 from shooter.ui.screens import Screen
 
 RESUME, SETTINGS, DEV, QUIT, BACK = "RESUME", "SETTINGS", "DEV", "QUIT", "BACK"
@@ -24,19 +24,14 @@ class MenuScreen(Screen):
         top = (height - column_height) // 2
 
         self.title_rect = pygame.Rect(0, top - 96, width, 52)
-        self.elements.append(
-            UILabel(
-                self.title_rect, self.title, self.manager, object_id="#screen_title"
-            )
-        )
+        self.add(widgets.title(self.title_rect, self.title, self.manager))
+
         self.actions = {}
         for index, (label, action) in enumerate(self.entries):
             rect = pygame.Rect(0, 0, *BUTTON_SIZE)
             rect.centerx = width // 2
             rect.y = top + index * (BUTTON_SIZE[1] + BUTTON_GAP)
-            button = UIButton(rect, label, self.manager)
-            self.elements.append(button)
-            self.actions[button] = action
+            self.actions[self.add(widgets.button(rect, label, self.manager))] = action
 
     def handle(self, event):
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
@@ -70,11 +65,7 @@ class StubScreen(MenuScreen):
     def open(self):
         super().open()
         hint_rect = pygame.Rect(0, self.title_rect.bottom + 6, self.window[0], 26)
-        self.elements.append(
-            UILabel(
-                hint_rect, "nothing here yet", self.manager, object_id="#screen_hint"
-            )
-        )
+        self.add(widgets.hint(hint_rect, "nothing here yet", self.manager))
 
     def handle(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -84,7 +75,3 @@ class StubScreen(MenuScreen):
 
 class SettingsScreen(StubScreen):
     title = "SETTINGS"
-
-
-class DevScreen(StubScreen):
-    title = "DEV"

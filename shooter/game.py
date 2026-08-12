@@ -18,7 +18,7 @@ from shooter.entities.projectiles import (
 )
 from shooter.systems.waves import WaveSystem
 from shooter.render import blit_group
-from shooter.ui import menu
+from shooter.ui import dev, menu
 from shooter.ui.screens import ScreenStack
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
 from shooter.ui.radar import RadarScreen
@@ -141,7 +141,7 @@ def game_loop():
                 elif action == menu.SETTINGS:
                     screens.push(menu.SettingsScreen(window, screens.manager))
                 elif action == menu.DEV:
-                    screens.push(menu.DevScreen(window, screens.manager))
+                    screens.push(dev.DevScreen(window, screens.manager))
                 elif action == menu.BACK:
                     screens.pop()
                 elif action == menu.QUIT:

@@ -9,6 +9,7 @@ import pytest
 
 from shooter import config, game
 from shooter.ui import menu
+from shooter.ui.dev import DevScreen
 from shooter.ui.screens import Screen, ScreenStack
 
 CAP = 600
@@ -71,7 +72,7 @@ def test_closing_settings_returns_to_pause(stack, window):
 
 def test_clearing_closes_everything(stack, window):
     stack.push(menu.PauseScreen(window, stack.manager))
-    stack.push(menu.DevScreen(window, stack.manager))
+    stack.push(DevScreen(window, stack.manager))
 
     stack.clear()
 
@@ -90,7 +91,7 @@ def test_a_closed_screen_leaves_no_widgets_behind(stack, window):
 
 def test_pause_overlays_the_game_and_a_full_screen_does_not(window, stack):
     assert menu.PauseScreen(window, stack.manager).covers_game is False
-    assert menu.DevScreen(window, stack.manager).covers_game is True
+    assert DevScreen(window, stack.manager).covers_game is True
 
 
 def test_escape_resumes_from_pause(stack, window):
