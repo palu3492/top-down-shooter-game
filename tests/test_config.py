@@ -74,9 +74,9 @@ def test_the_first_wave_uses_the_configured_base(window, cash):
     assert len(group) == config.WAVE_BASE
 
 
-def test_zombies_spawn_outside_the_spawn_area(window, cash):
-    width, height = config.SPAWN_AREA
+def test_zombies_spawn_outside_the_visible_world(window, cash):
+    visible = pygame.Rect(0, 0, *window)
 
     for _ in range(40):
-        x, y = Zombie(window, cash).get_position()
-        assert x < 0 or x > width or y < 0 or y > height
+        x, y = Zombie(window, cash, visible).get_position()
+        assert not visible.collidepoint(x, y)

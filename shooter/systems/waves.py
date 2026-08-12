@@ -16,21 +16,20 @@ BOARD_STRIPE = (100, 255, 100)
 
 
 class WaveSystem:
-    def __init__(self, window, zombie_group, player_cash):
+    def __init__(self, window, zombie_group, player_cash, visible=None):
         self.wave_count = 0
         self.wave_seconds = 0.0
         for _ in range(config.WAVE_BASE):
-            zombie_group.add(Zombie(window, player_cash))
+            zombie_group.add(Zombie(window, player_cash, visible))
 
-    def wave_gui(self, screen):
-        return True
-
-    def advance(self, window, zombie_group, player_cash, dt=config.SIM_DT):
+    def advance(
+        self, window, zombie_group, player_cash, dt=config.SIM_DT, visible=None
+    ):
         """Move the between-wave timer forward and spawn when it elapses."""
         if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.wave_count += 1
             for _ in range(config.WAVE_BASE + pow(self.wave_count, 2)):
-                zombie_group.add(Zombie(window, player_cash))
+                zombie_group.add(Zombie(window, player_cash, visible))
             self.wave_seconds = 0.0
         else:
             self.wave_seconds += dt

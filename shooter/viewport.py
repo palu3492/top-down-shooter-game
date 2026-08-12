@@ -9,6 +9,19 @@ It behaves as the `(width, height)` pair it replaces, so a plain tuple is still
 a valid argument anywhere a viewport is expected.
 """
 
+import pygame
+
+
+def visible_world(camera, window):
+    """The rectangle of the world currently on screen.
+
+    A sprite is drawn at `world + camera`, so the world coordinate sitting at
+    the top-left of the display is `-camera`. Anything that needs to reason
+    about where the player actually is -- spawning, culling -- wants this rather
+    than the window size on its own.
+    """
+    return pygame.Rect(-camera[0], -camera[1], window[0], window[1])
+
 
 class Viewport:
     def __init__(self, size):

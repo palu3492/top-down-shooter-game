@@ -29,9 +29,9 @@ ZOMBIE_SIZE = (120, 111)
 ZOMBIE_SCALE = 0.5
 KILL_REWARD = 50
 
-# The spawn ring is anchored at the world origin and sized to 1920x1080, a
-# resolution this game does not run at. Preserved as-is here; see AT15.
-SPAWN_AREA = (1920, 1080)
+# A wave starts this many seconds of travel outside the view, so the player
+# sees it coming instead of meeting it at the edge of the screen.
+SPAWN_LEAD_SECONDS = 3.0
 
 BULLET_SPEED = 9000
 BULLET_STEP = 14  # max pixels between collision checks
