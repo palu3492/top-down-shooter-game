@@ -13,6 +13,7 @@ import pytest
 from shooter import config, game
 from shooter.entities.player import Human
 from shooter.entities.zombie import Zombie
+from shooter.session import Session
 from shooter.settings import CATALOGUE, LIVE, Settings
 from shooter.ui.hud import HUD, Cash, GunData, HealthBar
 from shooter.ui.screens import ScreenStack
@@ -152,9 +153,8 @@ def test_resolution_is_a_live_setting_now():
 def test_nothing_happens_while_the_setting_matches(display, viewport, monkeypatch):
     monkeypatch.setattr(config, "WINDOW", SMALL)
     stack = ScreenStack(SMALL)
-    human = Human(viewport)
 
-    assert game.match_resolution(viewport, stack, human) is None
+    assert game.match_resolution(viewport, stack, Session(viewport)) is None
     stack.clear()
 
 
@@ -262,11 +262,11 @@ def test_many_resolution_changes_do_not_bring_the_process_down(display, monkeypa
     """
     stack = ScreenStack(SMALL)
     viewport = Viewport(SMALL)
-    human = Human(viewport)
+    session = Session(viewport)
 
     for size in RESOLUTION_WALK:
         monkeypatch.setattr(config, "WINDOW", size)
-        assert game.match_resolution(viewport, stack, human) is not None
+        assert game.match_resolution(viewport, stack, session) is not None
         assert viewport == size
 
     stack.clear()
