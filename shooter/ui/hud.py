@@ -110,12 +110,10 @@ class Cash:
     # if player has the cash to purchase Item method will
     # return True allowing the purchase to be made
     def cash_add_remove(self, cash):
-        if self.cash_amount == 0 or (self.cash_amount + cash) == 0:
-            print("Player does not have enough funds")
+        if self.cash_amount + cash < 0:
             return False
-        else:
-            self.cash_amount += cash
-            return True
+        self.cash_amount += cash
+        return True
 
     def update(self,screen):
         screen.blit(pygame.font.Font(None, 40).render("$"+str(self.cash_amount), True, (255, 255, 255)), (400, 7))

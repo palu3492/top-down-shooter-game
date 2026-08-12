@@ -63,7 +63,6 @@ def test_killing_a_zombie_pays_out(zombie, cash):
     assert cash.received == [50]
 
 
-@pytest.mark.xfail(strict=True, reason="a corpse pays out again on every further hit")
 def test_a_zombie_only_pays_out_once(zombie, cash):
     zombie.remove_health(100)
     zombie.remove_health(100)
@@ -104,10 +103,51 @@ def test_player_animation_advances_through_its_frames(human):
     assert len(seen) > 1
 
 
-@pytest.mark.xfail(strict=True, reason="idle is pinned to frame 0 and never advances")
-def test_idle_animation_should_advance(human):
+def test_idle_animation_advances(human):
     human.update_anim("IDLE")
     first = human.image
     human.update_anim("IDLE")
 
     assert human.image is not first
+
+
+def test_zombie_animation_advances(zombie):
+    seen = {id(zombie.image)}
+    for _ in range(5):
+        zombie.update_anim("MOVE")
+        seen.add(id(zombie.image))
+
+    assert len(seen) > 1
+
+
+def test_zombie_rect_matches_the_pose_it_is_drawing(zombie):
+    zombie.update_anim("MOVE")
+    moving = zombie.rect.size
+    assert moving == zombie.image.get_size()
+
+    zombie.update_anim("ATTACK")
+    assert zombie.rect.size == zombie.image.get_size()
+    assert zombie.rect.size != moving
+
+
+def test_changing_pose_does_not_teleport_the_zombie(zombie):
+    zombie.rect.topleft = (100, 200)
+    zombie.update_anim("ATTACK")
+
+    assert zombie.rect.topleft == (100, 200)
+
+
+def test_rotation_keeps_the_player_centred(human):
+    centre = human.rect.center
+
+    for angle in (0, 37, 90, 180, 271):
+        human.update_anim("MOVE")
+        human.rot_center(angle)
+
+        assert human.rect.center == centre
+
+
+def test_rotation_no_longer_desyncs_image_from_rect(human):
+    human.rot_center(45)
+
+    assert human.rect.size == human.image.get_size()
