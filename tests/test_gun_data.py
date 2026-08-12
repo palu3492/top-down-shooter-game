@@ -1,11 +1,11 @@
 import pytest
 
-from shooter.ui.hud import gun_data
+from shooter.ui.hud import GunData
 
 
 @pytest.fixture
 def gun(window):
-    return gun_data(window)
+    return GunData(window)
 
 
 def test_starts_with_a_full_clip_and_two_spares(gun):
@@ -76,7 +76,7 @@ def test_reload_counts_down_then_clears(gun):
 
 
 def test_two_guns_do_not_share_ammo(gun, window):
-    other = gun_data(window)
+    other = GunData(window)
     gun.shooting_bullet()
 
     assert other.clip_size == 60

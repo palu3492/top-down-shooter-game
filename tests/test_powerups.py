@@ -14,8 +14,8 @@ EVERY_KIND = [INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH]
 def make_powerup():
     """Build a power-up of a chosen kind.
 
-    PowerUp_Selection currently hardcodes randint(2, 2), so every power-up is a
-    Nuke. Tests must not rely on that -- AT5 restores the full 1..4 range.
+    select_powerup currently hardcodes randint(2, 2), so every power-up is a
+    nuke. Tests must not rely on that -- AT5 restores the full 1..4 range.
     """
 
     def build(kind=NUKE):
@@ -51,7 +51,9 @@ def is_transparent(surface):
 
 
 @pytest.mark.parametrize("kind", EVERY_KIND)
-def test_survives_its_whole_lifetime_then_expires(make_powerup, far_away, display, kind):
+def test_survives_its_whole_lifetime_then_expires(
+    make_powerup, far_away, display, kind
+):
     powerup = make_powerup(kind)
     group = pygame.sprite.Group()
 
@@ -86,7 +88,9 @@ def test_blinks_before_expiring(make_powerup, far_away, display, kind):
 def test_walking_into_any_kind_consumes_it(make_powerup, display, kind):
     powerup = make_powerup(kind)
 
-    assert powerup.update(touching(powerup), pygame.sprite.Group(), display, 0, 0) is True
+    assert (
+        powerup.update(touching(powerup), pygame.sprite.Group(), display, 0, 0) is True
+    )
 
 
 def test_nuke_clears_the_horde(make_powerup, window, cash, display):

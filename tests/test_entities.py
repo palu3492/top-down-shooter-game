@@ -72,7 +72,7 @@ def test_a_zombie_only_pays_out_once(zombie, cash):
 
 
 def test_zombie_spawns_outside_the_play_area(zombie, window):
-    x, y = zombie.get_posistion()
+    x, y = zombie.get_position()
 
     assert x < 0 or x > window[0] or y < 0 or y > window[1]
 

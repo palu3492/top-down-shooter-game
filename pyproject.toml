@@ -28,10 +28,3 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "B", "C4", "SIM", "UP", "N", "RUF"]
-# Each entry below is owned by a later ticket in AARON_TICKETS.md; the gate
-# tightens as those land. Nothing here is permanent.
-ignore = [
-    "N801", "N802", "N803", "N806", "N815", "N816",  # AT9
-    "F403", "F405",                                   # AT9
-    "E501",                                           # AT9
-]

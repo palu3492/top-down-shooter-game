@@ -8,8 +8,8 @@ ANIMATIONS = {
     "SHOOT": ("Player Animations/Shoot", "survivor-shoot_rifle_", 3),
 }
 
-class Human(pygame.sprite.Sprite):
 
+class Human(pygame.sprite.Sprite):
     type = "IDLE"
     current_idle = 0
     current_move = 0
@@ -20,15 +20,15 @@ class Human(pygame.sprite.Sprite):
     health = 100.00
 
     def __init__(self, window_size):
-       pygame.sprite.Sprite.__init__(self)
-       self.frames = {
-           name: load_animation(directory, prefix, count, .5)
-           for name, (directory, prefix, count) in ANIMATIONS.items()
-       }
-       self.image = self.frames["IDLE"][0]
-       self.rect = self.image.get_rect()
-       self.rect.x = (window_size[0] / 2.0) - (self.rect.size[0] / 2.0)
-       self.rect.y = (window_size[1]/2.0)-(self.rect.size[1]/2.0)
+        pygame.sprite.Sprite.__init__(self)
+        self.frames = {
+            name: load_animation(directory, prefix, count, 0.5)
+            for name, (directory, prefix, count) in ANIMATIONS.items()
+        }
+        self.image = self.frames["IDLE"][0]
+        self.rect = self.image.get_rect()
+        self.rect.x = (window_size[0] / 2.0) - (self.rect.size[0] / 2.0)
+        self.rect.y = (window_size[1] / 2.0) - (self.rect.size[1] / 2.0)
 
     def rot_center(self, angle):
         """Rotate the current frame about its centre."""
@@ -36,12 +36,15 @@ class Human(pygame.sprite.Sprite):
         self.image = pygame.transform.rotate(self.image, angle)
         self.rect = self.image.get_rect(center=centre)
 
-    def update_anim(self, type,):
+    def update_anim(
+        self,
+        type,
+    ):
         self.type = type
         frame = 0
         if self.type == "IDLE":
             if self.current_idle < 19:
-                self.current_idle+=1
+                self.current_idle += 1
             else:
                 self.current_idle = 0
             frame = self.current_idle
@@ -70,14 +73,10 @@ class Human(pygame.sprite.Sprite):
 
     def get_health(self):
         if self.health > 0:
-            return  int(self.health)
+            return int(self.health)
         else:
             return 0
 
     def health_regen(self):
         if self.health < 100:
-            self.health += .05
-
-
-
-
+            self.health += 0.05
