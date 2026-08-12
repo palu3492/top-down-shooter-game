@@ -16,7 +16,7 @@ from shooter.settings import InvalidSettingError, Settings
 from shooter.ui import form
 from shooter.ui.dev import DevScreen
 from shooter.ui.menu import BACK
-from shooter.ui.screens import ScreenStack
+from shooter.scenes import SceneStack
 from shooter.ui.settings_screen import DISPLAY, SettingsScreen
 
 WINDOW = (1080, 720)
@@ -29,7 +29,7 @@ def store(tmp_path):
 
 @pytest.fixture
 def stack(display):
-    made = ScreenStack(WINDOW)
+    made = SceneStack(WINDOW)
     yield made
     made.clear()
 

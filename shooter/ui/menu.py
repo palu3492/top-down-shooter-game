@@ -1,11 +1,11 @@
-"""The pause menu and the screens it opens."""
+"""The pause menu and the scenes it opens."""
 
 import pygame
 import pygame_gui
 
 from shooter import config
 from shooter.ui import widgets
-from shooter.ui.screens import Screen
+from shooter.scenes import Scene
 
 RESUME, SETTINGS, DEV, QUIT, BACK = "RESUME", "SETTINGS", "DEV", "QUIT", "BACK"
 
@@ -13,7 +13,7 @@ BUTTON_SIZE = (280, 54)
 BUTTON_GAP = 14
 
 
-class MenuScreen(Screen):
+class MenuScreen(Scene):
     """A screen that is a vertical column of buttons."""
 
     entries = ()
@@ -41,7 +41,7 @@ class MenuScreen(Screen):
 
 class PauseScreen(MenuScreen):
     title = "PAUSED"
-    covers_game = False
+    opaque = False
 
     @property
     def entries(self):

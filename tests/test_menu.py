@@ -12,7 +12,7 @@ from shooter import session
 from shooter.ui import menu
 from shooter.ui.settings_screen import SettingsScreen
 from shooter.ui.dev import DevScreen
-from shooter.ui.screens import Screen, ScreenStack
+from shooter.scenes import Scene, SceneStack
 
 CAP = 600
 
@@ -23,7 +23,7 @@ class LoopRanAwayError(Exception):
 
 @pytest.fixture
 def stack(window, display):
-    built = ScreenStack(window)
+    built = SceneStack(window)
     yield built
     built.clear()
 
@@ -92,8 +92,8 @@ def test_a_closed_screen_leaves_no_widgets_behind(stack, window):
 
 
 def test_pause_overlays_the_game_and_a_full_screen_does_not(window, stack):
-    assert menu.PauseScreen(window, stack.manager).covers_game is False
-    assert DevScreen(window, stack.manager).covers_game is True
+    assert menu.PauseScreen(window, stack.manager).opaque is False
+    assert DevScreen(window, stack.manager).opaque is True
 
 
 def test_escape_resumes_from_pause(stack, window):
@@ -148,39 +148,32 @@ def test_the_pointer_comes_back_for_menus_and_leaves_again(stack, window):
     assert pygame.mouse.get_visible() is False
 
 
-def test_the_frozen_frame_is_captured_before_the_crosshair_is_drawn():
-    """Otherwise the veiled backdrop keeps a crosshair where the mouse used to
-    be, and the player sees it alongside the live pointer."""
+def test_the_crosshair_is_not_drawn_while_a_menu_is_up():
+    """There is no frozen frame any more -- pause draws the live world beneath
+    its veil. The ghost crosshair that replaced is prevented by the shell
+    drawing the crosshair only while the top scene is the one being played.
+    """
     tree = ast.parse(Path(game.__file__).read_text())
 
-    capture = [
-        node.lineno
+    guarded = [
+        node
         for node in ast.walk(tree)
-        if isinstance(node, ast.Assign)
+        if isinstance(node, ast.If)
+        and isinstance(node.test, ast.Attribute)
+        and node.test.attr == "simulates"
         and any(
-            isinstance(t, ast.Name) and t.id == "frozen_frame" for t in node.targets
+            isinstance(inner, ast.Name) and inner.id == "cursor"
+            for statement in node.body
+            for inner in ast.walk(statement)
         )
-        and isinstance(node.value, ast.Call)
-    ]
-    crosshair = [
-        node.lineno
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "blit"
-        and node.args
-        and isinstance(node.args[0], ast.Name)
-        and node.args[0].id == "cursor"
     ]
 
-    assert len(capture) == 1, "expected exactly one frozen-frame capture"
-    assert len(crosshair) == 1, "expected exactly one crosshair blit"
-    assert capture[0] < crosshair[0]
+    assert guarded, "the crosshair blit is not behind a `scenes.simulates` check"
 
 
 def test_a_bare_screen_refuses_to_be_used_directly(window, stack):
     with pytest.raises(NotImplementedError):
-        Screen(window, stack.manager).open()
+        Scene(window, stack.manager).open()
 
 
 def drive(events, monkeypatch):
@@ -203,13 +196,13 @@ def drive(events, monkeypatch):
 def test_escape_then_quit_leaves_the_game(monkeypatch):
     """Quit lives on the pause menu now, not on a bare keypress."""
     live = {}
-    real_init = ScreenStack.__init__
+    real_init = SceneStack.__init__
 
     def remember(self, window):
         real_init(self, window)
         live["stack"] = self
 
-    monkeypatch.setattr(ScreenStack, "__init__", remember)
+    monkeypatch.setattr(SceneStack, "__init__", remember)
 
     real_flip = pygame.display.flip
     counter = {"n": 0}

@@ -497,7 +497,7 @@ loading creeping back as assets grow.
 
 ---
 
-## AT29 — Gameplay becomes a scene — TODO
+## AT29 — Gameplay becomes a scene — DONE
 
 **Short description:** Generalise the AT21 screen stack so gameplay sits on it
 like everything else, and `covers_game` becomes a plain `opaque`.
@@ -505,9 +505,29 @@ like everything else, and `covers_game` becomes a plain `opaque`.
 **Dependencies:** AT27
 
 **Goals**
-- [ ] One stack holding splash, menu, gameplay and pause
-- [ ] `Session` is created when the gameplay scene is entered, dropped when it exits
-- [ ] Starting and ending a game become stack operations
+- [x] One stack holding splash, menu, gameplay and pause
+- [x] `Session` is created when the gameplay scene is entered, dropped when it exits
+- [x] Starting and ending a game become stack operations
+
+**Two properties replaced the special cases.** `opaque` decides whether anything
+below still needs drawing; `simulates` decides whether the fixed timestep
+advances. Pausing is no longer a branch in the loop -- it is what happens when
+the scene on top does not simulate.
+
+**The frozen frame is gone.** Pause used to veil a screenshot taken the moment
+it opened, which is why the crosshair had to be captured out of it. It is
+transparent now, so the stack walks down and draws the live world underneath.
+The crosshair moved to the shell, drawn only while the top scene is the one
+being played -- it belongs to the application, like the frame counter, not to
+the world.
+
+**`push` closing the scene beneath it turned out to be right.** It exists so two
+menus cannot both be live; gameplay has no widgets, so `open` and `close` are
+deliberately empty and the session comes through untouched.
+
+**A mechanical rename.** `Screen` became `Scene` and `ScreenStack` became
+`SceneStack`, moving out of `ui/` to `shooter/scenes.py` -- a stack holding
+gameplay is not part of the interface layer.
 
 **We are most of the way there.** AT21 built a scene stack that deliberately
 excluded the one scene that matters, which is why `Screen` has a `covers_game`
