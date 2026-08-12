@@ -24,6 +24,7 @@ class WaveSystem:
     """
 
     outcome = None
+    level = None
 
     def __init__(self, window, zombie_group, player_cash, visible=None):
         self.wave_count = 0

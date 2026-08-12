@@ -713,16 +713,37 @@ for -- and endless freeplay simply never declares one.
 
 ---
 
-## AT34 — Freeplay levels — TODO
+## AT34 — Freeplay levels — DONE
 
 **Short description:** Turn endless waves into numbered levels with a target,
 so freeplay has an arc rather than a difficulty curve that runs forever.
 
 **Dependencies:** AT31
 
+**Goals**
+- [x] Numbered levels with a target rather than a curve that runs forever
+- [x] Each level opens bigger and asks for more waves than the last
+- [x] Winning offers the way onward; losing offers the way back
+- [x] A level can be finished by playing it
+
 **A level is a rules object.** `WaveSystem` already decides what spawns and
 when; a level is the same thing with a finish line, declaring a win when its
-target is met. That is what AT31's outcome seam is for.
+target is met. That is what AT31's outcome seam is for, and it needed no change
+to `Session` at all.
+
+**A table, not a formula.** A formula is tempting and gives every level the same
+shape. The point of authoring them is that the third can be a step up rather
+than four per cent harder than the second.
+
+**Freeplay does not run out.** Past the authored levels the hardest is played
+again, rather than the game refusing to start. That is a decision the campaign
+(AT35) will make differently -- it ends.
+
+**Two guards, not one redundant one.** A finished level does nothing at all,
+*and* the wave after the final one is never spawned. They look alike but hold
+different moments: the first stops the timer churning, the second stops a wave
+arriving in the instant between clearing the target and the result screen
+appearing.
 
 ---
 

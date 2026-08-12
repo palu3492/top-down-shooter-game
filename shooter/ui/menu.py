@@ -10,6 +10,7 @@ from shooter.scenes import Scene
 RESUME, SETTINGS, DEV, QUIT, BACK = "RESUME", "SETTINGS", "DEV", "QUIT", "BACK"
 END_GAME = "END_GAME"
 RETRY = "RETRY"
+NEXT_LEVEL = "NEXT_LEVEL"
 
 BUTTON_SIZE = (280, 54)
 BUTTON_GAP = 14
@@ -72,19 +73,25 @@ class ResultScreen(MenuScreen):
 
     TITLES = ((session.LOST, "YOU DIED"), (session.WON, "LEVEL COMPLETE"))
 
-    entries = (
-        ("RETRY", RETRY),
-        ("MAIN MENU", END_GAME),
-        ("QUIT", QUIT),
-    )
-
-    def __init__(self, window, manager, outcome=session.LOST):
+    def __init__(self, window, manager, outcome=session.LOST, level=None):
         super().__init__(window, manager)
         self.outcome = outcome
+        self.level = level
 
     @property
     def title(self):
+        if self.outcome == session.WON and self.level is not None:
+            return f"{self.level.title} COMPLETE"
         return dict(self.TITLES).get(self.outcome, "GAME OVER")
+
+    @property
+    def entries(self):
+        """Winning offers the way onward; losing offers the way back."""
+        if self.outcome == session.WON:
+            first = ("NEXT LEVEL", NEXT_LEVEL)
+        else:
+            first = ("RETRY", RETRY)
+        return (first, ("MAIN MENU", END_GAME), ("QUIT", QUIT))
 
     def handle(self, event):
         """Escape does not dismiss this one -- there is nothing to go back to,

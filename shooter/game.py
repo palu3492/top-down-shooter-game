@@ -17,6 +17,7 @@ from shooter.preload import preload
 from shooter.scenes import SceneStack
 from shooter import session
 from shooter.settings import Settings
+from shooter.systems import levels
 from shooter.ui import dev, menu, settings_screen, title
 from shooter.ui.layout import LayoutOverflowError
 from shooter.viewport import Viewport
@@ -66,6 +67,29 @@ def open_scene(scenes, scene):
         scenes.push(scene)
 
 
+def played_level(scenes):
+    """The level of the game currently on the stack, wherever it sits.
+
+    A result screen is asked what to do next while the game that produced it is
+    still underneath, which is where the answer is.
+    """
+    for scene in reversed(list(scenes.visible())):
+        rules = getattr(getattr(scene, "session", None), "rules", None)
+        if getattr(rules, "level", None) is not None:
+            return rules.level
+    return None
+
+
+def start_level(scenes, window, level, replacing=0):
+    """Put a game of this level on the stack, dropping whatever it replaces."""
+    for _ in range(replacing):
+        scenes.pop()
+    open_scene(
+        scenes,
+        GameplayScene(window, scenes.manager, rules=levels.rules_for(level)),
+    )
+
+
 def show_loading(screen):
     screen.blit(
         pygame.font.Font(None, 40).render("Loading...", True, config.WHITE),
@@ -90,15 +114,19 @@ def route(action, scenes, window, settings):
         scenes.pop()
         open_scene(scenes, title.MainMenuScene(window, scenes.manager))
     elif action == title.START:
-        open_scene(scenes, GameplayScene(window, scenes.manager))
+        start_level(scenes, window, levels.FIRST)
     elif action in (session.LOST, session.WON):
-        open_scene(scenes, menu.ResultScreen(window, scenes.manager, action))
+        open_scene(
+            scenes,
+            menu.ResultScreen(window, scenes.manager, action, played_level(scenes)),
+        )
     elif action == menu.RETRY:
-        # Drop the result screen and the game that produced it, then start a
-        # fresh one on the menu that has been underneath all along.
-        scenes.pop()
-        scenes.pop()
-        open_scene(scenes, GameplayScene(window, scenes.manager))
+        start_level(scenes, window, played_level(scenes) or levels.FIRST, replacing=2)
+    elif action == menu.NEXT_LEVEL:
+        finished = played_level(scenes) or levels.FIRST
+        start_level(
+            scenes, window, levels.level_number(finished.number + 1), replacing=2
+        )
     elif action == menu.END_GAME:
         # The main menu is still underneath, so ending a game is dropping
         # whatever is over it and finding it where it was left.
