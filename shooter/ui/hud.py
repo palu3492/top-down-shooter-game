@@ -2,6 +2,44 @@ import pygame
 
 from shooter import config
 from shooter.assets import load_image
+from shooter.ui.anchor import BOTTOM, CENTRE, LEFT, RIGHT, TOP, inside, place
+
+
+class Panel:
+    """A piece of HUD art and the corner it stays glued to.
+
+    The readouts drawn on a panel take their positions from its rectangle, so
+    the number and the artwork it sits on can never drift apart.
+    """
+
+    def __init__(self, asset, horizontal, vertical, inset):
+        self.asset = asset
+        self.horizontal = horizontal
+        self.vertical = vertical
+        self.inset = inset
+        self._image = None
+
+    @property
+    def image(self):
+        if self._image is None:
+            self._image = load_image(self.asset)
+        return self._image
+
+    def rect(self, window):
+        return place(
+            self.image.get_size(), window, self.horizontal, self.vertical, self.inset
+        )
+
+
+BOTTOM_LEFT = Panel("HUD/blHUD.png", LEFT, BOTTOM, (40, 30))
+BOTTOM_RIGHT = Panel("HUD/brHUD.png", RIGHT, BOTTOM, (40, 41))
+TOP_MIDDLE = Panel("HUD/tmHUD.png", CENTRE, TOP, (0, 0))
+PANELS = (BOTTOM_LEFT, BOTTOM_RIGHT, TOP_MIDDLE)
+
+
+HEALTH_READOUT = (30, -1)
+HEALTH_METER = (165, 10)
+METER_SIZE = (100 * 2.2, 22)
 
 
 class HealthBar:
@@ -9,16 +47,18 @@ class HealthBar:
         self.window_size = window_size
 
     def draw(self, screen, health_update):
-        health_value = str(health_update)
-        health_text = pygame.font.Font(None, 55)
+        readout = BOTTOM_LEFT.rect(self.window_size)
         screen.blit(
-            health_text.render(health_value, True, config.WHITE),
-            (70, self.window_size[1] - 77),
+            pygame.font.Font(None, 55).render(str(health_update), True, config.WHITE),
+            inside(readout, HEALTH_READOUT),
         )
+
+        meter = TOP_MIDDLE.rect(self.window_size)
+        left, top = inside(meter, HEALTH_METER)
         pygame.draw.rect(
-            screen, config.HEALTH_GREEN, (480, 10, health_update * 2.2, 22)
+            screen, config.HEALTH_GREEN, (left, top, health_update * 2.2, METER_SIZE[1])
         )
-        pygame.draw.rect(screen, config.HEALTH_GREY, (480, 10, 100 * 2.2, 22), 4)
+        pygame.draw.rect(screen, config.HEALTH_GREY, (left, top, *METER_SIZE), 4)
 
 
 class HUD:
@@ -29,22 +69,19 @@ class HUD:
     """
 
     def __init__(self, window=None):
-        self.images = (
-            load_image("HUD/blHUD.png"),
-            load_image("HUD/brHUD.png"),
-            load_image("HUD/tmHUD.png"),
-        )
+        self.panels = PANELS
 
     def positions(self, window):
-        return (
-            (40, window[1] - 76),
-            (window[0] - 263, window[1] - 162),
-            ((window[0] / 2.0) - 225, 0),
-        )
+        return tuple(panel.rect(window).topleft for panel in self.panels)
 
     def update(self, screen, window):
-        for image, position in zip(self.images, self.positions(window), strict=True):
-            screen.blit(image, position)
+        for panel in self.panels:
+            screen.blit(panel.image, panel.rect(window))
+
+
+CLIP_READOUT = (13, 57)
+RESERVE_READOUT = (93, 60)
+GUN_ICON = (138, 42)
 
 
 class GunData:
@@ -104,23 +141,27 @@ class GunData:
         return None
 
     def update(self, screen):
+        panel = BOTTOM_RIGHT.rect(self.window)
         screen.blit(
             pygame.font.Font(None, 55).render(str(self.clip_size), True, config.WHITE),
-            (self.window[0] - 250, self.window[1] - 105),
+            inside(panel, CLIP_READOUT),
         )
         screen.blit(
             pygame.font.Font(None, 44).render(
                 str(self.ammo_amount), True, config.WHITE
             ),
-            (self.window[0] - 170, self.window[1] - 102),
+            inside(panel, RESERVE_READOUT),
         )
-        screen.blit(self.gun_type, (self.window[0] - 125, self.window[1] - 120))
+        screen.blit(self.gun_type, inside(panel, GUN_ICON))
 
 
 class GrenadeData:
     def __init__(self):
         self.grenade_amount = config.STARTING_GRENADES
         self.stun_grenade_amount = config.STARTING_STUN_GRENADES
+
+
+CASH_READOUT = (85, 7)
 
 
 class Cash:
@@ -140,10 +181,10 @@ class Cash:
         self.cash_amount += cash
         return True
 
-    def update(self, screen):
+    def update(self, screen, window):
         screen.blit(
             pygame.font.Font(None, 40).render(
                 "$" + str(self.cash_amount), True, config.WHITE
             ),
-            (400, 7),
+            inside(TOP_MIDDLE.rect(window), CASH_READOUT),
         )

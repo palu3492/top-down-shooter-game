@@ -27,6 +27,8 @@ from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
 from shooter.ui.radar import RadarScreen
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
+INSTAKILL_TOP = 40
+RELOADING_TOP = 100
 
 
 def collect_powerup(kind, human, zombie_group, gun):
@@ -64,6 +66,16 @@ def explosion_touching_zombie(zombie, explosion):
 def stun_explosion_touching_zombie(zombie, explosion):
     if pygame.sprite.collide_rect(zombie, explosion):
         zombie.remove_speed(config.STUN_SPEED)
+
+
+def centred_text(screen, window, message, top, size, colour=config.WHITE):
+    """Measured and centred rather than nudged by a hand-tuned offset.
+
+    `window[0] / 2 - 70` was only ever centred for one particular string at one
+    particular font size.
+    """
+    text = pygame.font.Font(None, size).render(message, True, colour)
+    screen.blit(text, (window[0] / 2.0 - text.get_width() / 2.0, top))
 
 
 def open_display(window):
@@ -343,7 +355,7 @@ def game_loop():
         blit_group(screen, bullets, draw_x, draw_y, alpha)
 
         if len(zombie_group) == 0:
-            wave_system.draw(screen)
+            wave_system.draw(screen, window)
 
         blit_group(screen, grenades, draw_x, draw_y, alpha)
         blit_group(screen, explosions, draw_x, draw_y, alpha)
@@ -355,25 +367,22 @@ def game_loop():
             radar.update_zom(screen, zombie)
 
         if instakill_seconds > 0:
-            screen.blit(
-                pygame.font.Font(None, 34).render(
-                    f"INSTAKILL {int(instakill_seconds) + 1}s",
-                    True,
-                    config.INSTAKILL_TEXT,
-                ),
-                (window[0] / 2.0 - 70, 40),
+            centred_text(
+                screen,
+                window,
+                f"INSTAKILL {int(instakill_seconds) + 1}s",
+                INSTAKILL_TOP,
+                size=34,
+                colour=config.INSTAKILL_TEXT,
             )
 
         heads_up_display.update(screen, window)
         health_data.draw(screen, human.get_health())
         ammo_class.update(screen)
-        player_cash.update(screen)
+        player_cash.update(screen, window)
 
         if ammo_count == "reload":
-            screen.blit(
-                pygame.font.Font(None, 30).render("Reloading", True, config.WHITE),
-                ((window[0] / 2.0) - 50, 100),
-            )
+            centred_text(screen, window, "Reloading", RELOADING_TOP, size=30)
 
         screen.blit(
             pygame.font.Font(None, 20).render(str(clock.get_fps()), True, config.WHITE),

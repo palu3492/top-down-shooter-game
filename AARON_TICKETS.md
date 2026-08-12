@@ -990,7 +990,7 @@ That has not been true since AT14 moved quitting behind the pause screen.
 
 ---
 
-## AT18 — Adaptive HUD via pygame_gui anchors — TODO
+## AT18 — Adaptive HUD via anchors — DONE
 
 **Short description:** Scaling is not layout. Reposition HUD elements relative
 to window edges instead of stretching a fixed-resolution image.
@@ -998,10 +998,33 @@ to window edges instead of stretching a fixed-resolution image.
 **Dependencies:** AT17, AT21 (which owns adopting `pygame_gui`)
 
 **Goals**
-- [ ] Rebuild the HUD with anchors
-- [ ] Replace the hand-tuned absolute offsets throughout `ui/hud.py`
-- [ ] Fix the wave banner, currently fully absolute at `(300, 210, 500, 100)`
-- [ ] Radar, ammo, health and cash all track their nearest corner
+- [x] Rebuild the HUD with anchors
+- [x] Replace the hand-tuned absolute offsets throughout `ui/hud.py`
+- [x] Fix the wave banner, currently fully absolute at `(300, 210, 500, 100)`
+- [x] Radar, ammo, health and cash all track their nearest corner
+
+**The premise was half right.** Measured before changing anything: six of the
+eight HUD positions already tracked their corner, because
+`(window[0] - 263, window[1] - 162)` *is* an anchor, just written as a magic
+number coupled to the art being 223x121. Only three things were genuinely
+absolute and genuinely broken -- the health meter at `(480, 10)`, the cash
+readout at `(400, 7)`, and the wave banner. Those are the three the tests catch;
+the rest is the same layout said properly.
+
+**Not `pygame_gui` anchors.** The HUD is drawn with direct blits inside the game
+render path, and it changes every frame -- a health bar that is a `UIElement`
+would be rebuilt constantly and drawn by the manager, out of order with the
+world. `anchor.place` copies the model the ticket asked for, as arithmetic
+returning rectangles, exactly like the AT22 grid.
+
+**Readouts belong to panels, not to the window.** The numbers are drawn *on*
+the HUD art, so they take their position from the panel's rectangle. The number
+and the artwork under it can no longer drift apart, which is a stronger
+guarantee than both happening to track the same corner.
+
+**Locked at the tuned resolution.** A test asserts every element lands on the
+exact pixel the old formulas gave at 1080x720. Anchoring is meant to change what
+happens at *other* sizes, and nothing else.
 
 **Why anchors.** `pygame_gui` positions elements with anchors such as
 `{'right': 'right', 'bottom': 'bottom'}`, which keeps an element's size while
