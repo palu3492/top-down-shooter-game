@@ -29,9 +29,9 @@ ZOMBIE_SIZE = (120, 111)
 ZOMBIE_SCALE = 0.5
 KILL_REWARD = 50
 
-# Zombies arrive this far outside the visible world, which is enough for a
-# sprite of ZOMBIE_SIZE to be fully off-screen when it appears.
-SPAWN_MARGIN = 130
+# A wave starts this many seconds of travel outside the view, so the player
+# sees it coming instead of meeting it at the edge of the screen.
+SPAWN_LEAD_SECONDS = 3.0
 
 BULLET_SPEED = 9000
 BULLET_STEP = 14  # max pixels between collision checks

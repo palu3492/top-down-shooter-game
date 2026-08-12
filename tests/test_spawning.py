@@ -13,7 +13,7 @@ import pygame
 import pytest
 
 from shooter import config, game
-from shooter.entities.zombie import Zombie
+from shooter.entities.zombie import Zombie, spawn_margin
 from shooter.systems.waves import WaveSystem
 from shooter.viewport import visible_world
 
@@ -29,8 +29,8 @@ CORNERS = [
 
 def furthest_possible():
     """Centre of the viewport to the corner of the ring around it."""
-    half_width = WINDOW[0] / 2 + config.SPAWN_MARGIN
-    half_height = WINDOW[1] / 2 + config.SPAWN_MARGIN
+    half_width = WINDOW[0] / 2 + spawn_margin()
+    half_height = WINDOW[1] / 2 + spawn_margin()
     return math.hypot(half_width, half_height)
 
 
@@ -66,7 +66,7 @@ def test_a_zombie_never_appears_on_screen(display, camera):
 @pytest.mark.parametrize("camera", CORNERS)
 def test_a_zombie_arrives_on_the_ring_not_just_anywhere_outside(display, camera):
     visible = visible_world(camera, WINDOW)
-    ring = visible.inflate(2 * config.SPAWN_MARGIN, 2 * config.SPAWN_MARGIN)
+    ring = visible.inflate(2 * spawn_margin(), 2 * spawn_margin())
 
     for _ in range(60):
         x, y = Zombie(WINDOW, None, visible).get_position()
@@ -77,10 +77,49 @@ def test_a_zombie_arrives_on_the_ring_not_just_anywhere_outside(display, camera)
         assert ring.top <= y <= ring.bottom
 
 
-def test_the_margin_clears_a_whole_sprite(display):
+def test_the_margin_clears_a_whole_sprite(display, monkeypatch):
     """A one-pixel margin, as the old ring used, would pop half a zombie into
-    view the instant it appeared."""
-    assert max(config.ZOMBIE_SIZE) <= config.SPAWN_MARGIN
+    view the instant it appeared. The floor holds even at the slowest settings."""
+    assert max(config.ZOMBIE_SIZE) <= spawn_margin()
+
+    monkeypatch.setattr(config, "ZOMBIE_SPEED", 30)
+    monkeypatch.setattr(config, "SPAWN_LEAD_SECONDS", 0.5)
+    assert max(config.ZOMBIE_SIZE) <= spawn_margin()
+
+
+def test_a_wave_takes_the_stated_time_to_come_into_view(display, monkeypatch):
+    """The point of the setting: seconds of warning, not pixels of distance."""
+    monkeypatch.setattr(config, "ZOMBIE_SPEED", 360)
+    monkeypatch.setattr(config, "SPAWN_LEAD_SECONDS", 3.0)
+    assert spawn_margin() / config.ZOMBIE_SPEED == pytest.approx(3.0)
+
+
+def test_a_faster_zombie_starts_further_out(display, monkeypatch):
+    """So the warning stays the same however the tunables are set."""
+    monkeypatch.setattr(config, "SPAWN_LEAD_SECONDS", 4.0)
+
+    monkeypatch.setattr(config, "ZOMBIE_SPEED", 360)
+    slow = spawn_margin()
+    monkeypatch.setattr(config, "ZOMBIE_SPEED", 720)
+    fast = spawn_margin()
+
+    assert fast == 2 * slow
+    assert fast / 720 == pytest.approx(slow / 360)
+
+
+def test_the_lead_is_read_at_spawn_not_bound_at_import(display, monkeypatch):
+    """ZOMBIE_SPEED is a setting, so a margin copied once would ignore it."""
+    monkeypatch.setattr(config, "SPAWN_LEAD_SECONDS", 3.0)
+    monkeypatch.setattr(config, "ZOMBIE_SPEED", 360)
+    near = spawn_margin()
+
+    monkeypatch.setattr(config, "ZOMBIE_SPEED", 1500)
+    assert spawn_margin() > near
+
+
+def test_a_wave_starts_much_further_out_than_it_used_to(display):
+    """The ring used to sit 130px away -- about a third of a second's walk."""
+    assert spawn_margin() > 4 * 130
 
 
 @pytest.mark.parametrize("camera", CORNERS)
@@ -98,11 +137,20 @@ def test_difficulty_no_longer_depends_on_where_the_player_stands(display):
 
 
 def test_the_old_origin_ring_would_have_failed_that(display):
-    """Guards the guard: the property is one the previous behaviour breaks."""
+    """Guards the guard: the property is one the previous behaviour breaks.
+
+    Stated as approach time, which is what the player actually feels -- the old
+    ring left a far-corner wave walking for the better part of a minute, while
+    the new one is bounded wherever they stand.
+    """
     far_camera = (-(config.WORLD[0] - WINDOW[0]), -(config.WORLD[1] - WINDOW[1]))
     player = visible_world(far_camera, WINDOW).center
-    at_origin = math.dist((960, 540), player)
-    assert at_origin > 3 * furthest_possible()
+
+    from_origin = math.dist((960, 540), player) / config.ZOMBIE_SPEED
+    from_the_ring = furthest_possible() / config.ZOMBIE_SPEED
+
+    assert from_the_ring < 8.0, "a wave should not take that long to arrive"
+    assert from_origin > 2 * from_the_ring
 
 
 @pytest.mark.parametrize("camera", CORNERS)

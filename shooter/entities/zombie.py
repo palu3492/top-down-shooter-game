@@ -14,6 +14,21 @@ ANIMATIONS = {
 }
 
 
+def spawn_margin():
+    """How far outside the view a wave starts.
+
+    Measured as the distance a zombie covers in `SPAWN_LEAD_SECONDS`, so a
+    faster zombie starts further out and the player always gets the same warning
+    rather than the same number of pixels. Never closer than a sprite's width,
+    or a zombie would appear already half on screen.
+
+    Read when a zombie spawns rather than bound at import, because ZOMBIE_SPEED
+    is a setting and a value copied once would ignore it.
+    """
+    approach = config.ZOMBIE_SPEED * config.SPAWN_LEAD_SECONDS
+    return max(approach, max(config.ZOMBIE_SIZE))
+
+
 class Zombie(Interpolated, pygame.sprite.Sprite):
     def __init__(self, window_size, cash, visible=None):
         self.player_cash = cash
@@ -48,7 +63,7 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         pixels away and difficulty that depended on where they were standing.
         """
         area = self.spawn_area(visible)
-        margin = config.SPAWN_MARGIN
+        margin = spawn_margin()
         side = random.randint(1, 4)
         if side == 1:
             self.set_position(random.randint(area.left, area.right), area.top - margin)

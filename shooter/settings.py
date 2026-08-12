@@ -102,6 +102,7 @@ CATALOGUE = (
     Setting("WAVE_BASE", LIVE, minimum=1, maximum=100),
     Setting("WAVE_INTERVAL_SECONDS", LIVE, minimum=1.0, maximum=600.0),
     Setting("ZOMBIE_SPEED", NEW_ENTITIES, minimum=30, maximum=3000),
+    Setting("SPAWN_LEAD_SECONDS", NEW_ENTITIES, minimum=0.5, maximum=15.0),
     Setting("ZOMBIE_HEALTH", NEW_ENTITIES, minimum=1.0, maximum=10_000.0),
     Setting("RELOAD_SECONDS", NEW_ENTITIES, minimum=0.1, maximum=30.0),
     Setting("STARTING_GRENADES", NEW_ENTITIES, minimum=0, maximum=99),

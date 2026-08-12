@@ -477,9 +477,16 @@ balance change rather than a constant rename.
 the player -- always drawn at screen centre -- stands at its middle.
 `viewport.visible_world` says that once, and the spawn ring is built around it.
 
-**The margin had to grow.** The old ring sat one pixel outside its area, which
-with a 120x111 sprite would pop half a zombie into view the moment it appeared.
-`SPAWN_MARGIN` is 130, enough to clear the sprite.
+**The margin is time, not pixels.** A wave starts `SPAWN_LEAD_SECONDS` of
+travel outside the view -- three seconds at the default speed, about 1080px --
+so the player sees it coming instead of meeting it at the screen edge. Deriving
+it from `ZOMBIE_SPEED` means a faster zombie starts further out and the warning
+stays the same however the tunables are set, and a floor keeps it clear of the
+sprite so nothing ever appears half on screen. Computed when a zombie spawns
+rather than bound at import, because `ZOMBIE_SPEED` is a setting.
+
+`SPAWN_LEAD_SECONDS` is itself a `new entities` setting on the dev screen, so
+the feel can be dialled in without a code change.
 
 **Not clamped to the world.** Standing in a corner, the ring extends past the
 map edge and zombies start slightly outside it, then walk in. The original did
