@@ -66,12 +66,12 @@ def test_manual_reload_with_nothing_left_reports_no_ammo(gun):
     assert gun.manual_reload() == "no ammo"
 
 
-def test_reload_counts_down_then_clears(gun, display):
+def test_reload_counts_down_then_clears(gun):
     assert gun.reload_time == 60
     for _ in range(60):
-        assert gun.reloading(display) == "reload"
+        assert gun.reloading() == "reload"
 
-    assert gun.reloading(display) is None
+    assert gun.reloading() is None
     assert gun.reload_time == 60
 
 

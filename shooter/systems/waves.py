@@ -8,11 +8,10 @@ class Wave_System:
     Wave_Timer = 0
 
     def __init__(self, window, zombie_group, player_cash):
-        for i in range(5):
+        for _ in range(5):
             zombie_group.add(Zombie(window, player_cash))
 
     def wave_gui(self, screen):
-        #pygame.draw.rect(screen, (100,100,100),(650, 100, 250, 400))
         return True
 
     def wave_control(self, screen, window, zombie_group, player_cash):
@@ -20,7 +19,7 @@ class Wave_System:
         if self.Wave_Timer == 1500:
             self.Wave_Count += 1
             num_spawn = 5 + (pow(self.Wave_Count, 2))
-            for i in range(num_spawn):
+            for _ in range(num_spawn):
                 zombie_group.add(Zombie(window, player_cash))
             self.Wave_Timer = 0
         else:

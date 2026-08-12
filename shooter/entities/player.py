@@ -63,10 +63,7 @@ class Human(pygame.sprite.Sprite):
 
     def remove_health(self, damage):
         self.health -= damage
-        if self.health <= 0:
-            return True
-        else:
-            return False
+        return self.health <= 0
 
     def add_health(self, repair):
         self.health += repair
