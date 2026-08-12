@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -12,15 +13,13 @@ REPO = Path(__file__).resolve().parent.parent
 
 
 def run_isolated(code, **env_overrides):
-    """Run code in a fresh interpreter so import-time effects are observable."""
-    env = {
-        "PATH": "/usr/bin:/bin",
-        "SDL_VIDEODRIVER": "dummy",
-        "SDL_AUDIODRIVER": "dummy",
-        "PYGAME_HIDE_SUPPORT_PROMPT": "1",
-        "PYTHONPATH": str(REPO),
-        **env_overrides,
-    }
+    """Run code in a fresh interpreter so import-time effects are observable.
+
+    Inherits this process's environment, which conftest has already pointed at
+    the dummy SDL drivers; PYTHONPATH is added because pytest's `pythonpath`
+    setting only affects the collecting process, not subprocesses.
+    """
+    env = {**os.environ, "PYTHONPATH": str(REPO), **env_overrides}
     return subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True, env=env, cwd=REPO
     )
