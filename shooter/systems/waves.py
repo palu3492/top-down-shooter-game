@@ -2,8 +2,8 @@ import pygame
 
 from shooter.entities.zombie import Zombie
 
-class WaveSystem:
 
+class WaveSystem:
     wave_count = 0
     wave_timer = 0
 
@@ -15,7 +15,7 @@ class WaveSystem:
         return True
 
     def wave_control(self, screen, window, zombie_group, player_cash):
-        #tick and next wave spawner
+        # tick and next wave spawner
         if self.wave_timer == 1500:
             self.wave_count += 1
             num_spawn = 5 + (pow(self.wave_count, 2))
@@ -26,12 +26,29 @@ class WaveSystem:
             self.wave_timer += 1
 
         # Updating timer to screen
-        screen.blit(pygame.font.Font(None, 40).render("Time until next round " + str(15-(int(self.wave_timer/100))), True, (255, 255, 255)), (400, 150))
-        screen.blit(pygame.font.Font(None, 40).render("or press [SPACE] to continue" , True, (255, 255, 255)), (370, 180))
+        screen.blit(
+            pygame.font.Font(None, 40).render(
+                "Time until next round " + str(15 - (int(self.wave_timer / 100))),
+                True,
+                (255, 255, 255),
+            ),
+            (400, 150),
+        )
+        screen.blit(
+            pygame.font.Font(None, 40).render(
+                "or press [SPACE] to continue", True, (255, 255, 255)
+            ),
+            (370, 180),
+        )
 
-        pygame.draw.rect(screen,(100, 100, 100), (300, 210, 500, 100))
-        pygame.draw.rect(screen,(100, 255, 100), (300, 210, 500, 10))
-        screen.blit(pygame.font.Font(None, 40).render("   [AMMO]        [HEALTH]        [GUN]" , True, (255, 255, 255)), (300, 230))
+        pygame.draw.rect(screen, (100, 100, 100), (300, 210, 500, 100))
+        pygame.draw.rect(screen, (100, 255, 100), (300, 210, 500, 10))
+        screen.blit(
+            pygame.font.Font(None, 40).render(
+                "   [AMMO]        [HEALTH]        [GUN]", True, (255, 255, 255)
+            ),
+            (300, 230),
+        )
 
         # Checks if player is pressing SPACE
         # if so, then timer is set to 0 and

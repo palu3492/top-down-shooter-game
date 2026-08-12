@@ -51,7 +51,9 @@ def is_transparent(surface):
 
 
 @pytest.mark.parametrize("kind", EVERY_KIND)
-def test_survives_its_whole_lifetime_then_expires(make_powerup, far_away, display, kind):
+def test_survives_its_whole_lifetime_then_expires(
+    make_powerup, far_away, display, kind
+):
     powerup = make_powerup(kind)
     group = pygame.sprite.Group()
 
@@ -86,7 +88,9 @@ def test_blinks_before_expiring(make_powerup, far_away, display, kind):
 def test_walking_into_any_kind_consumes_it(make_powerup, display, kind):
     powerup = make_powerup(kind)
 
-    assert powerup.update(touching(powerup), pygame.sprite.Group(), display, 0, 0) is True
+    assert (
+        powerup.update(touching(powerup), pygame.sprite.Group(), display, 0, 0) is True
+    )
 
 
 def test_nuke_clears_the_horde(make_powerup, window, cash, display):

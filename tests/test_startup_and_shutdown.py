@@ -91,9 +91,7 @@ def press(*keys):
     def flip():
         n = next(frames)
         if n >= 20 and n % 5 == 0 and queued:
-            pygame.event.post(
-                pygame.event.Event(pygame.KEYDOWN, key=queued.pop(0))
-            )
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=queued.pop(0)))
         real_flip()
 
     return flip

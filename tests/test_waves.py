@@ -49,7 +49,9 @@ def test_spawning_resets_the_timer(waves, group, display, window, make_cash):
     assert waves.wave_timer == 0
 
 
-def test_two_wave_systems_do_not_share_progress(waves, group, display, window, make_cash):
+def test_two_wave_systems_do_not_share_progress(
+    waves, group, display, window, make_cash
+):
     waves.wave_timer = 1500
     waves.wave_control(display, window, group, make_cash())
 

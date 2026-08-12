@@ -2,8 +2,9 @@ import pygame
 import random
 
 from shooter.assets import load_image
-class PowerUps(pygame.sprite.Sprite):
 
+
+class PowerUps(pygame.sprite.Sprite):
     # 0 == Null
     # 1 == instakill
     # 2 == nuke
@@ -42,7 +43,7 @@ class PowerUps(pygame.sprite.Sprite):
         self.spawning_location()
 
     def select_powerup(self):
-        self.powerup_selected = random.randint(2,2)
+        self.powerup_selected = random.randint(2, 2)
         if self.powerup_selected == 1:
             self.instakill()
         elif self.powerup_selected == 2:
@@ -57,21 +58,22 @@ class PowerUps(pygame.sprite.Sprite):
             self.og_image = self.image
             self.blank_image = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
         if self.timer_count >= 400:
-            if (self.timer_count >= 400 and self.timer_count <= 500) or\
-                    (self.timer_count >= 600 and self.timer_count <= 650) or\
-                    (self.timer_count >= 800 and self.timer_count <= 850) or\
-                    (self.timer_count >= 1000 and self.timer_count <= 1050) or\
-                    (self.timer_count >= 1100 and self.timer_count <= 1125) or\
-                    (self.timer_count >= 1150 and self.timer_count <= 1175):
+            if (
+                (self.timer_count >= 400 and self.timer_count <= 500)
+                or (self.timer_count >= 600 and self.timer_count <= 650)
+                or (self.timer_count >= 800 and self.timer_count <= 850)
+                or (self.timer_count >= 1000 and self.timer_count <= 1050)
+                or (self.timer_count >= 1100 and self.timer_count <= 1125)
+                or (self.timer_count >= 1150 and self.timer_count <= 1175)
+            ):
                 self.image = self.blank_image
             else:
                 self.image = self.og_image
         if self.timer_count >= 1200:
             return True
         else:
-            self.timer_count +=1
+            self.timer_count += 1
             return False
-
 
     def update(self, human, zombie_group, screen, change_x, change_y):
         self.move_with_camera(change_x, change_y)
@@ -87,7 +89,10 @@ class PowerUps(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.select_powerup()
-        self.image = pygame.transform.scale(self.image, (int(self.image.get_rect().size[0] * .5), int(self.image.get_rect().size[1] * .5)))
-
-
-
+        self.image = pygame.transform.scale(
+            self.image,
+            (
+                int(self.image.get_rect().size[0] * 0.5),
+                int(self.image.get_rect().size[1] * 0.5),
+            ),
+        )

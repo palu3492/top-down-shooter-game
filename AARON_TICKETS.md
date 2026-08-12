@@ -422,19 +422,40 @@ art it implied is kept.
 
 ---
 
-## AT9 — PEP 8 naming and import hygiene — TODO
+## AT9 — PEP 8 naming and import hygiene — DONE
 
-**Short description:** Mechanical rename pass. Large diff, near-zero risk, so it
-goes late — every earlier ticket would otherwise conflict with it.
+**Short description:** Mechanical rename pass. Large diff, near-zero risk, and
+the last thing standing between us and a linter with nothing suppressed.
 
 **Dependencies:** AT8
 
 **Goals**
-- [ ] Classes to PascalCase: `gun_data` → `GunData`, `grenade_data` → `GrenadeData`, `Wave_System` → `WaveSystem`, `loadBackground` → `BackgroundSheet`, `grenadeDetonate` → `GrenadeDetonate`, `stunGrenade` → `StunGrenade`, `stunDetonate` → `StunDetonate`, `RadarScrn` → `RadarScreen`
-- [ ] Methods/attrs to snake_case: `Move_With_Camera`, `PowerUp_Selection`, `Spawning_Location`, `Wave_Count`, `cameraX`, `changeX`, …
-- [ ] Fix the `posistion` typo throughout (`get_posistion`, `move_posistion`, `reset_posistion`)
-- [ ] Replace `from X import *` with explicit imports in `game.py`, `Zombie.py`, `waveSystem.py`
-- [ ] Shadowed builtin: `type` as a class attribute on `Human` and `Zombie`
+- [x] Classes to PascalCase
+- [x] Methods and attributes to snake_case
+- [x] `posistion` typo fixed throughout
+- [x] Wildcard imports replaced with explicit ones
+- [x] `ruff format` across the tree, and enforced in CI
+
+**The ignore list is gone.** `pyproject.toml` no longer has one. Every rule in
+`E, W, F, B, C4, SIM, UP, N, RUF` is enforced, plus `ruff format --check` in CI.
+167 suppressed violations at the start of AT8, zero now.
+
+**Landed as two commits on purpose.** 352 renames first, then the 703-line
+`ruff format` sweep. Combining them would have made the rename unreadable; split,
+the first commit is reviewable and the second is "the formatter did it".
+
+**The sweep got one thing wrong and the tests caught it.** `\bMaxAmmo\b` matched
+inside `"Power Ups/MaxAmmo.png"` — `/` and `.` are word boundaries — so three
+asset paths were renamed along with the methods they shared a name with. Fixed,
+then every referenced asset path was audited against disk: 104 referenced, all
+present.
+
+**Two wildcard imports were pure dead weight.** `zombie.py` star-imported all of
+`hud` and used nothing from it; `waves.py` did the same.
+
+**`ruff format` also finished off `E501`.** Three lines it could not fix were
+comments: one was dead commented-out code AT8 missed, one was an overlong
+trailing comment, one needed moving above its loop.
 
 ---
 
