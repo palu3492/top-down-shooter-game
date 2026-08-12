@@ -19,6 +19,7 @@ from shooter.entities.projectiles import (
 from shooter.systems.waves import WaveSystem
 from shooter.render import blit_group
 from shooter.ui import dev, menu
+from shooter.ui.layout import LayoutOverflowError
 from shooter.ui.screens import ScreenStack
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
 from shooter.ui.radar import RadarScreen
@@ -61,6 +62,13 @@ def explosion_touching_zombie(zombie, explosion):
 def stun_explosion_touching_zombie(zombie, explosion):
     if pygame.sprite.collide_rect(zombie, explosion):
         zombie.remove_speed(config.STUN_SPEED)
+
+
+def open_screen(screens, screen):
+    """A screen too big for the window must not end the game -- the menu the
+    player is already looking at stays open instead."""
+    with contextlib.suppress(LayoutOverflowError):
+        screens.push(screen)
 
 
 def game_loop():
@@ -139,9 +147,9 @@ def game_loop():
                 if action == menu.RESUME:
                     screens.clear()
                 elif action == menu.SETTINGS:
-                    screens.push(menu.SettingsScreen(window, screens.manager))
+                    open_screen(screens, menu.SettingsScreen(window, screens.manager))
                 elif action == menu.DEV:
-                    screens.push(dev.DevScreen(window, screens.manager))
+                    open_screen(screens, dev.DevScreen(window, screens.manager))
                 elif action == menu.BACK:
                     screens.pop()
                 elif action == menu.QUIT:

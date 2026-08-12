@@ -21,6 +21,8 @@ SPAN_HEIGHT = 32
 SETTING_HEIGHT = 34
 CAPTION_HEIGHT = 24
 SELECTOR_HEIGHT = 150
+MIN_SELECTOR_HEIGHT = 64
+MIN_NESTED_HEIGHT = 40
 BUTTON_HEIGHT = 54
 
 HINT = "twelve columns, every rectangle below measured in them"
@@ -79,11 +81,14 @@ class DevScreen(Screen):
     def _build_selector(self, area):
         grid = Grid(area)
         self._add_caption(grid, "RESOLUTION")
-        self.add(
-            widgets.selector(
-                grid.row(SELECTOR_HEIGHT).rest(), RESOLUTIONS, self.manager
-            )
-        )
+
+        nested_demo = CAPTION_HEIGHT + MIN_NESTED_HEIGHT + 2 * grid.gutter
+        if grid.free_height < nested_demo + MIN_SELECTOR_HEIGHT:
+            self.add(widgets.selector(grid.rest().rest(), RESOLUTIONS, self.manager))
+            return
+
+        height = min(SELECTOR_HEIGHT, grid.free_height - nested_demo)
+        self.add(widgets.selector(grid.row(height).rest(), RESOLUTIONS, self.manager))
         self._add_caption(grid, "NESTED GRID")
         self._build_nested_demo(grid.rest().rest())
 

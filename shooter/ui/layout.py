@@ -22,7 +22,7 @@ class Row:
     """A horizontal band, handed out left to right in column spans."""
 
     def __init__(self, area, columns=COLUMNS, gutter=GUTTER):
-        self.area = area
+        self.area = pygame.Rect(area)
         self.columns = columns
         self.gutter = gutter
         self.claimed = 0
@@ -95,6 +95,14 @@ class Grid:
         return Row(area, self.columns, self.gutter)
 
     def skip(self, height):
+        if height < 0:
+            raise LayoutOverflowError(
+                f"cannot skip backwards up the grid, got {height}"
+            )
+        if height > self.free_height:
+            raise LayoutOverflowError(
+                f"cannot skip {height}px of {self.free_height}px of remaining grid"
+            )
         self.next_top += height
         return self
 

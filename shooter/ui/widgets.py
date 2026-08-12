@@ -33,14 +33,21 @@ def button(rect, text, manager, container=None):
 
 
 def checkbox(rect, text, manager, container=None, checked=False):
-    box = UICheckBox(rect, text, manager, container=container)
-    box.set_state(checked)
-    return box
+    """`initial_state` rather than `set_state`, which announces the change --
+    right for a click, wrong for a screen that is still being built."""
+    return UICheckBox(rect, text, manager, container=container, initial_state=checked)
 
 
 def dropdown(rect, options, manager, container=None, selected=None):
+    listed = list(options)
+    if not listed:
+        raise ValueError("a dropdown needs at least one option")
     return UIDropDownMenu(
-        list(options), selected or options[0], rect, manager, container=container
+        listed,
+        listed[0] if selected is None else selected,
+        rect,
+        manager,
+        container=container,
     )
 
 

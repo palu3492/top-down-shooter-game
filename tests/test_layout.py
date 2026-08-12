@@ -169,3 +169,29 @@ def test_a_grid_does_not_move_the_rect_it_was_given():
     area = pygame.Rect(AREA)
     Grid(area, padding=25).row(50)
     assert area == AREA
+
+
+def test_a_row_copies_the_rect_it_was_given():
+    area = pygame.Rect(AREA)
+    row = Row(area, columns=4)
+    area.move_ip(500, 500)
+    assert row.cell(1).left == AREA.left
+
+
+def test_skipping_past_the_bottom_of_a_grid_is_refused():
+    grid = Grid(AREA)
+    grid.row(100)
+    with pytest.raises(LayoutOverflowError):
+        grid.skip(AREA.height)
+
+
+def test_a_grid_cannot_be_skipped_backwards():
+    with pytest.raises(LayoutOverflowError):
+        Grid(AREA).skip(-1)
+
+
+def test_a_legal_skip_still_moves_the_cursor():
+    grid = Grid(AREA)
+    before = grid.free_height
+    grid.skip(50)
+    assert grid.free_height == before - 50

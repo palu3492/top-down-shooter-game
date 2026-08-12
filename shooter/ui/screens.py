@@ -82,10 +82,16 @@ class ScreenStack:
         return self._screens[-1] if self._screens else None
 
     def push(self, screen):
+        """The new screen is built before the old one is torn down, so a screen
+        that cannot lay itself out leaves the stack exactly as it found it."""
+        try:
+            screen.open()
+        except Exception:
+            screen.close()
+            raise
         if self._screens:
             self._screens[-1].close()
         self._screens.append(screen)
-        screen.open()
         self._sync_pointer()
 
     def pop(self):

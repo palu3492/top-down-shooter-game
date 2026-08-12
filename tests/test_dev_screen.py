@@ -11,12 +11,14 @@ import pygame
 import pygame_gui
 import pytest
 
-from shooter import config
+from shooter import config, game
 from shooter.ui import menu, widgets
 from shooter.ui.dev import DevScreen
+from shooter.ui.layout import LayoutOverflowError
 from shooter.ui.screens import ScreenStack
 
 WINDOW = (1080, 720)
+TINY = (1080, 300)
 
 
 @pytest.fixture
@@ -116,3 +118,64 @@ def test_a_checkbox_can_be_built_already_checked(stack):
     rect = pygame.Rect(0, 0, 120, 30)
     assert widgets.checkbox(rect, "", stack.manager, checked=True).get_state() is True
     assert widgets.checkbox(rect, "", stack.manager, checked=False).get_state() is False
+
+
+def test_building_a_checked_checkbox_announces_nothing(stack):
+    """set_state posts UI_CHECK_BOX_CHECKED, which a settings form would read
+    as the player editing a field it was still drawing."""
+    pygame.event.clear()
+    box = widgets.checkbox(pygame.Rect(0, 0, 120, 30), "", stack.manager, checked=True)
+    assert pygame.event.get() == []
+    assert box.get_state() is True
+
+
+def test_opening_the_gallery_leaves_no_events_behind(stack):
+    pygame.event.clear()
+    stack.push(DevScreen(WINDOW, stack.manager))
+    assert pygame.event.get() == []
+
+
+def test_a_dropdown_takes_any_iterable_of_options(stack):
+    made = widgets.dropdown(
+        pygame.Rect(0, 0, 150, 30), (name for name in ["A", "B"]), stack.manager
+    )
+    assert made.selected_option[0] == "A"
+
+
+def test_a_dropdown_refuses_to_be_built_empty(stack):
+    with pytest.raises(ValueError):
+        widgets.dropdown(pygame.Rect(0, 0, 150, 30), [], stack.manager)
+
+
+@pytest.mark.parametrize("height", [570, 640, 720, 900, 1440])
+def test_the_gallery_builds_at_every_window_it_claims_to_support(display, height):
+    stack = ScreenStack((1080, height))
+    stack.push(DevScreen((1080, height), stack.manager))
+    window = pygame.Rect(0, 0, 1080, height)
+    assert all(window.contains(e.get_abs_rect()) for e in stack.top.elements)
+    stack.clear()
+
+
+def test_a_screen_too_big_for_the_window_leaves_the_stack_alone(display):
+    """Building the new screen before tearing down the old one is what makes
+    a failure a no-op rather than a menu that has already been destroyed."""
+    stack = ScreenStack(TINY)
+    stack.push(menu.PauseScreen(TINY, stack.manager))
+    survivors = list(stack.top.elements)
+
+    with pytest.raises(LayoutOverflowError):
+        stack.push(DevScreen(TINY, stack.manager))
+
+    assert len(stack) == 1
+    assert stack.top.elements == survivors
+    assert all(element.alive() for element in survivors)
+    assert pygame.mouse.get_visible() is True
+    stack.clear()
+
+
+def test_the_game_stays_up_when_a_screen_will_not_fit(display):
+    stack = ScreenStack(TINY)
+    stack.push(menu.PauseScreen(TINY, stack.manager))
+    game.open_screen(stack, DevScreen(TINY, stack.manager))
+    assert isinstance(stack.top, menu.PauseScreen)
+    stack.clear()

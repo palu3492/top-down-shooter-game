@@ -1124,6 +1124,14 @@ the settings screen will look like.
 became a type of its own -- `row.cell(span)` returns a rectangle and that is the
 whole idea. `Grid` and `Row` are the only two classes.
 
+**Review fixes.** A checkbox built pre-checked used to post
+`UI_CHECK_BOX_CHECKED` at construction, which the AT24 form would have read as
+the player editing a field it was still drawing -- it now uses the library's
+`initial_state`. `ScreenStack.push` builds the incoming screen before tearing
+down the outgoing one, so a screen that cannot lay itself out is a no-op rather
+than a destroyed menu. The dev gallery sizes its selector to the space it has
+and now builds from 570px rather than 643px.
+
 **Overflow is an exception, not a squeeze.** A row that does not fit or a cell
 that overruns its columns raises `LayoutOverflowError` rather than silently
 shrinking. It caught two real mistakes while the dev screen was being written.
