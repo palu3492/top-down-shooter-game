@@ -618,7 +618,7 @@ have raised.
 
 ---
 
-## AT33 — Bring the menu background to life — TODO
+## AT33 — Bring the menu background to life — DONE
 
 **Short description:** Animate the title art. Polish, deliberately separate from
 the theming that established the look.
@@ -626,9 +626,26 @@ the theming that established the look.
 **Dependencies:** AT32
 
 **Goals**
-- [ ] The sky moves without the art being redrawn
-- [ ] Something happens on a slow cycle, so the menu is not static while read
-- [ ] No per-frame cost worth measuring
+- [x] The sky moves without the art being redrawn
+- [x] Something happens on a slow cycle, so the menu is not static while read
+- [x] No per-frame cost worth measuring
+
+**One picture, three times of day.** Dusk drifts to night, holds there, then
+comes up through dawn and back, over 54 seconds. Nothing is redrawn -- the six
+colours are replaced, so the sun becomes a moon and the sunset becomes a night
+sky out of the same file.
+
+**Quantised into steps, not interpolated per frame.** The cycle is cut into 108
+steps, so the picture is rebuilt about twice a second rather than sixty times,
+and every frame in between hands back the surface it already has. Measured on
+the real menu: 0.46ms a frame and 20 rebuilds across ten seconds. One surface is
+kept rather than a cache of many, because at full size each is three megabytes
+and only ever one is on screen.
+
+**The art and the palette have to agree.** `replace` silently misses a colour
+that is not exactly right, and part of the picture would stop animating with
+nothing to show for it. A test asserts the file contains only the palette being
+cycled -- changing one channel of one colour fails it.
 
 **Palette cycling is the period-correct technique.** The background is six
 colours mapped from a painting; shifting *what those six colours are* over time
