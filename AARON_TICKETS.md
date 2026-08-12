@@ -780,6 +780,19 @@ walked would make the result depend on the order a sprite group happens to
 iterate in, which is exactly the kind of thing that holds at sixty frames and
 not at two hundred.
 
+**Review fixes.** Pace quietly broke two things that had been settled
+elsewhere. AT15 made the spawn ring a number of *seconds* rather than pixels, so
+that the warning stays constant however the speed is tuned -- but the margin was
+still read from the shared speed, giving the quickest zombie 2.54s of the 3.0s
+the setting claims. And the shove that pulls zombies out of a pile used the
+crowd's speed, so a stunned one was flung at 3.6 times its stunned pace, undoing
+the stun exactly when it should read most clearly. Both now use the zombie's own
+speed.
+
+The test that was supposed to guard the first divided the margin by the same
+shared constant it came from, so it could not have noticed. It is a per-pace
+check now.
+
 **Pace belongs to the zombie, not the config.** The stun timer used to restore
 `config.ZOMBIE_SPEED`, which would have quietly re-paced every zombie that was
 ever stunned. It restores that zombie's own walking speed now, and the tests

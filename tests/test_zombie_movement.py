@@ -6,12 +6,19 @@ they were walking.
 """
 
 import math
+import random
 
 import pygame
 import pytest
 
 from shooter import config
-from shooter.entities.zombie import PERSONAL_SPACE, Zombie, keep_apart
+from shooter.entities.zombie import (
+    PERSONAL_SPACE,
+    SHOVE,
+    Zombie,
+    keep_apart,
+    spawn_margin,
+)
 from shooter.session import Session
 from shooter.viewport import Viewport
 
@@ -118,6 +125,10 @@ def test_pushing_apart_does_not_depend_on_iteration_order(display, cash):
     to iterate differently still lands in the same place."""
 
     def run(reverse):
+        # Same seed both times: each zombie draws its own pace when it is
+        # built, and comparing two differently paced crowds would say nothing
+        # about iteration order.
+        random.seed(1234)
         group = pygame.sprite.Group()
         made = []
         for index in range(4):
@@ -234,3 +245,71 @@ def test_a_zombie_on_the_player_does_not_spin(display, cash):
     zombie.face_player()
 
     assert zombie.image is upright
+
+
+# ----------------------------------------------------------------------
+# Pace must not undo the promises the rest of the game makes
+# ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("pace", [0.82, 0.9, 1.0, 1.1, 1.18])
+def test_every_zombie_gets_the_same_warning_whatever_its_pace(display, pace):
+    """AT15 made the spawn ring a number of *seconds*, not a number of pixels.
+    Reading the shared speed instead of the zombie's own gave the quickest of
+    them a fifth less warning than the setting claims -- and the test that was
+    supposed to guard it divided the margin by the same shared constant, so it
+    could not tell."""
+    walking_speed = config.ZOMBIE_SPEED * pace
+    seconds = spawn_margin(walking_speed) / walking_speed
+    assert seconds == pytest.approx(config.SPAWN_LEAD_SECONDS)
+
+
+def test_a_fast_zombie_really_does_start_further_out(display, cash):
+    quick = spawn_margin(config.ZOMBIE_SPEED * 1.18)
+    slow = spawn_margin(config.ZOMBIE_SPEED * 0.82)
+    assert quick > slow
+
+
+def test_the_sprite_clearance_still_wins_at_a_crawl(display):
+    """The floor is what stops a zombie appearing already half on screen, and
+    a slow pace must not sneak under it."""
+    assert spawn_margin(1.0) >= max(config.ZOMBIE_SIZE)
+
+
+def test_a_stunned_zombie_is_shoved_at_its_stunned_pace(display, cash):
+    """A stun exists to slow a zombie down. Pushing it out of a pile at the
+    crowd's speed flung it further than it can ever walk, undoing the stun at
+    the moment it should read most clearly."""
+    group = pygame.sprite.Group()
+    for _ in range(2):
+        zombie = Zombie(WINDOW, cash)
+        zombie.set_position(1000, 1000)
+        group.add(zombie)
+
+    stunned = next(iter(group))
+    stunned.remove_speed(config.STUN_SPEED)
+    before = stunned.get_position()
+
+    keep_apart(group, (0, 0), config.SIM_DT)
+
+    shoved = math.dist(stunned.get_position(), before) / config.SIM_DT
+    assert shoved <= stunned.zombie_speed * SHOVE + 1
+    assert shoved < config.ZOMBIE_SPEED, "shoved faster than it can walk"
+
+
+def test_a_brisk_zombie_steps_aside_faster_than_a_slow_one(display, cash):
+    def shove_rate(pace):
+        group = pygame.sprite.Group()
+        pair = []
+        for _ in range(2):
+            zombie = Zombie(WINDOW, cash)
+            zombie.pace = pace
+            zombie.zombie_speed = zombie.walking_speed
+            zombie.set_position(1000, 1000)
+            group.add(zombie)
+            pair.append(zombie)
+        before = pair[0].get_position()
+        keep_apart(group, (0, 0), config.SIM_DT)
+        return math.dist(pair[0].get_position(), before)
+
+    assert shove_rate(1.18) > shove_rate(0.82)

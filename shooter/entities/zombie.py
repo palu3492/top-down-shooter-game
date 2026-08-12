@@ -48,13 +48,18 @@ def keep_apart(zombies, camera, dt=config.SIM_DT):
                 # they would sit inside each other for ever.
                 away_x, away_y, gap = 1.0, 0.0, 1.0
             crowding = (PERSONAL_SPACE - gap) / PERSONAL_SPACE
-            shove = crowding * SHOVE * config.ZOMBIE_SPEED * dt
-            step_x = away_x / gap * shove
-            step_y = away_y / gap * shove
-            pushes[index][0] += step_x
-            pushes[index][1] += step_y
-            pushes[other_index][0] -= step_x
-            pushes[other_index][1] -= step_y
+            unit_x, unit_y = away_x / gap, away_y / gap
+
+            # Each is shoved at its own pace rather than the crowd's, so a
+            # stunned zombie stays sluggish while it is pushed out of a pile
+            # instead of being flung across the field at full walking speed.
+            for slot, direction, zombie in (
+                (index, 1, one),
+                (other_index, -1, other),
+            ):
+                shove = crowding * SHOVE * zombie.zombie_speed * dt * direction
+                pushes[slot][0] += unit_x * shove
+                pushes[slot][1] += unit_y * shove
 
     for zombie, (push_x, push_y) in zip(crowd, pushes, strict=True):
         if push_x or push_y:
@@ -63,19 +68,21 @@ def keep_apart(zombies, camera, dt=config.SIM_DT):
             zombie.move_position(*camera)
 
 
-def spawn_margin():
-    """How far outside the view a wave starts.
+def spawn_margin(walking_speed=None):
+    """How far outside the view a wave starts, for a zombie walking this fast.
 
-    Measured as the distance a zombie covers in `SPAWN_LEAD_SECONDS`, so a
-    faster zombie starts further out and the player always gets the same warning
-    rather than the same number of pixels. Never closer than a sprite's width,
-    or a zombie would appear already half on screen.
+    Measured as the distance covered in `SPAWN_LEAD_SECONDS`, so the player
+    gets the same warning rather than the same number of pixels. That only
+    holds if it is *this* zombie's speed: since AT36 they each walk at their
+    own pace, and using the shared one gave the quickest of them a fifth less
+    warning than the setting claims.
 
     Read when a zombie spawns rather than bound at import, because ZOMBIE_SPEED
     is a setting and a value copied once would ignore it.
     """
-    approach = config.ZOMBIE_SPEED * config.SPAWN_LEAD_SECONDS
-    return max(approach, max(config.ZOMBIE_SIZE))
+    if walking_speed is None:
+        walking_speed = config.ZOMBIE_SPEED
+    return max(walking_speed * config.SPAWN_LEAD_SECONDS, max(config.ZOMBIE_SIZE))
 
 
 class Zombie(Interpolated, pygame.sprite.Sprite):
@@ -114,7 +121,7 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         pixels away and difficulty that depended on where they were standing.
         """
         area = self.spawn_area(visible)
-        margin = spawn_margin()
+        margin = spawn_margin(self.walking_speed)
         side = random.randint(1, 4)
         if side == 1:
             self.set_position(random.randint(area.left, area.right), area.top - margin)
