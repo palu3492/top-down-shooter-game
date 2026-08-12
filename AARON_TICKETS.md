@@ -564,6 +564,59 @@ from `/`.
 
 ---
 
+## AT14 — Pause, and the seam for a screen system — TODO
+
+**Short description:** `Escape` pauses and resumes. Deliberately small, but
+shaped so the eventual splash → menu → game → pause-menu flow grows out of it
+instead of replacing it.
+
+**Dependencies:** AT5
+
+**Goals**
+- [ ] `Escape` toggles pause; the world stops, the frame stays on screen behind an overlay
+- [ ] Movement, zombies, projectiles, and every timer freeze while paused
+- [ ] `Escape` resumes
+- [ ] Rebind quit off `P`
+
+**Where this is going.** The intended end state is: animated splash → main menu
+(*start game*) → playing → pause menu (*resume*, *settings*, *end game*) → back
+to the menu. Pause is the first screen that is not "playing", so it is the
+right place to introduce the seam — but only the seam.
+
+**The seam is a named state, not a boolean.** `state = PLAYING | PAUSED` extends
+to `SPLASH | MENU | PLAYING | PAUSED | GAME_OVER` by adding names; a `paused =
+True/False` flag would have to be torn out. That single choice is the whole
+forward-compatibility story for this ticket.
+
+**What is deliberately *not* built here, and why.** A real screen system needs
+two refactors this ticket must not attempt:
+
+1. **Update and draw are interleaved.** `grenades.update(cameraX, cameraY,
+   screen, explosions)` takes the screen; `zombie.health_bar(screen)` draws from
+   inside the zombie update loop. Menus need to draw without updating, which
+   means untangling every one of those call sites.
+2. **All game state is local to `game_loop`.** Roughly thirty locals — camera,
+   sprite groups, HUD, wave system. A menu that can *start* a game needs that
+   state constructed and discarded on demand, i.e. lifted into an object.
+   Overlaps AT7.
+
+Pause dodges both by snapshotting the frame on entry and blitting the snapshot
+under the overlay, so nothing needs to redraw while paused. That is a real
+technique, not a stopgap, and it stays useful once screens exist.
+
+**Interaction with AT12.** Every timer is a frame counter today — `Wave_Timer`,
+`stun_timer`, `reload_time`, `PowerUps.timer_count` — so skipping the update
+block freezes them correctly and pause works naturally. Once AT12 moves to
+delta-time, pause must not accumulate `dt` across the paused span or everything
+jumps on resume. Whoever does AT12 owns that.
+
+**Quit moves off `P`.** `P` currently quits immediately with no confirmation,
+which is the key most players press expecting pause. With `Escape` taken by
+pause, quitting belongs in the pause menu; until that exists, `P` is at least a
+surprise worth removing.
+
+---
+
 ## AT12 — Frame-rate independence — TODO
 
 **Short description:** All movement, animation, timers, and cooldowns are counted

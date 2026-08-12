@@ -82,24 +82,35 @@ def test_game_loop_returns_on_quit_event(monkeypatch, frames):
     assert pygame.display.get_init() is False
 
 
-def test_game_loop_returns_when_p_is_pressed(monkeypatch):
-    pressed = [False]
-
-    def get_pressed():
-        state = dict.fromkeys(range(512), False)
-        state[pygame.K_p] = pressed[0]
-        return state
-
+def press(*keys):
+    """Post a KEYDOWN for each key, one per frame, then stop."""
+    queued = list(keys)
     real_flip = pygame.display.flip
-    frames = iter(range(31))
+    frames = iter(range(10_000))
 
     def flip():
-        if next(frames, 30) >= 30:
-            pressed[0] = True
+        n = next(frames)
+        if n >= 20 and n % 5 == 0 and queued:
+            pygame.event.post(
+                pygame.event.Event(pygame.KEYDOWN, key=queued.pop(0))
+            )
         real_flip()
 
-    monkeypatch.setattr(pygame.key, "get_pressed", get_pressed)
-    monkeypatch.setattr(pygame.display, "flip", flip)
+    return flip
+
+
+def test_escape_then_q_leaves_the_game(monkeypatch):
+    monkeypatch.setattr(pygame.display, "flip", press(pygame.K_ESCAPE, pygame.K_q))
+
+    game_loop()
+
+    assert pygame.display.get_init() is False
+
+
+def test_q_alone_does_not_quit_while_playing(monkeypatch):
+    monkeypatch.setattr(
+        pygame.display, "flip", press(pygame.K_q, pygame.K_ESCAPE, pygame.K_q)
+    )
 
     game_loop()
 
