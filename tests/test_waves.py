@@ -23,7 +23,7 @@ def test_first_wave_spawns_five(waves, group):
 def test_timer_ticks_up_between_waves(waves, group, display, window, make_cash):
     waves.advance(window, group, make_cash())
 
-    assert waves.wave_seconds == pytest.approx(1 / config.FPS)
+    assert waves.wave_seconds == pytest.approx(config.SIM_DT)
 
 
 @pytest.mark.parametrize(

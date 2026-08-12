@@ -90,8 +90,8 @@ def test_stun_slows_the_zombie_then_wears_off(zombie):
     zombie.remove_speed(config.STUN_SPEED)
 
     assert zombie.zombie_speed == config.STUN_SPEED
-    for _ in range(int(config.STUN_SECONDS * config.FPS) + 2):
-        zombie.zombie_speed_timer(1 / config.FPS)
+    for _ in range(int(config.STUN_SECONDS * config.SIM_HZ) + 2):
+        zombie.zombie_speed_timer(config.SIM_DT)
 
     assert zombie.zombie_speed == original
 

@@ -83,7 +83,7 @@ class GunData:
         elif self.clip_size == 0:
             return "no ammo"
 
-    def reloading(self, dt=1 / config.FPS):
+    def reloading(self, dt=config.SIM_DT):
         if self.reload_seconds > 0:
             self.reload_seconds -= dt
             return "reload"

@@ -5,6 +5,7 @@ import pygame
 
 from shooter import config
 from shooter.assets import load_animation, load_sized
+from shooter.render import Interpolated
 
 ANIMATIONS = {
     "IDLE": ("Zombie Animations/zombie_idle", "skeleton-idle_", 17),
@@ -13,7 +14,7 @@ ANIMATIONS = {
 }
 
 
-class Zombie(pygame.sprite.Sprite):
+class Zombie(Interpolated, pygame.sprite.Sprite):
     def __init__(self, window_size, cash):
         self.player_cash = cash
         pygame.sprite.Sprite.__init__(self)
@@ -36,6 +37,7 @@ class Zombie(pygame.sprite.Sprite):
         )
         self.rect = self.image.get_rect()
         self.spawn_zombie()  # calls function that controls Zombie Spawning
+        self.remember_position()
 
     # Spawns zombies out side of screen size
     def spawn_zombie(self):
@@ -91,6 +93,14 @@ class Zombie(pygame.sprite.Sprite):
         self.image = self.frames[self.type][frame]
         self.rect = self.image.get_rect(topleft=self.rect.topleft)
 
+    @property
+    def world_x(self):
+        return self.zombie_x
+
+    @property
+    def world_y(self):
+        return self.zombie_y
+
     def get_position(self):
         return (self.zombie_x, self.zombie_y)
 
@@ -111,7 +121,8 @@ class Zombie(pygame.sprite.Sprite):
         self.rect.x = self.zombie_x + camera_x
         self.rect.y = self.zombie_y + camera_y
 
-    def move_toward_center(self, camera_x, camera_y, dt=1 / config.FPS):
+    def move_toward_center(self, camera_x, camera_y, dt=config.SIM_DT):
+        self.remember_position()
         zombie_pos = self.rect.x, self.rect.y
         distance_from_center_x = (self.window_size[0] / 2.0) - zombie_pos[0] - 120
         distance_from_center_y = (self.window_size[1] / 2.0) - zombie_pos[1] - 110
@@ -124,16 +135,17 @@ class Zombie(pygame.sprite.Sprite):
         self.zombie_y += move_y_amount
         self.move_position(camera_x, camera_y)
 
-    def health_bar(self, screen):
+    def health_bar(self, screen, at=None):
+        x, y = at if at else self.rect.topleft
         pygame.draw.rect(
             screen,
             config.HEALTH_RED,
-            (self.rect.x + 75, self.rect.y, self.zombie_health * 1.2, 22),
+            (x + 75, y, self.zombie_health * 1.2, 22),
         )
         pygame.draw.rect(
             screen,
             config.HEALTH_GREY,
-            (self.rect.x + 75, self.rect.y, 100 * 1.2, 22),
+            (x + 75, y, 100 * 1.2, 22),
             4,
         )
 
@@ -153,7 +165,7 @@ class Zombie(pygame.sprite.Sprite):
         self.zombie_speed = stun_amount
         self.stun_seconds = config.STUN_SECONDS
 
-    def zombie_speed_timer(self, dt=1 / config.FPS):
+    def zombie_speed_timer(self, dt=config.SIM_DT):
         if self.stun_seconds > 0:
             self.stun_seconds -= dt
         else:

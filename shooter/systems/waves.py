@@ -14,7 +14,7 @@ class WaveSystem:
     def wave_gui(self, screen):
         return True
 
-    def advance(self, window, zombie_group, player_cash, dt=1 / config.FPS):
+    def advance(self, window, zombie_group, player_cash, dt=config.SIM_DT):
         """Move the between-wave timer forward and spawn when it elapses."""
         if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.wave_count += 1
