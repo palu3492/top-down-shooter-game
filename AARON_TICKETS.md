@@ -279,22 +279,75 @@ import. Overlaps AT8's dead-code sweep.
 
 ---
 
-## AT5 — Fix gameplay bugs — TODO
+## AT5 — Fix gameplay bugs — DONE
 
-**Short description:** Behaviour that is plainly wrong rather than merely stylistic.
-Each one changes how the game plays, so they land together and get called out.
+**Short description:** Behaviour that is plainly wrong rather than merely
+stylistic. Each one changes how the game plays, so they land together.
 
 **Dependencies:** AT4
 
 **Goals**
-- [ ] Zombies never animate — `zombie.update_anim("MOVE")` is commented out in the main loop, so they slide toward the player in a fixed pose. Same for the `"ATTACK"` pose in `is_zombie_attacking`.
-- [ ] `PowerUps.PowerUp_Selection` calls `random.randint(2, 2)` — hardcoded to Nuke, a debug leftover. Restore `1..4`; `InstaKill` and `MaxAmmo` have empty pickup handlers and need implementing.
-- [ ] `Human.rot_center` rotates without recentering the rect, so the sprite drifts and grows as it turns. The correct version is sitting commented out directly beneath it.
-- [ ] `Shot.changeX/changeY` compute Y velocity from `smallChangeX`. Currently inert — only the commented-out `update()` reads them — so delete the dead fields rather than fixing them.
-- [ ] `pygame.sprite.collide_rect_ratio(.5)` in `is_zombie_attacking` builds a callable and discards it; the following line does a plain full-rect check. Decide which was intended.
-- [ ] `Cash.cash_add_remove` rejects any purchase when the balance is exactly 0 or would land on 0, and never checks that the balance actually covers the cost.
-- [ ] `Zombie.remove_health` guards the damage but not the payout, so a corpse pays $50 again on every further hit — reachable when two explosions overlap one zombie in a frame, since `game.py` keeps iterating explosions after `kill()`. Found in AT11 review; covered by a strict xfail.
-- [ ] Fullscreen toggle reads `key.get_pressed()`, so holding `\` flips the mode every frame. Move to a `KEYDOWN` event.
+- [x] Zombies never animate — `update_anim("MOVE")` commented out of the main loop, `"ATTACK"` likewise
+- [x] `Human.rot_center` rotates without recentring, so the sprite drifts as it turns
+- [x] `Shot.changeX/changeY` dead fields deleted
+- [x] `collide_rect_ratio(.5)` no-op removed
+- [x] `Cash.cash_add_remove` boundary arithmetic
+- [x] `Zombie.remove_health` pays out once per zombie
+- [x] Fullscreen toggle moved to `KEYDOWN`
+- [ ] ~~Power-up selection and handlers~~ — split into AT5.1
+
+**Five strict xfails flip to assertions here**, which is what they were for: the
+three `Cash` boundary bugs, the double payout, and the idle animation. One
+remains, owned by AT5.1.
+
+**Animation was not a one-line uncomment.** Zombie frames differ per pose —
+IDLE 120×111, MOVE 144×155, ATTACK 159×147 — while `__init__` forced 120×111 and
+`self.rect` was never resized. Simply enabling animation would have drawn a
+larger sprite anchored to a stale, smaller collision box. `update_anim` now
+rebuilds the rect from the current frame while preserving `topleft`, which is
+what `move_posistion` controls, so poses change without teleporting the zombie.
+
+**Rotation now recentres.** Measured: 0 px centre drift across a full 360°
+sweep, against a sprite that previously slid because the rect stayed fixed while
+the rotated image grew from its top-left.
+
+**Consequence worth knowing:** the player's rect is the bounding box of the
+*rotated* sprite, so it grows from 156×103 to about 186×167 at 30°, and the
+hitbox now varies with aim angle. That is the standard cost of axis-aligned
+collision plus rotation, and it is still an improvement — previously the drawn
+sprite and its collision box were simply desynchronised. A fixed hitbox
+independent of the drawn frame would need a separate rect; worth doing only if
+it actually feels wrong in play.
+
+**On `collide_rect_ratio(.5)`:** removed as dead code rather than adopted. It
+built a callable and discarded it, so the live behaviour has always been a
+full-rect check; enabling a 50% hitbox would change difficulty, which is a design
+choice and not a bug fix. One line to switch if the tighter box is wanted.
+
+---
+
+## AT5.1 — Power-up selection and handlers — TODO
+
+**Short description:** `PowerUp_Selection` calls `random.randint(2, 2)`, a debug
+leftover pinning every spawn to Nuke. Restoring the full `1..4` range is one
+character; the reason it is a separate ticket is that three of the four
+handlers do nothing, so restoring the range without implementing them just
+spawns pickups that are cosmetic.
+
+**Dependencies:** AT5
+
+**Goals**
+- [ ] `random.randint(2, 2)` → `random.randint(1, 4)`
+- [ ] `MaxAmmo` — refill the reserve; needs the gun passed into `PowerUps.update`, which currently only receives the human
+- [ ] `MaxHealth` — restore the player to full
+- [ ] `InstaKill` — design needed: a timed damage buff implies new state and a countdown, which AT7 reworks and AT12 converts to seconds
+- [ ] Flip the last strict xfail, `test_every_kind_can_spawn`
+
+**Why split from AT5:** the other seven items are unambiguous defects. This one
+requires deciding what two power-ups *should* do, which is design, not repair.
+AT11's power-up tests already build every kind through a `make_powerup` factory
+so they do not depend on the bug, and they are parametrised over all four —
+so the coverage is waiting for the implementation.
 
 ---
 

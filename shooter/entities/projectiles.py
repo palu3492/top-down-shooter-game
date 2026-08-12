@@ -30,8 +30,6 @@ def play(spec):
 class Shot(pygame.sprite.Sprite):
     smallChangeX=0
     smallChangeY=0
-    changeX=0
-    changeY=0
     bulletX=0
     bulletY=0
     bullet_speed=150
@@ -43,9 +41,6 @@ class Shot(pygame.sprite.Sprite):
         angle = math.atan2(y, x)  # find angle of shot
         self.smallChangeX=math.cos(angle)
         self.smallChangeY=-math.sin(angle)
-        self.changeX = int(self.bullet_speed * self.smallChangeX)  # x change amount
-        self.changeY = int(self.bullet_speed * self.smallChangeX)  # Y change amount
-
         self.image = load_image("Projectiles/bullet.png", True)
 
         self.rect = self.image.get_rect()

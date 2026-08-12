@@ -31,17 +31,10 @@ class Human(pygame.sprite.Sprite):
        self.rect.y = (window_size[1]/2.0)-(self.rect.size[1]/2.0)
 
     def rot_center(self, angle):
-
-        """rotate an image while keeping its center"""
-        rot_image = pygame.transform.rotate(self.image, angle)
-        self.image = rot_image
-
-        # orig_rect = self.image.get_rect()
-        # rot_image = pygame.transform.rotate(self.image, angle)
-        # rot_rect = orig_rect.copy()
-        # rot_rect.center = rot_image.get_rect().center
-        # rot_image = rot_image.subsurface(rot_rect).copy()
-        # self.image = rot_image
+        """Rotate the current frame about its centre."""
+        centre = self.rect.center
+        self.image = pygame.transform.rotate(self.image, angle)
+        self.rect = self.image.get_rect(center=centre)
 
     def update_anim(self, type,):
         self.type = type
@@ -51,6 +44,7 @@ class Human(pygame.sprite.Sprite):
                 self.current_idle+=1
             else:
                 self.current_idle = 0
+            frame = self.current_idle
         elif type == "MOVE":
             if self.current_move < 19:
                 self.current_move += 1

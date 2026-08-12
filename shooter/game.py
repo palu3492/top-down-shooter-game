@@ -15,11 +15,10 @@ def reset_zombie_pos(zombie):
     zombie.reset_posistion()
 
 def is_zombie_attacking(human, zombie):
-    pygame.sprite.collide_rect_ratio(.5)
     if pygame.sprite.collide_rect(human, zombie):
-        #zombie.update_anim("ATTACK")
+        zombie.update_anim("ATTACK")
         if human.remove_health(.10): #if return True (player is dead) then change to idle and kill player
-            #zombie.update_anim("IDLE")
+            zombie.update_anim("IDLE")
             human.kill()
 
 def explosion_touching_zombie(zombie, explotion):
@@ -78,15 +77,7 @@ def game_loop():
         changeX=changeY=0
         human_anim = "MOVE"
 
-        #Fullscreen Switch
         pressed = pygame.key.get_pressed()
-        if pressed[pygame.K_BACKSLASH]:
-            if fullscreen_flag:
-                screen = pygame.display.set_mode(window)
-                fullscreen_flag = False
-            else:
-                screen = pygame.display.set_mode(window, pygame.FULLSCREEN)
-                fullscreen_flag = True
 
         #Controls for moving the camera, moving 40 px per frame
         if human.alive():
@@ -125,6 +116,10 @@ def game_loop():
             if event.type==pygame.QUIT:
                 game_is_running = False
             if event.type==pygame.KEYDOWN:
+                if event.key==pygame.K_BACKSLASH:
+                    fullscreen_flag = not fullscreen_flag
+                    screen = pygame.display.set_mode(
+                        window, pygame.FULLSCREEN if fullscreen_flag else 0)
                 if event.key==pygame.K_g:
                     if all_grenade_data.grenade_amount > 0:
                         grenade = Grenade((window[0] / 2.0) - cameraX, (window[1] / 2.0) - cameraY, centerX, centerY)
@@ -163,7 +158,7 @@ def game_loop():
         # 2. Sends zombie to Human
         # 3. Moves Zombies when camera moves
         for zombie in zombie_group:
-            #zombie.update_anim("MOVE")
+            zombie.update_anim("MOVE")
             is_zombie_attacking(human, zombie)
             zombie.moveZombieTowardMid(cameraX,cameraY)
             zombie.health_bar(screen)

@@ -74,6 +74,7 @@ class Zombie(pygame.sprite.Sprite):
             frame = self.current_attack
 
         self.image = self.frames[self.type][frame]
+        self.rect = self.image.get_rect(topleft=self.rect.topleft)
 
     def get_posistion(self):
         return (self.zombieX, self.zombieY)
@@ -111,13 +112,13 @@ class Zombie(pygame.sprite.Sprite):
         pygame.draw.rect(gameDisplay, (96, 96, 96), (self.rect.x + 75, self.rect.y, 100 * 1.2, 22), 4)
 
     def remove_health(self, damage):
-        if self.zombie_health > 0:
-            self.zombie_health -= damage
+        if self.zombie_health <= 0:
+            return False
+        self.zombie_health -= damage
         if self.zombie_health <= 0:
             self.player_cash.increase_cash(50)
             return True
-        else:
-            return False
+        return False
 
     def add_health(self, repair):
         self.zombie_health += repair
