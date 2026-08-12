@@ -104,14 +104,14 @@ def test_a_wave_arrives_at_the_same_time(window, cash, display, cash_factory, ra
     run_for(
         config.WAVE_INTERVAL_SECONDS - 0.2,
         rate,
-        lambda dt: waves.wave_control(display, window, group, cash_factory(), dt),
+        lambda dt: waves.advance(window, group, cash_factory(), dt),
     )
     assert len(group) == 0
 
     run_for(
         0.4,
         rate,
-        lambda dt: waves.wave_control(display, window, group, cash_factory(), dt),
+        lambda dt: waves.advance(window, group, cash_factory(), dt),
     )
     assert len(group) == config.WAVE_BASE + 1
 

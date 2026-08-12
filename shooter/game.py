@@ -229,7 +229,6 @@ def game_loop():
             zombie.update_anim("MOVE", dt)
             is_zombie_attacking(human, zombie, dt)
             zombie.move_toward_center(camera_x, camera_y, dt)
-            zombie.health_bar(screen)
             for explosion in explosions:
                 explosion_touching_zombie(zombie, explosion)
             for stun_explosion in stun_explosions:
@@ -261,6 +260,9 @@ def game_loop():
             powerup.kill()
         powerups_group.draw(screen)
 
+        for zombie in zombie_group:
+            zombie.health_bar(screen)
+
         # Loads in Human and Zombie
         zombie_group.draw(screen)
         human_group.draw(screen)
@@ -269,15 +271,19 @@ def game_loop():
         bullets.update(camera_x, camera_y, zombie_group, dt)
         bullets.draw(screen)
 
-        if len(zombie_group) == 0 and wave_system.wave_gui(screen):
-            wave_system.wave_control(screen, window, zombie_group, player_cash, dt)
+        between_waves = len(zombie_group) == 0
+        if between_waves:
+            wave_system.advance(window, zombie_group, player_cash, dt)
+
+        if between_waves:
+            wave_system.draw(screen)
 
         # Grenades and explosions
-        grenades.update(camera_x, camera_y, screen, explosions, dt)
+        grenades.update(camera_x, camera_y, explosions, dt)
         grenades.draw(screen)
         explosions.update(camera_x, camera_y, dt)
         explosions.draw(screen)
-        stun_grenades.update(camera_x, camera_y, screen, stun_explosions, dt)
+        stun_grenades.update(camera_x, camera_y, stun_explosions, dt)
         stun_grenades.draw(screen)
         stun_explosions.update(camera_x, camera_y, dt)
         stun_explosions.draw(screen)

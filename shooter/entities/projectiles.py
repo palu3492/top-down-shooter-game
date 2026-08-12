@@ -97,7 +97,7 @@ class Grenade(pygame.sprite.Sprite):
         self.travelled = 0.0
         self.flight = math.hypot(x, y) / config.GRENADE_SPEED
 
-    def update(self, camera_x, camera_y, screen, explosions, dt=1 / config.FPS):
+    def update(self, camera_x, camera_y, explosions, dt=1 / config.FPS):
         if self.travelled < self.flight:
             step = min(dt, self.flight - self.travelled)
             self.grenade_x += self.change_x * step
@@ -146,7 +146,7 @@ class StunGrenade(pygame.sprite.Sprite):
         self.travelled = 0.0
         self.flight = math.hypot(x, y) / config.GRENADE_SPEED
 
-    def update(self, camera_x, camera_y, screen, explosions, dt=1 / config.FPS):
+    def update(self, camera_x, camera_y, explosions, dt=1 / config.FPS):
         if self.travelled < self.flight:
             step = min(dt, self.flight - self.travelled)
             self.grenade_x += self.change_x * step
