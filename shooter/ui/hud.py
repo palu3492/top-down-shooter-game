@@ -5,8 +5,6 @@ from shooter.assets import load_image
 
 
 class HealthBar:
-    lives = 0
-
     def __init__(self, window_size):
         self.window_size = window_size
 
@@ -40,12 +38,11 @@ class GunData:
     CLIP = config.CLIP_SIZE
     RESERVE = config.RESERVE_SIZE
 
-    clip_size = CLIP
-    ammo_amount = RESERVE
-    reload_time = config.RELOAD_FRAMES
-
     def __init__(self, window):
         self.window = window
+        self.clip_size = self.CLIP
+        self.ammo_amount = self.RESERVE
+        self.reload_time = config.RELOAD_FRAMES
         self.gun_type = load_image("HUD/gunShotty.png")
 
     def shooting_bullet(self):
@@ -110,15 +107,14 @@ class GunData:
 
 
 class GrenadeData:
-    grenade_amount = config.STARTING_GRENADES
-    stun_grenade_amount = config.STARTING_STUN_GRENADES
-
     def __init__(self):
-        pass
+        self.grenade_amount = config.STARTING_GRENADES
+        self.stun_grenade_amount = config.STARTING_STUN_GRENADES
 
 
 class Cash:
-    cash_amount = 0
+    def __init__(self):
+        self.cash_amount = 0
 
     # Method used when zombie dies
     def increase_cash(self, amount):

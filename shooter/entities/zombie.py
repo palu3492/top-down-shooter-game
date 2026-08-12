@@ -14,17 +14,15 @@ ANIMATIONS = {
 
 
 class Zombie(pygame.sprite.Sprite):
-    zombie_x = zombie_y = 0
-    type = "MOVE"
-    current_idle, current_move, current_attack = 0, 0, 0
-    zombie_speed = config.ZOMBIE_SPEED
-    stun_timer = 0
-
-    zombie_health = config.ZOMBIE_HEALTH
-
     def __init__(self, window_size, cash):
         self.player_cash = cash
         pygame.sprite.Sprite.__init__(self)
+        self.zombie_x = self.zombie_y = 0
+        self.type = "MOVE"
+        self.current_idle = self.current_move = self.current_attack = 0
+        self.zombie_speed = config.ZOMBIE_SPEED
+        self.stun_timer = 0
+        self.zombie_health = config.ZOMBIE_HEALTH
         self.window_size = window_size
         self.frames = {
             name: load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
