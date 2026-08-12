@@ -12,8 +12,7 @@ loading them would trade a hitch for a slower start. `tests/test_preload.py` is
 what keeps the list honest -- it fails if anything reaches disk during play.
 """
 
-from shooter import config
-from shooter.assets import load_animation, load_image, load_sheet, load_sized
+from shooter.assets import load_asset, load_image, load_sheet
 from shooter.entities import player, zombie
 
 SPRITES = (
@@ -49,10 +48,5 @@ def preload():
     for relative in SHEETS:
         load_sheet(relative)
 
-    for directory, prefix, count in player.ANIMATIONS.values():
-        load_animation(directory, prefix, count, config.PLAYER_SCALE)
-
-    for directory, prefix, count in zombie.ANIMATIONS.values():
-        load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
-
-    load_sized(ZOMBIE_STILL, *config.ZOMBIE_SIZE, True)
+    for asset_id in (*player.ASSET_IDS.values(), *zombie.ASSET_IDS.values()):
+        load_asset(asset_id)

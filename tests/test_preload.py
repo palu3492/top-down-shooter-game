@@ -10,6 +10,7 @@ import pytest
 
 from shooter import config, preload
 from shooter.assets import (
+    load_asset,
     load_animation,
     load_image,
     load_sheet,
@@ -129,7 +130,7 @@ def test_every_listed_asset_exists(display):
 def test_the_manifest_matches_what_a_cold_start_actually_needs(display):
     """Clears every cache, preloads, then plays -- so the list is checked
     against a genuinely cold process rather than one warmed by other tests."""
-    for cache in (load_image, load_sheet, load_sized, load_animation):
+    for cache in (load_asset, load_image, load_sheet, load_sized, load_animation):
         cache.cache_clear()
 
     preload.preload()

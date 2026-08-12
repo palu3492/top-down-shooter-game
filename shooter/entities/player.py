@@ -1,6 +1,6 @@
 import pygame
 
-from shooter.assets import load_animation
+from shooter.assets import load_asset
 
 from shooter import config
 
@@ -8,6 +8,12 @@ ANIMATIONS = {
     "IDLE": ("Player Animations/Idle", "survivor-idle_rifle_", 20),
     "MOVE": ("Player Animations/Move", "survivor-move_rifle_", 20),
     "SHOOT": ("Player Animations/Shoot", "survivor-shoot_rifle_", 3),
+}
+
+ASSET_IDS = {
+    "IDLE": "player.rifle.idle",
+    "MOVE": "player.rifle.move",
+    "SHOOT": "player.rifle.shoot",
 }
 
 
@@ -22,8 +28,7 @@ class Human(pygame.sprite.Sprite):
         self.animation_clock = 0.0
         self.frame = 0
         self.frames = {
-            name: load_animation(directory, prefix, count, config.PLAYER_SCALE)
-            for name, (directory, prefix, count) in ANIMATIONS.items()
+            name: load_asset(asset_id) for name, asset_id in ASSET_IDS.items()
         }
         self.image = self.frames["IDLE"][0]
         self.rect = self.image.get_rect()

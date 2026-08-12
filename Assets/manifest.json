@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "assets": {
+    "player.rifle.idle": {"kind": "animation", "directory": "Player Animations/Idle", "prefix": "survivor-idle_rifle_", "frame_count": 20, "fps": 60, "visual_size": [156, 103], "collision_size": [156, 103], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "player.rifle.move": {"kind": "animation", "directory": "Player Animations/Move", "prefix": "survivor-move_rifle_", "frame_count": 20, "fps": 60, "visual_size": [156, 103], "collision_size": [156, 103], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "player.rifle.shoot": {"kind": "animation", "directory": "Player Animations/Shoot", "prefix": "survivor-shoot_rifle_", "frame_count": 3, "fps": 60, "visual_size": [156, 103], "collision_size": [156, 103], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "zombie.basic.idle": {"kind": "animation", "directory": "Zombie Animations/zombie_idle", "prefix": "skeleton-idle_", "frame_count": 17, "fps": 60, "visual_size": [120, 111], "collision_size": [120, 111], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "zombie.basic.move": {"kind": "animation", "directory": "Zombie Animations/zombie_move", "prefix": "skeleton-move_", "frame_count": 17, "fps": 60, "visual_size": [144, 155], "collision_size": [120, 111], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "zombie.basic.attack": {"kind": "animation", "directory": "Zombie Animations/zombie_attack", "prefix": "skeleton-attack_", "frame_count": 9, "fps": 60, "visual_size": [159, 147], "collision_size": [120, 111], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "world.ground": {"kind": "image", "path": "Backgrounds/background_0.jpg", "frame_count": 1, "fps": 0, "visual_size": [5000, 5000], "collision_size": null, "anchor": [0.0, 0.0], "scaling": "smooth"},
+    "menu.background": {"kind": "image", "path": "Backgrounds/menu_pixel.png", "frame_count": 1, "fps": 0, "visual_size": [135, 90], "collision_size": null, "anchor": [0.0, 0.0], "scaling": "nearest"},
+    "ui.cursor": {"kind": "image", "path": "cursor.png", "frame_count": 1, "fps": 0, "visual_size": [46, 45], "collision_size": null, "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "ui.hud.bottom_left": {"kind": "image", "path": "HUD/blHUD.png", "frame_count": 1, "fps": 0, "visual_size": [117, 46], "collision_size": null, "anchor": [0.0, 1.0], "scaling": "smooth"},
+    "ui.hud.bottom_right": {"kind": "image", "path": "HUD/brHUD.png", "frame_count": 1, "fps": 0, "visual_size": [223, 121], "collision_size": null, "anchor": [1.0, 1.0], "scaling": "smooth"},
+    "ui.hud.top_middle": {"kind": "image", "path": "HUD/tmHUD.png", "frame_count": 1, "fps": 0, "visual_size": [450, 44], "collision_size": null, "anchor": [0.5, 0.0], "scaling": "smooth"},
+    "ui.weapon.shotgun": {"kind": "image", "path": "HUD/gunShotty.png", "frame_count": 1, "fps": 0, "visual_size": [82, 62], "collision_size": null, "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "powerup.instant_kill": {"kind": "image", "path": "Power Ups/instakill.png", "frame_count": 1, "fps": 0, "visual_size": [150, 150], "collision_size": [150, 150], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "powerup.nuke": {"kind": "image", "path": "Power Ups/Nuke.png", "frame_count": 1, "fps": 0, "visual_size": [150, 150], "collision_size": [150, 150], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "powerup.max_ammo": {"kind": "image", "path": "Power Ups/MaxAmmo.png", "frame_count": 1, "fps": 0, "visual_size": [150, 150], "collision_size": [150, 150], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "powerup.max_health": {"kind": "image", "path": "Power Ups/MaxHealth.png", "frame_count": 1, "fps": 0, "visual_size": [150, 150], "collision_size": [150, 150], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "projectile.bullet": {"kind": "image", "path": "Projectiles/bullet.png", "frame_count": 1, "fps": 0, "visual_size": [14, 14], "collision_size": [14, 14], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "throwable.grenade": {"kind": "image", "path": "Throwables/grenade.png", "frame_count": 1, "fps": 0, "visual_size": [19, 19], "collision_size": [19, 19], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "throwable.stun_grenade": {"kind": "image", "path": "Throwables/stungrenade.png", "frame_count": 1, "fps": 0, "visual_size": [10, 22], "collision_size": [10, 22], "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "effect.explosion": {"kind": "image", "path": "Effects/explosion.png", "frame_count": 1, "fps": 0, "visual_size": [374, 297], "collision_size": null, "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "effect.stun_explosion": {"kind": "image", "path": "Effects/stunexplosion.png", "frame_count": 1, "fps": 0, "visual_size": [255, 220], "collision_size": null, "anchor": [0.5, 0.5], "scaling": "smooth"}
+  }
+}

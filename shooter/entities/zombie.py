@@ -4,13 +4,19 @@ import random
 import pygame
 
 from shooter import config
-from shooter.assets import load_animation, load_sized
+from shooter.assets import load_asset
 from shooter.render import Interpolated
 
 ANIMATIONS = {
     "IDLE": ("Zombie Animations/zombie_idle", "skeleton-idle_", 17),
     "MOVE": ("Zombie Animations/zombie_move", "skeleton-move_", 17),
     "ATTACK": ("Zombie Animations/zombie_attack", "skeleton-attack_", 9),
+}
+
+ASSET_IDS = {
+    "IDLE": "zombie.basic.idle",
+    "MOVE": "zombie.basic.move",
+    "ATTACK": "zombie.basic.attack",
 }
 
 
@@ -99,14 +105,9 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         self.zombie_health = config.ZOMBIE_HEALTH
         self.window_size = window_size
         self.frames = {
-            name: load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
-            for name, (directory, prefix, count) in ANIMATIONS.items()
+            name: load_asset(asset_id) for name, asset_id in ASSET_IDS.items()
         }
-        self.upright = load_sized(
-            "Zombie Animations/zombie_idle/skeleton-idle_0.png",
-            *config.ZOMBIE_SIZE,
-            True,
-        )
+        self.upright = self.frames["IDLE"][0]
         self.image = self.upright
         self.rect = self.image.get_rect()
         self.spawn_zombie(visible)
