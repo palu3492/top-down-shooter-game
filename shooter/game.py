@@ -2,6 +2,7 @@ import math
 
 import pygame
 
+from shooter import config
 from shooter.assets import asset_path, load_image
 from shooter.background import BackgroundSheet
 from shooter.entities.player import Human
@@ -21,7 +22,7 @@ from shooter.ui.radar import RadarScreen
 
 PLAYING, PAUSED = "PLAYING", "PAUSED"
 
-INSTAKILL_FRAMES = 30 * 60  # 30 seconds at the locked 60 FPS; AT12 makes this seconds
+INSTAKILL_FRAMES = config.INSTAKILL_FRAMES
 
 
 def collect_powerup(kind, human, zombie_group, gun):
@@ -45,28 +46,30 @@ def is_zombie_attacking(human, zombie):
     if pygame.sprite.collide_rect(human, zombie):
         zombie.update_anim("ATTACK")
         if human.remove_health(
-            0.10
+            config.ZOMBIE_DAMAGE
         ):  # if return True (player is dead) then change to idle and kill player
             zombie.update_anim("IDLE")
             human.kill()
 
 
 def explosion_touching_zombie(zombie, explosion):
-    if pygame.sprite.collide_rect(zombie, explosion) and zombie.remove_health(75):
+    if pygame.sprite.collide_rect(zombie, explosion) and zombie.remove_health(
+        config.EXPLOSION_DAMAGE
+    ):
         zombie.kill()
 
 
 def stun_explosion_touching_zombie(zombie, explosion):
     if pygame.sprite.collide_rect(zombie, explosion):
-        zombie.remove_speed(3)
+        zombie.remove_speed(config.STUN_SPEED)
 
 
 def game_loop():
     pygame.init()
-    window = (1080, 720)
+    window = config.WINDOW
     screen = pygame.display.set_mode(window)
     screen.blit(
-        pygame.font.Font(None, 40).render("Loading...", True, (255, 255, 255)),
+        pygame.font.Font(None, 40).render("Loading...", True, config.WHITE),
         (100, 100),
     )
     pygame.display.update()
@@ -80,6 +83,8 @@ def game_loop():
     pygame.mouse.set_visible(False)
 
     camera_x, camera_y = 0, 0
+    min_camera_x = -(config.WORLD[0] - window[0])
+    min_camera_y = -(config.WORLD[1] - window[1])
 
     bck = BackgroundSheet(asset_path("Backgrounds/background_0.jpg"))
 
@@ -119,25 +124,25 @@ def game_loop():
         # Controls for moving the camera, moving 40 px per frame
         if state == PLAYING and human.alive():
             if pressed[pygame.K_w]:
-                change_y = 10
+                change_y = config.PLAYER_SPEED
             elif pressed[pygame.K_s]:
-                change_y = -10
+                change_y = -config.PLAYER_SPEED
             if pressed[pygame.K_a]:
-                change_x = 10
+                change_x = config.PLAYER_SPEED
             elif pressed[pygame.K_d]:
-                change_x = -10
+                change_x = -config.PLAYER_SPEED
 
         camera_x += change_x
         camera_y += change_y
 
         if camera_x > 0:
             camera_x = 0
-        elif camera_x < -5000 + window[0]:
-            camera_x = -5000 + window[0]
+        elif camera_x < min_camera_x:
+            camera_x = min_camera_x
         if camera_y > 0:
             camera_y = 0
-        elif camera_y < -5000 + window[1]:
-            camera_y = -5000 + window[1]
+        elif camera_y < min_camera_y:
+            camera_y = min_camera_y
 
         # When button is lifted up sets camera x,y change to 0
         if change_x <= 0 or change_y <= 0:
@@ -198,7 +203,7 @@ def game_loop():
         if state == PAUSED:
             pause.draw(screen, window, paused_frame)
             pygame.display.flip()
-            clock.tick(60)
+            clock.tick(config.FPS)
             continue
 
         if ammo_count == "reload":
@@ -281,16 +286,16 @@ def game_loop():
         screen.blit(cursor, (mouse_x - 23, mouse_y - 22))
 
         # Updating radar with new data, Human and Zombies
-        radar.draw(screen, -camera_x + 960, -camera_y + 540)
+        radar.draw(screen, -camera_x + window[0] / 2, -camera_y + window[1] / 2)
         for zombie in zombie_group:
             radar.update_zom(screen, zombie)
 
         if instakill_frames:
             instakill_frames -= 1
-            seconds = instakill_frames // 60 + 1
+            seconds = instakill_frames // config.FPS + 1
             screen.blit(
                 pygame.font.Font(None, 34).render(
-                    f"INSTAKILL {seconds}s", True, (255, 80, 80)
+                    f"INSTAKILL {seconds}s", True, config.INSTAKILL_TEXT
                 ),
                 (window[0] / 2.0 - 70, 40),
             )
@@ -303,17 +308,15 @@ def game_loop():
 
         if ammo_count == "reload":
             screen.blit(
-                pygame.font.Font(None, 30).render("Reloading", True, (255, 255, 255)),
+                pygame.font.Font(None, 30).render("Reloading", True, config.WHITE),
                 ((window[0] / 2.0) - 50, 100),
             )
 
         screen.blit(
-            pygame.font.Font(None, 20).render(
-                str(clock.get_fps()), True, (255, 255, 255)
-            ),
+            pygame.font.Font(None, 20).render(str(clock.get_fps()), True, config.WHITE),
             (0, 0),
         )
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(config.FPS)
 
     pygame.quit()

@@ -1,20 +1,43 @@
 import pygame
 
+from shooter import config
+
 
 class RadarScreen:
     def __init__(self):
         pass
 
-    def draw(self, screen, x, y):
-        pygame.draw.rect(screen, (200, 200, 200), (10, 10, 100, 100))
-        pygame.draw.line(screen, (0, 0, 0), (10, 60), (110, 60))
-        pygame.draw.line(screen, (0, 0, 0), (60, 10), (60, 110))
+    def _blip(self, screen, colour, x, y):
+        left, top = config.RADAR_ORIGIN
         pygame.draw.rect(
-            screen, (60, 255, 60), (10 + int(x / 50), 10 + int(y / 50), 5, 5)
+            screen,
+            colour,
+            (
+                left + int(x / config.RADAR_SCALE),
+                top + int(y / config.RADAR_SCALE),
+                config.RADAR_BLIP,
+                config.RADAR_BLIP,
+            ),
         )
+
+    def draw(self, screen, x, y):
+        left, top = config.RADAR_ORIGIN
+        size = config.RADAR_SIZE
+        pygame.draw.rect(screen, config.RADAR_BACKGROUND, (left, top, size, size))
+        pygame.draw.line(
+            screen,
+            config.BLACK,
+            (left, top + size // 2),
+            (left + size, top + size // 2),
+        )
+        pygame.draw.line(
+            screen,
+            config.BLACK,
+            (left + size // 2, top),
+            (left + size // 2, top + size),
+        )
+        self._blip(screen, config.RADAR_PLAYER, x, y)
 
     def update_zom(self, screen, zombie):
         x, y = zombie.get_position()
-        pygame.draw.rect(
-            screen, (255, 60, 60), (10 + int(x / 50), 10 + int(y / 50), 5, 5)
-        )
+        self._blip(screen, config.RADAR_ZOMBIE, x, y)
