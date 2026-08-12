@@ -18,11 +18,10 @@ from shooter.entities.projectiles import (
 )
 from shooter.systems.waves import WaveSystem
 from shooter.render import blit_group
-from shooter.ui import pause
+from shooter.ui import menu
+from shooter.ui.screens import ScreenStack
 from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
 from shooter.ui.radar import RadarScreen
-
-PLAYING, PAUSED = "PLAYING", "PAUSED"
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 
@@ -79,8 +78,9 @@ def game_loop():
     )
     pygame.display.update()
     game_is_running = True
-    state = PLAYING
-    paused_frame = None
+    screens = ScreenStack(window)
+    frozen_frame = None
+    pause_requested = False
     instakill_seconds = 0.0
 
     cursor = load_image("cursor.png")
@@ -131,6 +131,22 @@ def game_loop():
             human_anim = "IDLE"
 
         for event in pygame.event.get():
+            if screens:
+                if event.type == pygame.QUIT:
+                    game_is_running = False
+                    continue
+                action = screens.handle(event)
+                if action == menu.RESUME:
+                    screens.clear()
+                elif action == menu.SETTINGS:
+                    screens.push(menu.SettingsScreen(window, screens.manager))
+                elif action == menu.DEV:
+                    screens.push(menu.DevScreen(window, screens.manager))
+                elif action == menu.BACK:
+                    screens.pop()
+                elif action == menu.QUIT:
+                    game_is_running = False
+                continue
             if event.type == pygame.MOUSEBUTTONDOWN and ammo_count not in (
                 "no ammo",
                 "reload",
@@ -152,14 +168,8 @@ def game_loop():
                 # our reference valid if pygame swapped it out underneath us.
                 screen = pygame.display.get_surface()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    if state == PLAYING:
-                        state = PAUSED
-                        paused_frame = screen.copy()
-                    else:
-                        state = PLAYING
-                if event.key == pygame.K_q and state == PAUSED:
-                    game_is_running = False
+                if event.key == pygame.K_ESCAPE and not screens:
+                    pause_requested = True
                 if event.key == pygame.K_BACKSLASH:
                     # With SCALED this keeps the render surface intact; the old
                     # set_mode(FULLSCREEN) re-opened the window at 1080x720.
@@ -189,8 +199,8 @@ def game_loop():
                 if event.key == pygame.K_r:
                     ammo_count = ammo_class.manual_reload()
 
-        if state == PAUSED:
-            pause.draw(screen, window, paused_frame)
+        if screens:
+            screens.draw(screen, frozen_frame, 1 / config.SIM_HZ)
             pygame.display.flip()
             clock.tick(config.FPS)
             accumulator = 0.0
@@ -207,7 +217,7 @@ def game_loop():
         while accumulator >= config.SIM_DT:
             accumulator -= config.SIM_DT
 
-            if state == PLAYING and human.alive():
+            if human.alive():
                 if pressed[pygame.K_w]:
                     change_y = config.PLAYER_SPEED * config.SIM_DT
                 elif pressed[pygame.K_s]:
@@ -297,8 +307,6 @@ def game_loop():
         blit_group(screen, stun_grenades, draw_x, draw_y, alpha)
         blit_group(screen, stun_explosions, draw_x, draw_y, alpha)
 
-        screen.blit(cursor, (mouse_x - 23, mouse_y - 22))
-
         radar.draw(screen, -camera_x + window[0] / 2, -camera_y + window[1] / 2)
         for zombie in zombie_group:
             radar.update_zom(screen, zombie)
@@ -328,6 +336,13 @@ def game_loop():
             pygame.font.Font(None, 20).render(str(clock.get_fps()), True, config.WHITE),
             (0, 0),
         )
+
+        if pause_requested:
+            frozen_frame = screen.copy()
+            screens.push(menu.PauseScreen(window, screens.manager))
+            pause_requested = False
+
+        screen.blit(cursor, (mouse_x - 23, mouse_y - 22))
         pygame.display.flip()
         accumulator += min(clock.tick(config.FPS) / 1000.0, config.MAX_FRAME_SECONDS)
 

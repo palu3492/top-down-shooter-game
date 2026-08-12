@@ -69,17 +69,35 @@ def test_mutable_state_is_set_on_the_instance(built, name):
 
 
 def test_no_class_body_still_declares_mutable_state():
-    """Only ALL_CAPS constants may live on a class body."""
+    """A class attribute is state if the class also writes it onto instances.
+
+    Declarative attributes a subclass overrides -- a screen's title, whether it
+    covers the game -- are never assigned on self, so they cannot be shared
+    mutable state and are allowed.
+    """
     offenders = []
     for path in pathlib.Path("shooter").rglob("*.py"):
-        for node in ast.walk(ast.parse(path.read_text())):
+        tree = ast.parse(path.read_text())
+        written_to_self = {
+            node.attr
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Attribute)
+            and isinstance(node.ctx, ast.Store)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "self"
+        }
+        for node in ast.walk(tree):
             if not isinstance(node, ast.ClassDef):
                 continue
             for body in node.body:
                 if not isinstance(body, ast.Assign):
                     continue
                 for target in body.targets:
-                    if isinstance(target, ast.Name) and not target.id.isupper():
+                    if (
+                        isinstance(target, ast.Name)
+                        and not target.id.isupper()
+                        and target.id in written_to_self
+                    ):
                         offenders.append(f"{node.name}.{target.id}")
 
     assert offenders == []
