@@ -772,58 +772,84 @@ elsewhere.
 
 ---
 
-## AT16 — Fixed timestep with interpolation — TODO
+## AT16 — Fixed timestep — DONE
 
 **Short description:** Replace AT12's variable delta time with a fixed-step
-accumulator and render-time interpolation. Research spike concluded this is the
-industry-standard loop and, given planned physics, effectively mandatory.
+accumulator, so the simulation advances in constant increments no matter how
+fast the machine draws.
 
 **Dependencies:** AT12
 
 **Goals**
-- [ ] Accumulator loop: simulate in constant `SIM_DT` steps, render with `alpha = accumulator / SIM_DT`
-- [ ] Interpolate drawn positions between the previous and current simulation states
-- [ ] Keep the existing `dt` clamp as the spiral-of-death guard
-- [ ] Retire the bespoke bullet sub-stepping, which the accumulator generalises
-- [ ] Assert determinism: identical inputs produce byte-identical state at 30, 60 and 144 FPS
+- [x] Accumulator loop: simulate in constant `SIM_DT` steps
+- [x] Keep the frame-time clamp as the spiral-of-death guard
+- [x] Determinism: identical state after an equal number of steps at any frame rate
+- [ ] Interpolate entities between steps — camera only for now, see AT19
+- [ ] Retire the bespoke bullet sub-stepping — deferred, see below
 
-**Why this is no longer optional.** The first spike judged variable `dt`
-"defensible for a shooter with no physics solver". Aaron has since confirmed the
-roadmap includes physics for explosions and beyond, which inverts that
-conclusion. Pymunk — the standard 2D physics binding for Python — is explicit:
-*"The most important part in your game loop is to keep the dt argument to the
-pymunk.Space.step() function constant."* A constant step is also *"an order of
-magnitude fewer iterations to resolve the collisions in the usual case"*.
+**Determinism achieved, which AT12 could not give.** Byte-identical state hashes
+after 200 simulation steps at 30, 60, 90, 144, 200 and 300 FPS. AT12's best was
+87.30 / 87.00 / 86.69 — close, never equal.
 
-**Explosions are the exact failure case.** Fiedler's variable-`dt` failure modes
-are springs exploding, tunnelling, and bodies falling through floors — all
-impulse-driven, which is what an explosion is.
+**Groundwork first: simulation and drawing were interleaved.** `health_bar` drew
+from inside the zombie update loop, `wave_control` both advanced the timer and
+drew its banner, and both throwables took a `screen` they never used. A fixed
+step cannot exist until simulating and drawing are separable, so that landed as
+its own commit.
 
-**Sequencing matters more than the change itself.** This must land *before* any
-physics engine is introduced. Adding physics on variable `dt` and converting
-afterwards means doing the migration twice and debugging an unstable simulation
-in between, unable to tell engine bugs from timing bugs.
+**Two real bugs surfaced, both invisible to the unit tests.**
 
-**AT12 was not wasted.** Converting every constant to seconds and px/sec was the
-prerequisite; the accumulator is a change to the loop, not to the units.
+The first was a duplicated movement block: the original per-frame camera update
+was left in place alongside the new per-step one, so the camera moved twice.
+Arithmetic confirmed it exactly — at 144 FPS, 144 frames × 10px plus 59 steps ×
+10px is the 2030px that was measured.
 
-**Determinism is the real prize.** AT12 measured health at 87.30 / 87.00 / 86.69
-across three frame rates — close, but not equal. A fixed step makes those
-identical, which enables replays, deterministic tests, and eventually netplay.
+The second was subtler and is the interesting one. `human.rot_center` was in the
+render pass, but it resizes `human.rect`, which collision reads. More frames per
+step meant more compounding rotations, a larger hitbox and more damage taken —
+health diverged to 97.55 at 144 FPS and 93.05 at 200 while staying 100 at 60.
+**Rotation is not purely cosmetic here**, so it now runs once per step.
 
-**Interpolation is not optional.** Without it there is always a sub-`dt`
-remainder, so every frame renders the simulation at slightly the wrong instant —
-visible as stutter. Skipping it is the common half-implementation.
+**Interpolation is deliberately partial, and that is a constraint not a
+shortcut.** Only the camera is interpolated. Interpolating *some* things is
+worse than interpolating none — the ground would scroll smoothly while zombies
+stepped at 60 Hz. Because `FPS == SIM_HZ`, the accumulator remainder is
+approximately zero and `alpha` is approximately zero, so interpolation is
+currently a no-op regardless. It becomes necessary the moment the render cap
+rises above `SIM_HZ`, which is what AT19 covers, and `config.py` records the
+constraint.
 
-**3D-ish rendering strengthens the case.** Sprite stacking, raycasting or a
-ModernGL/shader path all make frame times less predictable and more GPU-bound.
-A fixed simulation step decouples the two: physics stays at 60 Hz while
-rendering runs at whatever the hardware manages.
+**Bullet sub-stepping stays for now.** The accumulator bounds how much time a
+step covers, but a single 1/60s step still moves a bullet 150px — far enough to
+tunnel past a zombie. The sub-stepping is doing a different job than the
+accumulator and cannot simply be deleted; revisit when physics arrives and owns
+continuous collision.
 
-**Note the tunnelling overlap.** Pymunk recommends multiple smaller steps per
-frame to prevent tunnelling — which is precisely what the accumulator does, and
-precisely what `Shot.update` currently hand-rolls for bullets alone. The
-accumulator replaces that special case with the general mechanism.
+---
+
+## AT19 — Interpolate entities between simulation steps — TODO
+
+**Short description:** Finish what AT16 started. Every drawn entity needs a
+previous and current position so rendering can interpolate, which is the
+prerequisite for running the renderer faster than the simulation.
+
+**Dependencies:** AT16
+
+**Goals**
+- [ ] Zombies, bullets, throwables and power-ups each keep a previous world position
+- [ ] Render positions computed as `previous + (current - previous) * alpha`
+- [ ] Decouple `FPS` from `SIM_HZ` and remove the constraint noted in `config.py`
+- [ ] Confirm motion is smooth at 144 Hz with the simulation still at 60 Hz
+
+**Why it was not done in AT16.** Partial interpolation looks worse than none:
+smoothly scrolling ground behind entities stepping at 60 Hz reads as juddering.
+Either everything interpolates or nothing does, and doing everything is a change
+to every moving entity rather than to the loop.
+
+**Why it is not urgent.** With `FPS == SIM_HZ` the accumulator remainder is
+approximately zero, so there is nothing to interpolate. This ticket is a
+prerequisite for high-refresh displays and for the GPU-bound rendering the 3D
+direction implies, not a fix for anything visible today.
 
 ---
 
