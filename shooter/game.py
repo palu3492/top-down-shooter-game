@@ -5,11 +5,15 @@ from shooter.assets import asset_path, load_image
 from shooter.entities.player import Human
 from shooter.systems.waves import  Wave_System
 #from CarePackage import PackageSystem
+from shooter.ui import pause
 from shooter.ui.hud import *
 from shooter.ui.radar import *
 from shooter.background import loadBackground
 from shooter.entities.projectiles import *
 from shooter.entities.powerups import PowerUps
+
+PLAYING, PAUSED = "PLAYING", "PAUSED"
+
 
 def reset_zombie_pos(zombie):
     zombie.reset_posistion()
@@ -38,6 +42,8 @@ def game_loop():
     pygame.display.update()
     game_is_running = True
     fullscreen_flag = True
+    state = PLAYING
+    paused_frame = None
 
     cursor = load_image('cursor.png')
     pygame.mouse.set_visible(False)
@@ -80,7 +86,7 @@ def game_loop():
         pressed = pygame.key.get_pressed()
 
         #Controls for moving the camera, moving 40 px per frame
-        if human.alive():
+        if state == PLAYING and human.alive():
             if pressed[pygame.K_w]:
                 changeY = 10
             elif pressed[pygame.K_s]:
@@ -116,6 +122,14 @@ def game_loop():
             if event.type==pygame.QUIT:
                 game_is_running = False
             if event.type==pygame.KEYDOWN:
+                if event.key==pygame.K_ESCAPE:
+                    if state == PLAYING:
+                        state = PAUSED
+                        paused_frame = screen.copy()
+                    else:
+                        state = PLAYING
+                if event.key==pygame.K_q and state == PAUSED:
+                    game_is_running = False
                 if event.key==pygame.K_BACKSLASH:
                     fullscreen_flag = not fullscreen_flag
                     screen = pygame.display.set_mode(
@@ -133,12 +147,14 @@ def game_loop():
                 if event.key == pygame.K_r:
                     ammoCount = ammo_class.manual_reload()
 
+        if state == PAUSED:
+            pause.draw(screen, window, paused_frame)
+            pygame.display.flip()
+            clock.tick(60)
+            continue
+
         if ammoCount=="reload":
             ammoCount=ammo_class.reloading(screen)
-
-        # Quit the game
-        if pressed[pygame.K_p]:
-            game_is_running = False
 
         #Human
         if human_anim == "IDLE":
