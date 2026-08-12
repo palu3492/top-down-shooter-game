@@ -1,7 +1,7 @@
 """Tunable values for the game.
 
-Timers and speeds are expressed in frames and pixels-per-frame, matching the
-locked 60 FPS loop. AT12 converts them to seconds and pixels-per-second.
+Speeds are pixels per second and durations are seconds, so behaviour is
+identical whatever frame rate the loop actually achieves.
 """
 
 FPS = 60
@@ -9,14 +9,14 @@ FPS = 60
 WINDOW = (1080, 720)
 WORLD = (5000, 5000)
 
-PLAYER_SPEED = 10
+PLAYER_SPEED = 600
 PLAYER_HEALTH = 100.0
-PLAYER_REGEN = 0.05
+PLAYER_REGEN = 3.0
 PLAYER_SCALE = 0.5
 
-ZOMBIE_SPEED = 6
+ZOMBIE_SPEED = 360
 ZOMBIE_HEALTH = 100.0
-ZOMBIE_DAMAGE = 0.10
+ZOMBIE_DAMAGE = 6.0
 ZOMBIE_SIZE = (120, 111)
 ZOMBIE_SCALE = 0.5
 KILL_REWARD = 50
@@ -25,31 +25,46 @@ KILL_REWARD = 50
 # resolution this game does not run at. Preserved as-is here; see AT15.
 SPAWN_AREA = (1920, 1080)
 
-BULLET_SPEED = 150
-BULLET_STEP = 14
+BULLET_SPEED = 9000
+BULLET_STEP = 14  # max pixels between collision checks
+EXPLOSION_SECONDS = 1 / 60
+ANIMATION_FPS = 60
+MAX_FRAME_SECONDS = 0.1  # clamp: a stalled frame must not teleport anything
 BULLET_DAMAGE = 20
 BULLET_RANGE = 1000
 LETHAL = 1000
 
-GRENADE_SPEED = 50
-GRENADE_FUSE = 30
+GRENADE_SPEED = 3000
+GRENADE_FUSE = 0.5
 EXPLOSION_DAMAGE = 75
-STUN_SPEED = 3
-STUN_FRAMES = 200
+STUN_SPEED = 180
+STUN_SECONDS = 200 / 60
 
 CLIP_SIZE = 60
 RESERVE_SIZE = 120
-RELOAD_FRAMES = 60
+RELOAD_SECONDS = 1.0
 STARTING_GRENADES = 5
 STARTING_STUN_GRENADES = 5
 
 WAVE_BASE = 5
-WAVE_INTERVAL_FRAMES = 1500
+WAVE_INTERVAL_SECONDS = 25.0
 
-POWERUP_LIFETIME_FRAMES = 1200
-POWERUP_BLINK_AFTER = 400
+POWERUP_LIFETIME_SECONDS = 20.0
+POWERUP_BLINK_AFTER = 400 / 60
+# The original frame windows, converted; the pickup flashes faster as it ages.
+POWERUP_BLINK_WINDOWS = tuple(
+    (start / 60, end / 60)
+    for start, end in (
+        (400, 500),
+        (600, 650),
+        (800, 850),
+        (1000, 1050),
+        (1100, 1125),
+        (1150, 1175),
+    )
+)
 POWERUP_SPAWN = (800, 500)
-INSTAKILL_FRAMES = 30 * FPS
+INSTAKILL_SECONDS = 30.0
 
 RADAR_ORIGIN = (10, 10)
 RADAR_SIZE = 100

@@ -7,28 +7,31 @@ from shooter.entities.zombie import Zombie
 class WaveSystem:
     def __init__(self, window, zombie_group, player_cash):
         self.wave_count = 0
-        self.wave_timer = 0
+        self.wave_seconds = 0.0
         for _ in range(config.WAVE_BASE):
             zombie_group.add(Zombie(window, player_cash))
 
     def wave_gui(self, screen):
         return True
 
-    def wave_control(self, screen, window, zombie_group, player_cash):
+    def wave_control(
+        self, screen, window, zombie_group, player_cash, dt=1 / config.FPS
+    ):
         # tick and next wave spawner
-        if self.wave_timer == config.WAVE_INTERVAL_FRAMES:
+        if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.wave_count += 1
             num_spawn = config.WAVE_BASE + pow(self.wave_count, 2)
             for _ in range(num_spawn):
                 zombie_group.add(Zombie(window, player_cash))
-            self.wave_timer = 0
+            self.wave_seconds = 0.0
         else:
-            self.wave_timer += 1
+            self.wave_seconds += dt
 
         # Updating timer to screen
         screen.blit(
             pygame.font.Font(None, 40).render(
-                "Time until next round " + str(15 - (int(self.wave_timer / 100))),
+                "Time until next round "
+                + str(max(0, int(config.WAVE_INTERVAL_SECONDS - self.wave_seconds))),
                 True,
                 config.WHITE,
             ),
@@ -55,4 +58,4 @@ class WaveSystem:
         # next round starts
         pressed = pygame.key.get_pressed()
         if pressed[pygame.K_SPACE]:
-            self.wave_timer = config.WAVE_INTERVAL_FRAMES
+            self.wave_seconds = config.WAVE_INTERVAL_SECONDS

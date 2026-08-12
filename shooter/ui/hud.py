@@ -42,7 +42,7 @@ class GunData:
         self.window = window
         self.clip_size = self.CLIP
         self.ammo_amount = self.RESERVE
-        self.reload_time = config.RELOAD_FRAMES
+        self.reload_seconds = config.RELOAD_SECONDS
         self.gun_type = load_image("HUD/gunShotty.png")
 
     def shooting_bullet(self):
@@ -83,14 +83,12 @@ class GunData:
         elif self.clip_size == 0:
             return "no ammo"
 
-    def reloading(self):
-        if self.reload_time > 0:
-            self.reload_time -= 1
+    def reloading(self, dt=1 / config.FPS):
+        if self.reload_seconds > 0:
+            self.reload_seconds -= dt
             return "reload"
-        else:
-            # return nothing so it knows that its not still "reloading"
-            self.reload_time = config.RELOAD_FRAMES
-            return
+        self.reload_seconds = config.RELOAD_SECONDS
+        return None
 
     def update(self, screen):
         screen.blit(

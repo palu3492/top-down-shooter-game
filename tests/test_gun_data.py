@@ -1,5 +1,7 @@
 import pytest
 
+from shooter import config
+
 from shooter.ui.hud import GunData
 
 
@@ -67,12 +69,14 @@ def test_manual_reload_with_nothing_left_reports_no_ammo(gun):
 
 
 def test_reload_counts_down_then_clears(gun):
-    assert gun.reload_time == 60
-    for _ in range(60):
-        assert gun.reloading() == "reload"
+    dt = 1 / config.FPS
+    assert gun.reload_seconds == config.RELOAD_SECONDS
 
-    assert gun.reloading() is None
-    assert gun.reload_time == 60
+    for _ in range(int(config.RELOAD_SECONDS * config.FPS)):
+        assert gun.reloading(dt) == "reload"
+
+    assert gun.reloading(dt) is None
+    assert gun.reload_seconds == config.RELOAD_SECONDS
 
 
 def test_two_guns_do_not_share_ammo(gun, window):
