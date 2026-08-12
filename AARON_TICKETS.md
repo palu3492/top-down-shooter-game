@@ -367,20 +367,50 @@ one** — a timed buff with no feedback leaves the player guessing. Red
 
 ---
 
-## AT6 — Coordinate system and magic numbers — TODO
+## AT6 — Coordinate system and magic numbers — DONE
 
-**Short description:** The window is 1080×720, but the code is littered with
-constants from a 1920×1080 build that was never fully migrated.
+**Short description:** The window is 1080×720, but constants from an abandoned
+1920×1080 build were still scattered through the code.
 
 **Dependencies:** AT5
 
 **Goals**
-- [ ] `Zombie.spawn_zombie` spawns against a 1920×1080 frame (`1081`, `1921`, `randint(1,192)*10`) — zombies appear at the wrong offsets
-- [ ] `RadarScreen.draw` is called with `-camera_x+960, -camera_y+540` — hardcoded 1920/2, 1080/2
-- [ ] ~~`Data.width` / `height` globals~~ — already deleted in AT8
-- [ ] World bounds `-5000+window[…]` are inlined in the camera clamp
-- [ ] Centralize in `shooter/config.py`: window size, world size, speeds, damage, costs, wave scaling, colors
-- [ ] Radar scale derives from world size instead of a hardcoded `/50`
+- [x] `shooter/config.py` holding window, world, speeds, damage, rewards, wave scaling, timers, colours
+- [x] Camera clamp derives from `WORLD` instead of an inlined `-5000 + window[…]`
+- [x] Radar centre and scale derive from window and world
+- [x] Spawn area named rather than inlined
+- [x] No resolution literal survives outside `config.py`
+
+**A real bug fixed: the radar was lying.** It was called with
+`-camera_x + 960, -camera_y + 540` — half of 1920×1080 — so in a 1080×720 window
+the player blip sat about 8 radar pixels off its true position. It now derives
+from the actual window centre, and tests pin the mapping at the origin, the far
+corner, and an arbitrary point.
+
+**The radar scale was already right.** `/50` happens to equal
+`WORLD // RADAR_SIZE` (5000 ÷ 100). It is derived now rather than coincidental.
+
+---
+
+## AT15 — Zombies spawn around the world origin, not the player — TODO
+
+**Short description:** `spawn_zombie` places zombies on a ring anchored at world
+`(0, 0)` and sized `1920×1080` — a resolution the game does not use. Found while
+doing AT6; **not** fixed there because it changes spawn distances, which is a
+balance change rather than a constant rename.
+
+**Dependencies:** AT6
+
+**Goals**
+- [ ] Spawn just outside the current viewport rather than around the origin
+- [ ] Retire `config.SPAWN_AREA` once the ring is camera-relative
+
+**Why it matters.** The world is 5000×5000 and the camera clamps to
+`-(5000 - window)`, so the player can stand at world x ≈ 4460 while zombies are
+still being placed within x ∈ [0, 1920]. They do converge — `move_toward_center`
+homes on the player wherever they are — but they can start thousands of pixels
+away, so wave difficulty varies with where the player happens to be standing.
+Not fatal, which is why it is its own ticket rather than a hotfix.
 
 ---
 
