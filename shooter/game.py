@@ -47,7 +47,7 @@ def match_resolution(window, screens, session):
     window.resize(config.WINDOW)
     surface = open_display(window)
     screens.resize(window)
-    session.resize(window)
+    session.resize()
     return surface
 
 
