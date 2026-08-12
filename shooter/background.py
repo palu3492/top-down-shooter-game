@@ -1,6 +1,6 @@
 import pygame
 
-class loadBackground:
+class BackgroundSheet:
     def __init__(self, filename):
         self.sheet = pygame.image.load(filename).convert()
 

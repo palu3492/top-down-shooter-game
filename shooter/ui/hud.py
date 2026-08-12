@@ -25,7 +25,7 @@ class HUD:
         for image in self.images:
             screen.blit(image[0],image[1])
 
-class gun_data:
+class GunData:
     clip_size = 60
     ammo_amount = 120
     reload_time=60
@@ -82,7 +82,7 @@ class gun_data:
         screen.blit(pygame.font.Font(None, 44).render(str(self.ammo_amount), True, (255, 255, 255)),(self.window[0] - 170, self.window[1] - 102))
         screen.blit(self.gun_type, (self.window[0]-125, self.window[1]-120))
 
-class grenade_data:
+class GrenadeData:
     grenade_amount=5
     stun_grenade_amount=5
     def __init__(self):

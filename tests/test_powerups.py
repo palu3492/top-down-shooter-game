@@ -14,8 +14,8 @@ EVERY_KIND = [INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH]
 def make_powerup():
     """Build a power-up of a chosen kind.
 
-    PowerUp_Selection currently hardcodes randint(2, 2), so every power-up is a
-    Nuke. Tests must not rely on that -- AT5 restores the full 1..4 range.
+    select_powerup currently hardcodes randint(2, 2), so every power-up is a
+    nuke. Tests must not rely on that -- AT5 restores the full 1..4 range.
     """
 
     def build(kind=NUKE):

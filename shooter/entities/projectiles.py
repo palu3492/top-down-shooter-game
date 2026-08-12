@@ -28,35 +28,35 @@ def play(spec):
     _load(*spec).play()
 
 class Shot(pygame.sprite.Sprite):
-    smallChangeX=0
-    smallChangeY=0
-    bulletX=0
-    bulletY=0
+    small_change_x=0
+    small_change_y=0
+    bullet_x=0
+    bullet_y=0
     bullet_speed=150
     continuous=bullet_speed/14
     kill_me=False
 
-    def __init__(self,startX,startY,x,y):
+    def __init__(self,start_x,start_y,x,y):
         pygame.sprite.Sprite.__init__(self)
         angle = math.atan2(y, x)  # find angle of shot
-        self.smallChangeX=math.cos(angle)
-        self.smallChangeY=-math.sin(angle)
+        self.small_change_x=math.cos(angle)
+        self.small_change_y=-math.sin(angle)
         self.image = load_image("Projectiles/bullet.png", True)
 
         self.rect = self.image.get_rect()
-        self.bulletX = startX - (self.rect[0] / 2)
-        self.bulletY = startY - (self.rect[1] / 2)
+        self.bullet_x = start_x - (self.rect[0] / 2)
+        self.bullet_y = start_y - (self.rect[1] / 2)
         play(GUN_SHOT)
 
 
 
-    def update(self,cameraX,cameraY,zombie_group):
+    def update(self,camera_x,camera_y,zombie_group):
         if not self.kill_me:
             for _ in range(int(self.continuous)):   #checks to see if bullet is touching zombie (bullet movement / bullet size) times
-                self.rect.x=self.bulletX+cameraX
-                self.rect.y=self.bulletY+cameraY
-                self.bulletX += (14 * self.smallChangeX)
-                self.bulletY += (14 * self.smallChangeY)
+                self.rect.x=self.bullet_x+camera_x
+                self.rect.y=self.bullet_y+camera_y
+                self.bullet_x += (14 * self.small_change_x)
+                self.bullet_y += (14 * self.small_change_y)
                 for zombie in zombie_group:
                     if self.bullet_touching_zombie(zombie):
                         return
@@ -77,152 +77,152 @@ class Shot(pygame.sprite.Sprite):
 
 
 class Grenade(pygame.sprite.Sprite):
-    changeX=0
-    changeY=0
-    grenadeX=0
-    grenadeY=0
-    xCounter=0
-    yCounter=0
+    change_x=0
+    change_y=0
+    grenade_x=0
+    grenade_y=0
+    x_counter=0
+    y_counter=0
     explode=30
 
-    def __init__(self, startX, startY, x, y):
+    def __init__(self, start_x, start_y, x, y):
         pygame.sprite.Sprite.__init__(self)
         angle = math.atan2(y, x)  # find angle of shot
-        self.changeX = (int(50 * math.cos(angle)))  # x change amount
-        self.changeY = (int(-50 * math.sin(angle)))  # Y change amount
-        if self.changeX==0:
-            self.changeX+=1
-        if self.changeY == 0:
-            self.changeY+=1
+        self.change_x = (int(50 * math.cos(angle)))  # x change amount
+        self.change_y = (int(-50 * math.sin(angle)))  # Y change amount
+        if self.change_x==0:
+            self.change_x+=1
+        if self.change_y == 0:
+            self.change_y+=1
         self.image = load_image("Throwables/grenade.png", True)
         self.rect = self.image.get_rect()
-        self.grenadeX = startX - (self.rect[0]*1.0 / 2.0) #-half of grenade size
-        self.grenadeY = startY - (self.rect[1]*1.0 / 2.0)
-        self.xCounter=x/self.changeX
-        self.yCounter=-y/self.changeY
+        self.grenade_x = start_x - (self.rect[0]*1.0 / 2.0) #-half of grenade size
+        self.grenade_y = start_y - (self.rect[1]*1.0 / 2.0)
+        self.x_counter=x/self.change_x
+        self.y_counter=-y/self.change_y
 
 
-    def update(self, cameraX, cameraY, screen,explosions):
-        #print self.xCounter, self.yCounter
+    def update(self, camera_x, camera_y, screen,explosions):
+        #print self.x_counter, self.y_counter
         if self.explode==30:
-            if self.xCounter>0:
-                self.rect.x = self.grenadeX + cameraX
-                self.grenadeX += self.changeX
-                self.xCounter+= -1
+            if self.x_counter>0:
+                self.rect.x = self.grenade_x + camera_x
+                self.grenade_x += self.change_x
+                self.x_counter+= -1
             else:
-                self.rect.x = self.grenadeX + cameraX
-            if self.yCounter>0:
-                self.rect.y = self.grenadeY + cameraY
-                self.grenadeY += self.changeY
-                self.yCounter+= -1
+                self.rect.x = self.grenade_x + camera_x
+            if self.y_counter>0:
+                self.rect.y = self.grenade_y + camera_y
+                self.grenade_y += self.change_y
+                self.y_counter+= -1
             else:
-                self.rect.y = self.grenadeY + cameraY
+                self.rect.y = self.grenade_y + camera_y
 
-            if self.xCounter<=0 and self.yCounter<=0:
+            if self.x_counter<=0 and self.y_counter<=0:
                 self.explode += -1
         else:
             if self.explode>0:
-                self.rect.x = self.grenadeX + cameraX
-                self.rect.y = self.grenadeY + cameraY
+                self.rect.x = self.grenade_x + camera_x
+                self.rect.y = self.grenade_y + camera_y
                 self.explode += -1
             else:
-                explosion=grenadeDetonate(self.grenadeX,self.grenadeY)
+                explosion=GrenadeDetonation(self.grenade_x,self.grenade_y)
                 explosions.add(explosion)
                 self.kill()
 
 
-class grenadeDetonate(pygame.sprite.Sprite):
-    explosionX=0
-    explosionY=0
+class GrenadeDetonation(pygame.sprite.Sprite):
+    explosion_x=0
+    explosion_y=0
     counter=1
-    def __init__(self,startX,startY):
+    def __init__(self,start_x,start_y):
         pygame.sprite.Sprite.__init__(self)
         self.image = load_image("Effects/explosion.png", True)
         self.rect = self.image.get_rect()
-        self.explosionX = startX - (self.rect.size[0] / 2) #-half of explosion size
-        self.explosionY = startY - (self.rect.size[1] / 2)
+        self.explosion_x = start_x - (self.rect.size[0] / 2) #-half of explosion size
+        self.explosion_y = start_y - (self.rect.size[1] / 2)
         play(EXPLOSION)
 
-    def update(self, cameraX, cameraY):
+    def update(self, camera_x, camera_y):
         #times before kill
         if self.counter>0:
-            self.rect.x=self.explosionX+cameraX
-            self.rect.y = self.explosionY + cameraY
+            self.rect.x=self.explosion_x+camera_x
+            self.rect.y = self.explosion_y + camera_y
             self.counter+= -1
         else:
             self.kill()
 
 
-class stunGrenade(pygame.sprite.Sprite):
-    changeX=0
-    changeY=0
-    grenadeX=0
-    grenadeY=0
-    xCounter=0
-    yCounter=0
+class StunGrenade(pygame.sprite.Sprite):
+    change_x=0
+    change_y=0
+    grenade_x=0
+    grenade_y=0
+    x_counter=0
+    y_counter=0
     explode=30
 
-    def __init__(self, startX, startY, x, y):
+    def __init__(self, start_x, start_y, x, y):
         pygame.sprite.Sprite.__init__(self)
         angle = math.atan2(y, x)  # find angle of shot
-        self.changeX = (int(50 * math.cos(angle)))  # x change amount
-        self.changeY = (int(-50 * math.sin(angle)))  # Y change amount
-        if self.changeX==0:
-            self.changeX+=1
-        if self.changeY == 0:
-            self.changeY+=1
+        self.change_x = (int(50 * math.cos(angle)))  # x change amount
+        self.change_y = (int(-50 * math.sin(angle)))  # Y change amount
+        if self.change_x==0:
+            self.change_x+=1
+        if self.change_y == 0:
+            self.change_y+=1
         self.image = load_image("Throwables/stungrenade.png", True)
         self.rect = self.image.get_rect()
-        self.grenadeX = startX - (self.rect[0]*1.0 / 2.0) #-half of grenade size
-        self.grenadeY = startY - (self.rect[1]*1.0 / 2.0)
-        self.xCounter=x/self.changeX
-        self.yCounter=-y/self.changeY
+        self.grenade_x = start_x - (self.rect[0]*1.0 / 2.0) #-half of grenade size
+        self.grenade_y = start_y - (self.rect[1]*1.0 / 2.0)
+        self.x_counter=x/self.change_x
+        self.y_counter=-y/self.change_y
 
 
-    def update(self, cameraX, cameraY, screen,explosions):
+    def update(self, camera_x, camera_y, screen,explosions):
         if self.explode==30:
-            if self.xCounter>0:
-                self.rect.x = self.grenadeX + cameraX
-                self.grenadeX += self.changeX
-                self.xCounter+= -1
+            if self.x_counter>0:
+                self.rect.x = self.grenade_x + camera_x
+                self.grenade_x += self.change_x
+                self.x_counter+= -1
             else:
-                self.rect.x = self.grenadeX + cameraX
-            if self.yCounter>0:
-                self.rect.y = self.grenadeY + cameraY
-                self.grenadeY += self.changeY
-                self.yCounter+= -1
+                self.rect.x = self.grenade_x + camera_x
+            if self.y_counter>0:
+                self.rect.y = self.grenade_y + camera_y
+                self.grenade_y += self.change_y
+                self.y_counter+= -1
             else:
-                self.rect.y = self.grenadeY + cameraY
-            if self.xCounter<=0 and self.yCounter<=0:
+                self.rect.y = self.grenade_y + camera_y
+            if self.x_counter<=0 and self.y_counter<=0:
                 self.explode += -1
         else:
             if self.explode>0:
-                self.rect.x = self.grenadeX + cameraX
-                self.rect.y = self.grenadeY + cameraY
+                self.rect.x = self.grenade_x + camera_x
+                self.rect.y = self.grenade_y + camera_y
                 self.explode += -1
             else:
-                explosion=stunDetonate(self.grenadeX,self.grenadeY)
+                explosion=StunDetonation(self.grenade_x,self.grenade_y)
                 explosions.add(explosion)
                 self.kill()
 
 
-class stunDetonate(pygame.sprite.Sprite):
-    explosionX=0
-    explosionY=0
+class StunDetonation(pygame.sprite.Sprite):
+    explosion_x=0
+    explosion_y=0
     counter=1
-    def __init__(self,startX,startY):
+    def __init__(self,start_x,start_y):
         pygame.sprite.Sprite.__init__(self)
         self.image = load_image("Effects/stunexplosion.png", True)
         self.rect = self.image.get_rect()
-        self.explosionX = startX - (self.rect.size[0] / 2) #-half of explosion size
-        self.explosionY = startY - (self.rect.size[1] / 2)
+        self.explosion_x = start_x - (self.rect.size[0] / 2) #-half of explosion size
+        self.explosion_y = start_y - (self.rect.size[1] / 2)
         play(EXPLOSION)
 
-    def update(self, cameraX, cameraY):
+    def update(self, camera_x, camera_y):
         #times before kill
         if self.counter>0:
-            self.rect.x=self.explosionX+cameraX
-            self.rect.y = self.explosionY + cameraY
+            self.rect.x=self.explosion_x+camera_x
+            self.rect.y = self.explosion_y + camera_y
             self.counter+= -1
         else:
             self.kill()
