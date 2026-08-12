@@ -1068,7 +1068,7 @@ inconsistent. This ticket owns it; AT18 depends on it.
 
 ---
 
-## AT22 — Layout grid, themed widgets, and a dev screen — TODO
+## AT22 — Layout grid, themed widgets, and a dev screen — DONE
 
 **Short description:** A Bootstrap-style grid for arranging UI, thin themed
 wrappers over the widgets `pygame_gui` already provides, and a full-screen dev
@@ -1077,11 +1077,11 @@ screen that exercises all of it.
 **Dependencies:** AT21
 
 **Goals**
-- [ ] `Grid` / `Row` / `Column` laying out rectangles by span, like Bootstrap
-- [ ] Thin themed wrappers so call sites are ours, not the library's
-- [ ] Full-screen dev screen, reachable from pause
-- [ ] A gallery: every widget arranged by the grid, with light examples
-- [ ] Iterate on theming and UX here, not in the settings screen
+- [x] `Grid` / `Row` laying out rectangles by span, like Bootstrap
+- [x] Thin themed wrappers so call sites are ours, not the library's
+- [x] Full-screen dev screen, reachable from pause
+- [x] A gallery: every widget arranged by the grid, with light examples
+- [x] Iterate on theming and UX here, not in the settings screen
 
 **The grid is arithmetic, not a widget.** `pygame_gui` positions everything with
 a `relative_rect`, so what we are missing is not a component — it is something
@@ -1115,32 +1115,26 @@ wrong. This is the house style and the grid is a good test of it.
 **This is the iteration surface.** Theming and spacing get argued out on a
 screen with no gameplay consequences, before the settings form depends on them.
 
-**Open questions for Aaron**
-- Should the dev screen be gated in release builds, or always reachable?
-- Theme direction: match the game's military/HUD palette, or deliberately plain so dev tools read as dev tools?
+**Answered.** The dev screen is gated on `config.DEV_TOOLS`, to be hidden and
+built out when the game is productionised. The theme is the game's own military
+palette rather than a plain dev look, so the gallery is a fair preview of what
+the settings screen will look like.
 
----|---|
-| Checkbox | `UICheckBox` exists |
-| Selector | `UISelectionList` and `UIDropDownMenu` exist |
-| **Table with header and rows** | **nothing table-like — build it** |
+**No `Column` class in the end.** A column is what a `Row` hands out, so it never
+became a type of its own -- `row.cell(span)` returns a rectangle and that is the
+whole idea. `Grid` and `Row` are the only two classes.
 
-Also available and worth knowing: `UIForm`, `UIPanel`, `UIWindow`,
-`UITabContainer` (marked experimental), `UIScrollingContainer`, `UITextEntryLine`,
-`UIConfirmationDialog`.
+**Review fixes.** A checkbox built pre-checked used to post
+`UI_CHECK_BOX_CHECKED` at construction, which the AT24 form would have read as
+the player editing a field it was still drawing -- it now uses the library's
+`initial_state`. `ScreenStack.push` builds the incoming screen before tearing
+down the outgoing one, so a screen that cannot lay itself out is a no-op rather
+than a destroyed menu. The dev gallery sizes its selector to the space it has
+and now builds from 570px rather than 643px.
 
-**Wrap rather than use directly.** A thin `shooter/ui/widgets.py` over
-`pygame_gui` means the theme and defaults live in one place, and swapping or
-patching the library later touches one file. It also gives the `Table` somewhere
-natural to sit next to the elements it visually matches.
-
-**This is the iteration surface.** Theming and layout get argued out here, on a
-screen with no gameplay consequences, rather than mid-way through building
-settings.
-
-**Open questions for Aaron**
-- Should `Table` sort, scroll, or support row selection, or is it display-only to begin with?
-- Should the dev screen be gated in release builds, or always reachable?
-- Theme direction: match the game's military/HUD palette, or deliberately plain so dev tools read as dev tools?
+**Overflow is an exception, not a squeeze.** A row that does not fit or a cell
+that overruns its columns raises `LayoutOverflowError` rather than silently
+shrinking. It caught two real mistakes while the dev screen was being written.
 
 ---
 
@@ -1175,6 +1169,15 @@ does nothing.
 
 **`SIM_HZ` stays out of settings.** AT16 bought determinism at a fixed rate;
 exposing it discards the property physics will depend on.
+
+**Loading a stored value must not look like an edit.** Audited every wrapper in
+`shooter/ui/widgets.py` while reviewing AT22: construction is silent for all of
+them, and a regression test now holds that. One setter is not --
+`UICheckBox.set_state` posts `UI_CHECK_BOX_CHECKED`, which is right for a click
+and wrong for populating a form from the store. Slider, dropdown and selector
+all load silently, so this is one known method rather than a general hazard.
+Whatever populates a form from this store either avoids `set_state` or ignores
+events raised before the screen's first draw.
 
 ---
 

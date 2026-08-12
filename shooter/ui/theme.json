@@ -77,5 +77,53 @@
     "misc": {
       "text_horiz_alignment": "center"
     }
+  },
+  "#caption": {
+    "colours": {
+      "normal_text": "#b9c09c"
+    },
+    "font": {
+      "name": "noto_sans",
+      "size": "15",
+      "bold": "0"
+    },
+    "misc": {
+      "text_horiz_alignment": "left"
+    }
+  },
+  "check_box": {
+    "misc": {
+      "shape": "rectangle",
+      "border_width": "3",
+      "shadow_width": "0"
+    }
+  },
+  "horizontal_slider": {
+    "misc": {
+      "shape": "rectangle",
+      "border_width": "2",
+      "shadow_width": "0",
+      "sb_slider_button_width": "24"
+    }
+  },
+  "drop_down_menu": {
+    "misc": {
+      "shape": "rectangle",
+      "border_width": "3",
+      "shadow_width": "0"
+    }
+  },
+  "selection_list": {
+    "misc": {
+      "shape": "rectangle",
+      "border_width": "3",
+      "shadow_width": "0"
+    }
+  },
+  "#item_list_item": {
+    "misc": {
+      "text_horiz_alignment": "left",
+      "text_horiz_alignment_padding": "8"
+    }
   }
 }
