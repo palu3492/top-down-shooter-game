@@ -7,8 +7,11 @@ name = "top-down-shooter"
 version = "0.1.0"
 description = "A top-down zombie wave shooter built with pygame"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 dependencies = ["pygame-ce>=2.5.5,<3"]
+
+[dependency-groups]
+dev = ["pytest>=9,<10", "ruff>=0.16,<0.17"]
 
 [project.scripts]
 shooter = "shooter.game:game_loop"

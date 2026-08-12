@@ -7,7 +7,7 @@ spend the cash the horde drops, and don't let them surround you.
 
 ## Requirements
 
-- Python 3.10 or newer. Development targets **3.14**, pinned in `.python-version`.
+- Python 3.14 or newer, pinned in `.python-version`. `uv` fetches it for you.
 - `pygame-ce` — **not** upstream `pygame`. Don't install both; they claim the
   same `pygame` import name and shadow each other.
 
@@ -20,13 +20,12 @@ environment together, so every contributor gets the same Python.
 brew install uv
 git clone https://github.com/palu3492/top-down-shooter-game.git
 cd top-down-shooter-game
-uv python install
-uv venv
-uv pip install -r requirements.txt
+uv sync
 ```
 
-`uv python install` reads `.python-version` and fetches a standalone CPython
-build — it does not touch your system or Homebrew Python.
+`uv sync` does everything: fetches the CPython build named in `.python-version`,
+creates `.venv`, and installs the exact versions recorded in `uv.lock`. It does
+not touch your system or Homebrew Python.
 
 Two things to avoid on macOS:
 
@@ -35,17 +34,20 @@ Two things to avoid on macOS:
   environments. Use Homebrew to install `uv`, and nothing else Python-related.
 - **Never use `/usr/bin/python3`.** That interpreter belongs to the OS.
 
-## Install (other platforms, or without uv)
+## Install (other platforms)
 
-`requirements.txt` is a plain pip file, so the standard flow works anywhere:
+`uv` works the same everywhere — `uv sync` is the supported path on Linux and
+Windows too.
+
+Without `uv`, pip can install from `pyproject.toml` on Python 3.14+:
 
 ```bash
 python -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -e .
 ```
 
-On Windows: `py -m venv .venv` and `.venv\Scripts\pip install -r requirements.txt`.
-Match the version in `.python-version` if you can.
+That resolves the dependency range rather than the exact versions in `uv.lock`,
+so it is reproducible only up to `pygame-ce>=2.5.5,<3`.
 
 ## Run
 
@@ -53,9 +55,7 @@ Match the version in `.python-version` if you can.
 .venv/bin/python main.py
 ```
 
-`uv run python main.py` also works, but note it resolves dependencies from
-`pyproject.toml` (`pygame-ce>=2.5.5,<3`) rather than the exact pin in
-`requirements.txt`, so the two can drift once a newer pygame-ce ships.
+`uv run python main.py` also works, and resolves from the same `uv.lock`.
 
 > **Run from the repository root.** Assets are currently loaded through paths
 > relative to the working directory, so launching from anywhere else fails with
@@ -81,8 +81,9 @@ while you stay untouched.
 ## Development
 
 ```bash
-uv pip install -r requirements-dev.txt   # adds ruff + pytest
-uv pip install -e .                      # editable install
+uv sync              # includes the dev group: pytest + ruff
+uv run pytest        # run the suite
+uv run ruff check .  # lint
 ```
 
 An editable install also provides a `shooter` console script, subject to the
