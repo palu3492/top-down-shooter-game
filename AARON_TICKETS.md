@@ -747,6 +747,199 @@ appearing.
 
 ---
 
+## AT37 — Items and the backpack — DONE
+
+**Short description:** The primitive both halves need. Item definitions and a
+container with a limited number of slots. No UI, nothing uses it yet.
+
+**Dependencies:** none
+
+**Goals**
+- [x] An item definition: what it is, what kind, how many fit in a slot
+- [x] A backpack of a fixed number of slots, upgradeable
+- [x] Adding what will not fit takes what it can and says how much
+- [x] Fully tested without a display
+
+**Stacks fill before slots open, and empty in the other order.** Adding tops up
+a part-used stack before starting a new one, so a pack never holds three
+half-stacks of the same thing; removing drains the smallest first, so it empties
+into whole stacks rather than a scattering of remainders that each cost a slot.
+
+**A pack cannot shrink below what is in it**, because there is nowhere for the
+overflow to go.
+
+**One rule for what a slot count may be.** The constructor and `resize` were
+disagreeing -- one clamped to the upper limit and the other did not -- which the
+tests caught before anything used either.
+
+**One primitive, two arcs.** A weapon is an item you equip; wood is an item you
+stack; ammunition is an item that competes with both. Building this once means
+weapons, loot and harvesting are all the same container afterwards.
+
+**A partial add is the whole point.** `add` returns how many were actually
+taken. A backpack that silently swallows everything makes looting a formality;
+one that fills up makes it a decision, and gives a better backpack something to
+be worth.
+
+**No UI here.** This is the AT23 shape: the hard part is the rules, it has no
+visual component, and bundling it with a screen would hide it behind UI review.
+
+---
+
+## AT38 — Weapons become data — TODO
+
+**Short description:** Lift `GunData` out of `ui/hud.py` and make a weapon a
+definition rather than a class. Behaviour preserved; still one gun.
+
+**Dependencies:** AT37
+
+**Goals**
+- [ ] A weapon definition: clip, reserve, damage, reload, sprite, ammunition
+- [ ] The current shotgun is one entry in a table
+- [ ] The literal `60` stops being written eleven times
+
+**A weapon model inside the HUD cannot grow.** `GunData` is in `ui/hud.py`,
+which is where it was put when there was one gun and it was a readout. Weapon
+variety starts by moving it.
+
+**A live bug to fix on the way.** `reload_ammo` hardcodes `60` in five places
+while the clip size is `config.CLIP_SIZE`. Changing that setting today gives a
+gun that reloads to the wrong size, and `CLIP = config.CLIP_SIZE` is one of the
+import-bound copies AT23's guard already refuses to let become a setting.
+
+---
+
+## AT39 — The knife, and equipping — TODO
+
+**Short description:** Start with a knife. Hold one thing at a time and change
+which.
+
+**Dependencies:** AT38
+
+**Goals**
+- [ ] A melee weapon: no ammunition, short reach, no projectile
+- [ ] The player starts with it and nothing else
+- [ ] Equipping swaps what shooting does
+- [ ] Switching by number key
+
+**Melee is not a gun with range zero.** It has no projectile and no reload, so
+it is the case that proves a weapon is a definition rather than a subclass of
+the shotgun.
+
+---
+
+## AT40 — The armoury — TODO
+
+**Short description:** SMG, shotgun, sniper, crossbow, each with their own
+ammunition.
+
+**Dependencies:** AT39
+
+**Goals**
+- [ ] Four weapons that feel different: rate, spread, damage, reload
+- [ ] Rounds, shells and bolts as separate items in the backpack
+- [ ] `gunAK47.png` finally referenced by something
+
+**Ammunition is where the choice bites.** Per-weapon types mean a sniper and an
+SMG compete for space rather than sharing a pool, which is what makes carrying
+both a decision instead of an obvious yes.
+
+---
+
+## AT41 — The wall-buy — TODO
+
+**Short description:** Spend coins on a weapon between waves.
+
+**Dependencies:** AT40
+
+**Goals**
+- [ ] A purchase point in the world
+- [ ] Coins buy a weapon and its ammunition
+- [ ] The between-wave banner stops advertising something that does not exist
+
+**Most of this was written in 2019 and never called.** `Cash.cash_add_remove`
+already returns whether a purchase can be afforded, with a comment saying so.
+`Assets/Wall Items/gun_on_wall.png` has never been referenced by anything. The
+wave banner has been printing `[AMMO]  [HEALTH]  [GUN]` for seven years.
+
+---
+
+## AT42 — Things in the world — TODO
+
+**Short description:** A layer of objects that stay where they are. Nothing is
+harvestable until something exists to harvest.
+
+**Dependencies:** AT27
+
+**Goals**
+- [ ] World objects with a position, a footprint and health
+- [ ] They occlude, collide, and survive the camera moving
+- [ ] Placed from a level definition rather than scattered at random
+
+**This is the hidden cost in the resource half.** The world is a 5000x5000
+background *image*. `Session` has groups for zombies, bullets, grenades and
+power-ups -- everything that moves and nothing that stays. Trees, a downed plane
+and a house are not more sprites, they are a layer the game has never had.
+
+---
+
+## AT43 — Harvesting — TODO
+
+**Short description:** Chop a tree, strip the plane. Wood and metal into the
+backpack.
+
+**Dependencies:** AT37, AT42
+
+**Goals**
+- [ ] Hitting a world object with the right tool yields its resource
+- [ ] An object is used up, and says so as it goes
+- [ ] What will not fit in the backpack is left behind
+
+---
+
+## AT44 — Loot from the dead — TODO
+
+**Short description:** Zombies drop what they were carrying.
+
+**Dependencies:** AT37
+
+**Goals**
+- [ ] A drop table per zombie kind
+- [ ] Dropped items are picked up by walking over them
+- [ ] A full backpack leaves them on the ground rather than eating them
+
+---
+
+## AT45 — Crafting — TODO
+
+**Short description:** Build a weapon from what you are carrying.
+
+**Dependencies:** AT41, AT43
+
+**Goals**
+- [ ] Recipes: what it costs, what it makes
+- [ ] Crafting consumes the parts and fails cleanly when short
+- [ ] A cheaper path to a gun than buying one
+
+---
+
+## AT46 — The backpack screen — TODO
+
+**Short description:** Look at what you are carrying, equip, and drop.
+
+**Dependencies:** AT40, AT44
+
+**Goals**
+- [ ] A grid of slots on the AT22 layout
+- [ ] Equip and drop from it
+- [ ] It pauses the game, like every other screen on the stack
+
+**Last on purpose, and cheap when it arrives.** AT22 built the grid, AT24 built
+the widgets and the form, AT29 made a screen a scene. By the time this is
+reached it is a layout over a container that already works.
+
+---
+
 ## AT36 — Zombies that move like a crowd — DONE
 
 **Short description:** They arrived in rank at one speed, converged until they
