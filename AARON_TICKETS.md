@@ -846,21 +846,37 @@ both a decision instead of an obvious yes.
 
 ---
 
-## AT41 — The wall-buy — TODO
+## AT41 — The shop on the wall — TODO
 
-**Short description:** Spend coins on a weapon between waves.
+**Short description:** Somewhere on the map you walk up to and buy from, not a
+menu that appears between waves.
 
-**Dependencies:** AT40
+**Dependencies:** AT40, AT42
 
 **Goals**
-- [ ] A purchase point in the world
+- [ ] A shop standing somewhere in the world
+- [ ] Walking up to it offers to trade; a key opens it
 - [ ] Coins buy a weapon and its ammunition
-- [ ] The between-wave banner stops advertising something that does not exist
+- [ ] Usable mid-wave, at the risk of standing still to do it
 
-**Most of this was written in 2019 and never called.** `Cash.cash_add_remove`
-already returns whether a purchase can be afforded, with a comment saying so.
-`Assets/Wall Items/gun_on_wall.png` has never been referenced by anything. The
-wave banner has been printing `[AMMO]  [HEALTH]  [GUN]` for seven years.
+**A place rather than a moment.** The first plan was a between-wave menu, which
+is a screen and nothing else. Putting it on the map makes buying a decision
+about *where the player is* -- worth crossing the field for, dangerous with a
+wave inbound -- and costs nothing extra once AT42 exists.
+
+**Which is why AT42 now comes first.** A shop on the map is a world object like
+any other; it should be that layer's first user rather than its own kind of
+thing.
+
+**Most of it was written in 2019 and never called.** `Cash.cash_add_remove`
+already returns whether a purchase can be afforded, with a comment saying so,
+and `Assets/Wall Items/gun_on_wall.png` had never been referenced by anything.
+
+**The advertisement is gone.** The wave banner printed `[AMMO]  [HEALTH]  [GUN]`
+for seven years for a shop nobody wrote. AT34 already stopped the player seeing
+it -- `LevelRules.draw` never called the base version -- so it was dead code
+promising a feature, and promising it in the wrong place. Deleted here rather
+than left to be honoured by something else entirely.
 
 ---
 
@@ -874,12 +890,19 @@ harvestable until something exists to harvest.
 **Goals**
 - [ ] World objects with a position, a footprint and health
 - [ ] They occlude, collide, and survive the camera moving
+- [ ] Standing near one offers an interaction; a key takes it
 - [ ] Placed from a level definition rather than scattered at random
 
 **This is the hidden cost in the resource half.** The world is a 5000x5000
 background *image*. `Session` has groups for zombies, bullets, grenades and
 power-ups -- everything that moves and nothing that stays. Trees, a downed plane
 and a house are not more sprites, they are a layer the game has never had.
+
+**It moved ahead of the shop.** Making the shop a thing on the map rather than a
+menu means it needs this, so the weapon arc now waits one phase longer than the
+coins-first ordering was chosen to avoid. Worth it: a shop you walk to is a
+better game than a shop that appears, and the interaction built here is the same
+one harvesting needs.
 
 ---
 
