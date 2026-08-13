@@ -29,7 +29,7 @@ from shooter.ui.sky import Sky
 ART = "Backgrounds/menu_pixel.png"
 GAME_TITLE = "TOP DOWN SHOOTER"
 
-MENU, START = "MENU", "START"
+MENU, START, CONTINUE = "MENU", "START", "CONTINUE"
 
 FADE_IN = 0.7
 HOLD = 1.3
@@ -120,11 +120,26 @@ class MainMenuScene(TitleScene):
 
     BUTTON_SIZE = (300, 56)
     BUTTON_GAP = 16
-    FIRST_BUTTON_TOP = 330
+    FIRST_BUTTON_TOP = 306
+
+    def __init__(self, window, manager, progress=None):
+        super().__init__(window, manager)
+        self.progress = progress
+
+    @property
+    def reached(self):
+        return self.progress.reached if self.progress else None
 
     @property
     def entries(self):
-        listed = [("START GAME", START), ("SETTINGS", menu.SETTINGS)]
+        """CONTINUE only appears once there is something to come back to."""
+        listed = []
+        if self.progress is not None and self.progress.started:
+            listed.append((f"CONTINUE  LEVEL {self.reached}", CONTINUE))
+            listed.append(("NEW GAME", START))
+        else:
+            listed.append(("START GAME", START))
+        listed.append(("SETTINGS", menu.SETTINGS))
         if config.DEV_TOOLS:
             listed.append(("DEV", menu.DEV))
         listed.append(("QUIT", menu.QUIT))

@@ -37,10 +37,10 @@ def straight_to_game(monkeypatch):
 
     real_route = game.route
 
-    def routed(action, scenes, window, settings):
-        keep = real_route(action, scenes, window, settings)
+    def routed(action, scenes, window, settings, progress=None):
+        keep = real_route(action, scenes, window, settings, progress)
         if action == title.MENU:
-            keep = real_route(title.START, scenes, window, settings) and keep
+            keep = real_route(title.START, scenes, window, settings, progress) and keep
         return keep
 
     monkeypatch.setattr(game, "route", routed)
@@ -60,6 +60,17 @@ def _settings_isolated(tmp_path_factory, monkeypatch):
     yield path
     for name, value in before.items():
         setattr(config, name, value)
+
+
+@pytest.fixture(autouse=True)
+def _progress_isolated(_settings_isolated):
+    """Progress is named from the settings path, so redirecting that redirects
+    this -- but only if nothing imported the function by value. Asserting it
+    here means a future refactor cannot quietly start writing to a real
+    player's save file from the test suite."""
+    from shooter.progress import progress_path
+
+    assert progress_path().parent == _settings_isolated.parent
 
 
 @pytest.fixture(autouse=True)
