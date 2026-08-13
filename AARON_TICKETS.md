@@ -747,6 +747,38 @@ appearing.
 
 ---
 
+## Controls — the map the inventory arc is built against
+
+Settled before AT39, AT42 and AT46 start, so all three agree rather than each
+inventing a key and the last one losing.
+
+| key | does |
+|---|---|
+| `W` `A` `S` `D` | move |
+| left mouse | fire the equipped weapon |
+| `1`–`5` | knife, SMG, shotgun, sniper, crossbow |
+| `R` | reload |
+| `G` / `F` | grenade / stun grenade |
+| `E` | interact -- buy, chop, strip |
+| `Tab` | the backpack |
+| `SPACE` | start the next wave early |
+| `Esc` | pause |
+| `\` | fullscreen |
+
+**`E` interacts rather than opening the pack.** Both are traditional and they
+come from different lineages: Minecraft made `E` the inventory for a whole
+generation, while Rust, DayZ, Valheim and Fallout put the pack on `Tab` and keep
+`E` for the world. Minecraft could spend `E` that way because it has no interact
+key at all -- interacting is a right-click. This game has a shop to stand in
+front of and trees to chop, so `E` earns its keep on the world and the pack goes
+where that lineage puts it.
+
+**Not right-click for interacting.** A mouse button that means "shoot"
+everywhere else must not sometimes mean "chop", and an interaction wants a
+prompt on screen rather than a button players have to guess at.
+
+---
+
 ## AT37 — Items and the backpack — DONE
 
 **Short description:** The primitive both halves need. Item definitions and a
@@ -802,10 +834,15 @@ definition rather than a class. Behaviour preserved; still one gun.
 which is where it was put when there was one gun and it was a readout. Weapon
 variety starts by moving it.
 
-**A live bug to fix on the way.** `reload_ammo` hardcodes `60` in five places
+**Two live bugs to fix on the way.** `reload_ammo` hardcodes `60` in five places
 while the clip size is `config.CLIP_SIZE`. Changing that setting today gives a
 gun that reloads to the wrong size, and `CLIP = config.CLIP_SIZE` is one of the
 import-bound copies AT23's guard already refuses to let become a setting.
+
+And firing runs on *any* `MOUSEBUTTONDOWN` with no button check, so right-click,
+middle-click and both side buttons all shoot. Left button only, which this
+ticket is already rewriting -- and which the controls map needs, since `E` is
+the interaction rather than a mouse button.
 
 ---
 
@@ -820,7 +857,7 @@ which.
 - [ ] A melee weapon: no ammunition, short reach, no projectile
 - [ ] The player starts with it and nothing else
 - [ ] Equipping swaps what shooting does
-- [ ] Switching by number key
+- [ ] `1`-`5` choose a weapon, per the controls map
 
 **Melee is not a gun with range zero.** It has no projectile and no reload, so
 it is the case that proves a weapon is a definition rather than a subclass of
@@ -855,7 +892,7 @@ menu that appears between waves.
 
 **Goals**
 - [ ] A shop standing somewhere in the world
-- [ ] Walking up to it offers to trade; a key opens it
+- [ ] Walking up to it offers to trade; `E` opens it
 - [ ] Coins buy a weapon and its ammunition
 - [ ] Usable mid-wave, at the risk of standing still to do it
 
@@ -890,7 +927,7 @@ harvestable until something exists to harvest.
 **Goals**
 - [ ] World objects with a position, a footprint and health
 - [ ] They occlude, collide, and survive the camera moving
-- [ ] Standing near one offers an interaction; a key takes it
+- [ ] Standing near one offers an interaction; `E` takes it
 - [ ] Placed from a level definition rather than scattered at random
 
 **This is the hidden cost in the resource half.** The world is a 5000x5000
@@ -953,7 +990,7 @@ backpack.
 **Dependencies:** AT40, AT44
 
 **Goals**
-- [ ] A grid of slots on the AT22 layout
+- [ ] `Tab` opens a grid of slots on the AT22 layout
 - [ ] Equip and drop from it
 - [ ] It pauses the game, like every other screen on the stack
 
