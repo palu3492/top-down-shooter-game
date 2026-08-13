@@ -779,6 +779,67 @@ prompt on screen rather than a button players have to guess at.
 
 ---
 
+## Four things, one identity — the shape the resource arc is built on
+
+Settled before AT42, AT43 and AT44 start. Only one of these is an `Item`, and
+conflating any two of them is the expensive mistake.
+
+| | what it is | has | has not |
+|---|---|---|---|
+| `Item` | a definition -- "Wood" exists once | id, kind, stack size, icon | position, count, health |
+| `Harvestable` | a tree standing in the world | position, footprint, health, tool, yield rule | it is **not** an item |
+| `Pickup` | wood lying on the ground | position, an `Item` reference, a count | health |
+| `Stack` | wood in the pack | an `Item` reference, a count | position |
+
+The `Item` is the shared identity travelling through all three. A tree does not
+*contain* wood objects -- it names the wood `Item` in a yield rule, and the
+pickup and the pack reference the same one. One definition, three contexts.
+
+**Yield is proportional to damage, not to hits.** "Two wood per swing" means a
+better axe fells the tree in fewer swings and comes away with *less* wood, which
+is backwards. Per point of damage instead: a hundred and twenty health at
+`0.08` is about ten wood however it is cut, and a sharper axe is faster rather
+than poorer.
+
+That gives health a second job worth having: **how much wood is left in a tree
+is literally its health bar**, so the feedback needs no extra state. Fractions
+carry over between blows using the accumulator idiom already in `player.py` and
+`zombie.py`:
+
+    self.pending += damage * rate
+    whole, self.pending = divmod(self.pending, 1)
+
+**A pickup is bulk, and shrinks by what was taken.** Ten wood is *one* pickup
+holding ten, never ten pickups holding one -- ten sprites is litter to look at
+and work to draw. Walking over it takes what fits and subtracts exactly that:
+
+    taken = backpack.add(pickup.item, pickup.count)
+    pickup.count -= taken
+    if not pickup.count:
+        pickup.kill()
+
+With room for five of the ten, five go in the pack and **five stay on the
+ground**. That is the whole reason AT37 made `add` report what it took rather
+than swallowing the difference, and loot from a corpse is the same three lines
+with a different source.
+
+**A pickup that cannot be taken has to say so.** Walking over wood with a full
+pack and seeing nothing happen reads as a bug rather than a decision.
+
+**Presentation splits in two.** `Item` carries an icon for the pack grid;
+`Pickup` carries its own world sprite. A log lying in grass and a wood icon in a
+slot are different pictures of the same item, and merging them leaves one of the
+two always looking wrong.
+
+**Open: what any of it looks like.** There is no tree, rock, plane or house art
+in the repository, and the trees the player can already see are painted into the
+5000x5000 background -- so AT42 puts a choppable tree next to an identical one
+that is scenery. Placeholder shapes unblock the arc immediately and look rough;
+sourcing a few sprites first is slower but the first thing worth QA-ing looks
+like a game.
+
+---
+
 ## AT37 — Items and the backpack — DONE
 
 **Short description:** The primitive both halves need. Item definitions and a
@@ -952,8 +1013,9 @@ backpack.
 
 **Goals**
 - [ ] Hitting a world object with the right tool yields its resource
-- [ ] An object is used up, and says so as it goes
-- [ ] What will not fit in the backpack is left behind
+- [ ] Yield is proportional to damage, so a better tool is faster not poorer
+- [ ] An object is used up, and its health says how much is left in it
+- [ ] What will not fit in the backpack stays on the ground
 
 ---
 
@@ -965,8 +1027,9 @@ backpack.
 
 **Goals**
 - [ ] A drop table per zombie kind
-- [ ] Dropped items are picked up by walking over them
-- [ ] A full backpack leaves them on the ground rather than eating them
+- [ ] One bulk pickup per drop, not one sprite per item
+- [ ] Walking over it takes what fits and subtracts exactly that
+- [ ] A full backpack leaves the remainder, and says why nothing happened
 
 ---
 
