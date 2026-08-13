@@ -22,6 +22,13 @@
     "throwable.grenade": {"kind": "image", "path": "Throwables/grenade.png", "frame_count": 1, "fps": 0, "visual_size": [19, 19], "collision_size": [19, 19], "anchor": [0.5, 0.5], "scaling": "smooth"},
     "throwable.stun_grenade": {"kind": "image", "path": "Throwables/stungrenade.png", "frame_count": 1, "fps": 0, "visual_size": [10, 22], "collision_size": [10, 22], "anchor": [0.5, 0.5], "scaling": "smooth"},
     "effect.explosion": {"kind": "image", "path": "Effects/explosion.png", "frame_count": 1, "fps": 0, "visual_size": [374, 297], "collision_size": null, "anchor": [0.5, 0.5], "scaling": "smooth"},
-    "effect.stun_explosion": {"kind": "image", "path": "Effects/stunexplosion.png", "frame_count": 1, "fps": 0, "visual_size": [255, 220], "collision_size": null, "anchor": [0.5, 0.5], "scaling": "smooth"}
+    "effect.stun_explosion": {"kind": "image", "path": "Effects/stunexplosion.png", "frame_count": 1, "fps": 0, "visual_size": [255, 220], "collision_size": null, "anchor": [0.5, 0.5], "scaling": "smooth"},
+    "demo.2p5d.ground": {"kind": "image", "path": "Demo2_5D/ground.png", "frame_count": 1, "fps": 0, "visual_size": [1080, 720], "collision_size": null, "anchor": [0.0, 0.0], "scaling": "smooth"},
+    "demo.2p5d.player": {"kind": "image", "path": "Demo2_5D/player.png", "frame_count": 1, "fps": 0, "visual_size": [104, 116], "collision_size": [34, 22], "anchor": [0.5, 0.94], "scaling": "smooth"},
+    "demo.2p5d.zombie": {"kind": "image", "path": "Demo2_5D/zombie.png", "frame_count": 1, "fps": 0, "visual_size": [92, 108], "collision_size": [32, 20], "anchor": [0.5, 0.94], "scaling": "smooth"},
+    "demo.2p5d.prop.bush": {"kind": "image", "path": "Demo2_5D/bush.png", "frame_count": 1, "fps": 0, "visual_size": [155, 145], "collision_size": [86, 44], "anchor": [0.5, 0.82], "scaling": "smooth"},
+    "demo.2p5d.prop.tree": {"kind": "image", "path": "Demo2_5D/tree.png", "frame_count": 1, "fps": 0, "visual_size": [190, 225], "collision_size": [52, 42], "anchor": [0.5, 0.96], "scaling": "smooth"},
+    "demo.2p5d.prop.car": {"kind": "image", "path": "Demo2_5D/car.png", "frame_count": 1, "fps": 0, "visual_size": [200, 120], "collision_size": [155, 58], "anchor": [0.5, 0.82], "scaling": "smooth"},
+    "demo.2p5d.prop.fence": {"kind": "image", "path": "Demo2_5D/fence.png", "frame_count": 1, "fps": 0, "visual_size": [245, 100], "collision_size": [205, 28], "anchor": [0.5, 0.84], "scaling": "smooth"}
   }
 }
