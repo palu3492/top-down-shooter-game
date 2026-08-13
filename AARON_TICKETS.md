@@ -747,6 +747,322 @@ appearing.
 
 ---
 
+## Controls — the map the inventory arc is built against
+
+Settled before AT39, AT42 and AT46 start, so all three agree rather than each
+inventing a key and the last one losing.
+
+| key | does |
+|---|---|
+| `W` `A` `S` `D` | move |
+| left mouse | fire the equipped weapon |
+| `1`–`5` | knife, SMG, shotgun, sniper, crossbow |
+| `R` | reload |
+| `G` / `F` | grenade / stun grenade |
+| `E` | interact -- buy, chop, strip |
+| `Tab` | the backpack |
+| `SPACE` | start the next wave early |
+| `Esc` | pause |
+| `\` | fullscreen |
+
+**`E` interacts rather than opening the pack.** Both are traditional and they
+come from different lineages: Minecraft made `E` the inventory for a whole
+generation, while Rust, DayZ, Valheim and Fallout put the pack on `Tab` and keep
+`E` for the world. Minecraft could spend `E` that way because it has no interact
+key at all -- interacting is a right-click. This game has a shop to stand in
+front of and trees to chop, so `E` earns its keep on the world and the pack goes
+where that lineage puts it.
+
+**Not right-click for interacting.** A mouse button that means "shoot"
+everywhere else must not sometimes mean "chop", and an interaction wants a
+prompt on screen rather than a button players have to guess at.
+
+---
+
+## Four things, one identity — the shape the resource arc is built on
+
+Settled before AT42, AT43 and AT44 start. Only one of these is an `Item`, and
+conflating any two of them is the expensive mistake.
+
+| | what it is | has | has not |
+|---|---|---|---|
+| `Item` | a definition -- "Wood" exists once | id, kind, stack size, icon | position, count, health |
+| `Harvestable` | a tree standing in the world | position, footprint, health, tool, yield rule | it is **not** an item |
+| `Pickup` | wood lying on the ground | position, an `Item` reference, a count | health |
+| `Stack` | wood in the pack | an `Item` reference, a count | position |
+
+The `Item` is the shared identity travelling through all three. A tree does not
+*contain* wood objects -- it names the wood `Item` in a yield rule, and the
+pickup and the pack reference the same one. One definition, three contexts.
+
+**Yield is proportional to damage, not to hits.** "Two wood per swing" means a
+better axe fells the tree in fewer swings and comes away with *less* wood, which
+is backwards. Per point of damage instead: a hundred and twenty health at
+`0.08` is about ten wood however it is cut, and a sharper axe is faster rather
+than poorer.
+
+That gives health a second job worth having: **how much wood is left in a tree
+is literally its health bar**, so the feedback needs no extra state. Fractions
+carry over between blows using the accumulator idiom already in `player.py` and
+`zombie.py`:
+
+    self.pending += damage * rate
+    whole, self.pending = divmod(self.pending, 1)
+
+**A pickup is bulk, and shrinks by what was taken.** Ten wood is *one* pickup
+holding ten, never ten pickups holding one -- ten sprites is litter to look at
+and work to draw. Walking over it takes what fits and subtracts exactly that:
+
+    taken = backpack.add(pickup.item, pickup.count)
+    pickup.count -= taken
+    if not pickup.count:
+        pickup.kill()
+
+With room for five of the ten, five go in the pack and **five stay on the
+ground**. That is the whole reason AT37 made `add` report what it took rather
+than swallowing the difference, and loot from a corpse is the same three lines
+with a different source.
+
+**A pickup that cannot be taken has to say so.** Walking over wood with a full
+pack and seeing nothing happen reads as a bug rather than a decision.
+
+**Presentation splits in two.** `Item` carries an icon for the pack grid;
+`Pickup` carries its own world sprite. A log lying in grass and a wood icon in a
+slot are different pictures of the same item, and merging them leaves one of the
+two always looking wrong.
+
+**Open: what any of it looks like.** There is no tree, rock, plane or house art
+in the repository, and the trees the player can already see are painted into the
+5000x5000 background -- so AT42 puts a choppable tree next to an identical one
+that is scenery. Placeholder shapes unblock the arc immediately and look rough;
+sourcing a few sprites first is slower but the first thing worth QA-ing looks
+like a game.
+
+---
+
+## AT37 — Items and the backpack — DONE
+
+**Short description:** The primitive both halves need. Item definitions and a
+container with a limited number of slots. No UI, nothing uses it yet.
+
+**Dependencies:** none
+
+**Goals**
+- [x] An item definition: what it is, what kind, how many fit in a slot
+- [x] A backpack of a fixed number of slots, upgradeable
+- [x] Adding what will not fit takes what it can and says how much
+- [x] Fully tested without a display
+
+**Stacks fill before slots open, and empty in the other order.** Adding tops up
+a part-used stack before starting a new one, so a pack never holds three
+half-stacks of the same thing; removing drains the smallest first, so it empties
+into whole stacks rather than a scattering of remainders that each cost a slot.
+
+**A pack cannot shrink below what is in it**, because there is nowhere for the
+overflow to go.
+
+**One rule for what a slot count may be.** The constructor and `resize` were
+disagreeing -- one clamped to the upper limit and the other did not -- which the
+tests caught before anything used either.
+
+**One primitive, two arcs.** A weapon is an item you equip; wood is an item you
+stack; ammunition is an item that competes with both. Building this once means
+weapons, loot and harvesting are all the same container afterwards.
+
+**A partial add is the whole point.** `add` returns how many were actually
+taken. A backpack that silently swallows everything makes looting a formality;
+one that fills up makes it a decision, and gives a better backpack something to
+be worth.
+
+**No UI here.** This is the AT23 shape: the hard part is the rules, it has no
+visual component, and bundling it with a screen would hide it behind UI review.
+
+---
+
+## AT38 — Weapons become data — TODO
+
+**Short description:** Lift `GunData` out of `ui/hud.py` and make a weapon a
+definition rather than a class. Behaviour preserved; still one gun.
+
+**Dependencies:** AT37
+
+**Goals**
+- [ ] A weapon definition: clip, reserve, damage, reload, sprite, ammunition
+- [ ] The current shotgun is one entry in a table
+- [ ] The literal `60` stops being written eleven times
+
+**A weapon model inside the HUD cannot grow.** `GunData` is in `ui/hud.py`,
+which is where it was put when there was one gun and it was a readout. Weapon
+variety starts by moving it.
+
+**Two live bugs to fix on the way.** `reload_ammo` hardcodes `60` in five places
+while the clip size is `config.CLIP_SIZE`. Changing that setting today gives a
+gun that reloads to the wrong size, and `CLIP = config.CLIP_SIZE` is one of the
+import-bound copies AT23's guard already refuses to let become a setting.
+
+And firing runs on *any* `MOUSEBUTTONDOWN` with no button check, so right-click,
+middle-click and both side buttons all shoot. Left button only, which this
+ticket is already rewriting -- and which the controls map needs, since `E` is
+the interaction rather than a mouse button.
+
+---
+
+## AT39 — The knife, and equipping — TODO
+
+**Short description:** Start with a knife. Hold one thing at a time and change
+which.
+
+**Dependencies:** AT38
+
+**Goals**
+- [ ] A melee weapon: no ammunition, short reach, no projectile
+- [ ] The player starts with it and nothing else
+- [ ] Equipping swaps what shooting does
+- [ ] `1`-`5` choose a weapon, per the controls map
+
+**Melee is not a gun with range zero.** It has no projectile and no reload, so
+it is the case that proves a weapon is a definition rather than a subclass of
+the shotgun.
+
+---
+
+## AT40 — The armoury — TODO
+
+**Short description:** SMG, shotgun, sniper, crossbow, each with their own
+ammunition.
+
+**Dependencies:** AT39
+
+**Goals**
+- [ ] Four weapons that feel different: rate, spread, damage, reload
+- [ ] Rounds, shells and bolts as separate items in the backpack
+- [ ] `gunAK47.png` finally referenced by something
+
+**Ammunition is where the choice bites.** Per-weapon types mean a sniper and an
+SMG compete for space rather than sharing a pool, which is what makes carrying
+both a decision instead of an obvious yes.
+
+---
+
+## AT41 — The shop on the wall — TODO
+
+**Short description:** Somewhere on the map you walk up to and buy from, not a
+menu that appears between waves.
+
+**Dependencies:** AT40, AT42
+
+**Goals**
+- [ ] A shop standing somewhere in the world
+- [ ] Walking up to it offers to trade; `E` opens it
+- [ ] Coins buy a weapon and its ammunition
+- [ ] Usable mid-wave, at the risk of standing still to do it
+
+**A place rather than a moment.** The first plan was a between-wave menu, which
+is a screen and nothing else. Putting it on the map makes buying a decision
+about *where the player is* -- worth crossing the field for, dangerous with a
+wave inbound -- and costs nothing extra once AT42 exists.
+
+**Which is why AT42 now comes first.** A shop on the map is a world object like
+any other; it should be that layer's first user rather than its own kind of
+thing.
+
+**Most of it was written in 2019 and never called.** `Cash.cash_add_remove`
+already returns whether a purchase can be afforded, with a comment saying so,
+and `Assets/Wall Items/gun_on_wall.png` had never been referenced by anything.
+
+**The advertisement is gone.** The wave banner printed `[AMMO]  [HEALTH]  [GUN]`
+for seven years for a shop nobody wrote. AT34 already stopped the player seeing
+it -- `LevelRules.draw` never called the base version -- so it was dead code
+promising a feature, and promising it in the wrong place. Deleted here rather
+than left to be honoured by something else entirely.
+
+---
+
+## AT42 — Things in the world — TODO
+
+**Short description:** A layer of objects that stay where they are. Nothing is
+harvestable until something exists to harvest.
+
+**Dependencies:** AT27
+
+**Goals**
+- [ ] World objects with a position, a footprint and health
+- [ ] They occlude, collide, and survive the camera moving
+- [ ] Standing near one offers an interaction; `E` takes it
+- [ ] Placed from a level definition rather than scattered at random
+
+**This is the hidden cost in the resource half.** The world is a 5000x5000
+background *image*. `Session` has groups for zombies, bullets, grenades and
+power-ups -- everything that moves and nothing that stays. Trees, a downed plane
+and a house are not more sprites, they are a layer the game has never had.
+
+**It moved ahead of the shop.** Making the shop a thing on the map rather than a
+menu means it needs this, so the weapon arc now waits one phase longer than the
+coins-first ordering was chosen to avoid. Worth it: a shop you walk to is a
+better game than a shop that appears, and the interaction built here is the same
+one harvesting needs.
+
+---
+
+## AT43 — Harvesting — TODO
+
+**Short description:** Chop a tree, strip the plane. Wood and metal into the
+backpack.
+
+**Dependencies:** AT37, AT42
+
+**Goals**
+- [ ] Hitting a world object with the right tool yields its resource
+- [ ] Yield is proportional to damage, so a better tool is faster not poorer
+- [ ] An object is used up, and its health says how much is left in it
+- [ ] What will not fit in the backpack stays on the ground
+
+---
+
+## AT44 — Loot from the dead — TODO
+
+**Short description:** Zombies drop what they were carrying.
+
+**Dependencies:** AT37
+
+**Goals**
+- [ ] A drop table per zombie kind
+- [ ] One bulk pickup per drop, not one sprite per item
+- [ ] Walking over it takes what fits and subtracts exactly that
+- [ ] A full backpack leaves the remainder, and says why nothing happened
+
+---
+
+## AT45 — Crafting — TODO
+
+**Short description:** Build a weapon from what you are carrying.
+
+**Dependencies:** AT41, AT43
+
+**Goals**
+- [ ] Recipes: what it costs, what it makes
+- [ ] Crafting consumes the parts and fails cleanly when short
+- [ ] A cheaper path to a gun than buying one
+
+---
+
+## AT46 — The backpack screen — TODO
+
+**Short description:** Look at what you are carrying, equip, and drop.
+
+**Dependencies:** AT40, AT44
+
+**Goals**
+- [ ] `Tab` opens a grid of slots on the AT22 layout
+- [ ] Equip and drop from it
+- [ ] It pauses the game, like every other screen on the stack
+
+**Last on purpose, and cheap when it arrives.** AT22 built the grid, AT24 built
+the widgets and the form, AT29 made a screen a scene. By the time this is
+reached it is a layout over a container that already works.
+
+---
+
 ## AT36 — Zombies that move like a crowd — DONE
 
 **Short description:** They arrived in rank at one speed, converged until they

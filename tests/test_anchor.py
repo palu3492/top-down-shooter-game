@@ -172,10 +172,23 @@ def test_the_wave_banner_is_centred_rather_than_pinned(display, window, cash):
 
 
 def test_the_wave_banner_still_draws_at_the_default(display, cash):
+    """Anywhere in the banner rather than one pixel of it: the previous version
+    happened to sample the middle of a board that has since been deleted, and
+    said the banner had stopped drawing when only the board had."""
     surface = pygame.Surface(config.WINDOW)
     waves = WaveSystem(config.WINDOW, pygame.sprite.Group(), cash)
     waves.draw(surface)
-    assert surface.get_at((config.WINDOW[0] // 2, 260))[:3] != (0, 0, 0)
+
+    banner = place(
+        waves_module.BANNER_SIZE, config.WINDOW, CENTRE, TOP, waves_module.BANNER_INSET
+    )
+    painted = [
+        (x, y)
+        for x in range(banner.left, banner.right, 3)
+        for y in range(banner.top, banner.bottom, 3)
+        if surface.get_at((x, y))[:3] != (0, 0, 0)
+    ]
+    assert painted, "nothing was drawn in the banner at all"
 
 
 class RecordingSurface(pygame.Surface):

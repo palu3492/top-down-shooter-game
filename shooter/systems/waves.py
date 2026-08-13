@@ -4,15 +4,10 @@ from shooter import config
 from shooter.entities.zombie import Zombie
 from shooter.ui.anchor import CENTRE, TOP, place
 
-BANNER_SIZE = (500, 160)
+BANNER_SIZE = (500, 60)
 BANNER_INSET = (0, 150)
-BOARD_SIZE = (500, 100)
-BOARD_TOP = 60
 TIMER_LINE = 0
 PROMPT_LINE = 30
-OPTIONS_LINE = 80
-BOARD_BACKGROUND = (100, 100, 100)
-BOARD_STRIPE = (100, 255, 100)
 
 
 class WaveSystem:
@@ -55,11 +50,6 @@ class WaveSystem:
 
         self._centred(screen, f"Time until next round {remaining}", banner, TIMER_LINE)
         self._centred(screen, "or press [SPACE] to continue", banner, PROMPT_LINE)
-
-        board = pygame.Rect(banner.left, banner.top + BOARD_TOP, *BOARD_SIZE)
-        pygame.draw.rect(screen, BOARD_BACKGROUND, board)
-        pygame.draw.rect(screen, BOARD_STRIPE, (*board.topleft, board.width, 10))
-        self._centred(screen, "[AMMO]     [HEALTH]     [GUN]", banner, OPTIONS_LINE)
 
     def _centred(self, screen, message, banner, top):
         text = pygame.font.Font(None, 40).render(message, True, config.WHITE)
