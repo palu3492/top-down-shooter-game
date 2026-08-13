@@ -32,7 +32,7 @@ class Item:
     """A thing that can be carried.
 
     `stack` is how many fit in one slot. A weapon is one per slot, so carrying a
-    second shotgun costs what a hundred rounds would; that is the trade the
+    second rifle costs what a hundred rounds would; that is the trade the
     backpack exists to make.
     """
 

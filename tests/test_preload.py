@@ -151,7 +151,7 @@ def test_the_manifest_matches_what_a_cold_start_actually_needs(display):
 
 
 ASKED_BOTH_WAYS = (
-    ("HUD/gunShotty.png", False),
+    ("HUD/gunAK47.png", False),
     ("Projectiles/bullet.png", True),
 )
 
@@ -160,7 +160,7 @@ ASKED_BOTH_WAYS = (
 def test_a_default_argument_does_not_mint_a_second_copy(display, relative, alpha):
     """`functools.cache` keys on the call as written, so `load_image(path)` and
     `load_image(path, False)` were two entries, two reads and two surfaces.
-    Call sites legitimately differ -- GunData omits the flag, the manifest
+    Call sites legitimately differ -- the gun readout omits the flag, the manifest
     passes it -- so the loaders normalise before the cache sees anything."""
     load_image.cache_clear()
 

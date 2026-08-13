@@ -23,7 +23,6 @@ from shooter.entities.player import Human
 from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
 from shooter.entities.projectiles import (
-    BULLET_DAMAGE,
     LETHAL,
     Grenade,
     Shot,
@@ -31,8 +30,9 @@ from shooter.entities.projectiles import (
 )
 from shooter.render import blit_group
 from shooter.systems.waves import WaveSystem
-from shooter.ui.hud import HUD, Cash, GrenadeData, GunData, HealthBar
+from shooter.ui.hud import HUD, Cash, GrenadeData, GunPanel, HealthBar
 from shooter.ui.radar import RadarScreen
+from shooter.weapons import NO_AMMO, RELOAD, Gun
 from shooter.viewport import visible_world
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
@@ -40,8 +40,10 @@ INSTAKILL_TOP = 40
 RELOADING_TOP = 100
 BACKGROUND = "Backgrounds/background_0.jpg"
 
-NO_AMMO = "no ammo"
-RELOAD = "reload"
+# Firing is the left button only. Any `MOUSEBUTTONDOWN` used to do it, so a
+# right-click, a middle-click or either side button emptied the clip -- and `E`
+# being the interaction means the other buttons have their own jobs coming.
+LEFT_BUTTON = 1
 
 # How a game can finish. `None` means it is still being played.
 LOST, WON = "LOST", "WON"
@@ -120,10 +122,11 @@ class Session:
         self.powerups = pygame.sprite.Group(PowerUps())
 
         self.cash = Cash()
-        self.gun = GunData(window)
+        self.gun = Gun()
         self.grenade_data = GrenadeData()
         self.heads_up_display = HUD(window)
         self.health_display = HealthBar(window)
+        self.gun_display = GunPanel(window)
         self.radar = RadarScreen()
 
         self.rules = rules(window, self.zombies, self.cash, self.visible)
@@ -172,7 +175,7 @@ class Session:
     # ------------------------------------------------------------------
 
     def handle(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == LEFT_BUTTON:
             self._shoot()
         elif event.type == pygame.KEYDOWN:
             self._key(event.key)
@@ -185,10 +188,10 @@ class Session:
             Shot(
                 *self._muzzle(),
                 *self.aim,
-                damage=LETHAL if self.instakill_seconds > 0 else BULLET_DAMAGE,
+                damage=LETHAL if self.instakill_seconds > 0 else self.gun.damage,
             )
         )
-        self.ammo_count = self.gun.shooting_bullet()
+        self.ammo_count = self.gun.fire()
 
     def _key(self, key):
         if key == pygame.K_g and self.grenade_data.grenade_amount > 0:
@@ -353,7 +356,7 @@ class Session:
 
         self.heads_up_display.update(screen, self.window)
         self.health_display.draw(screen, self.human.get_health())
-        self.gun.update(screen)
+        self.gun_display.draw(screen, self.gun)
         self.cash.update(screen, self.window)
 
         if self.ammo_count == RELOAD:

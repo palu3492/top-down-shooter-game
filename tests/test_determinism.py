@@ -15,7 +15,7 @@ from shooter import config
 from shooter.entities.player import Human
 from shooter.entities.zombie import Zombie
 from shooter.systems.waves import WaveSystem
-from shooter.ui.hud import GunData
+from shooter.weapons import Gun
 
 RATES = [30, 60, 90, 144, 300]
 STEPS = 120
@@ -37,7 +37,7 @@ def simulate(steps, cash):
     zombie.move_position(0, 0)
     human = Human(config.WINDOW)
     human.remove_health(20)
-    gun = GunData(config.WINDOW)
+    gun = Gun()
     camera_x = 0.0
 
     for _ in range(steps):
