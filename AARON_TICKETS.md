@@ -908,7 +908,7 @@ the interaction rather than a mouse button.
 
 ---
 
-## AT39 — The knife, and equipping — TODO
+## AT39 — The knife, and equipping — DONE
 
 **Short description:** Start with a knife. Hold one thing at a time and change
 which.
@@ -916,14 +916,40 @@ which.
 **Dependencies:** AT38
 
 **Goals**
-- [ ] A melee weapon: no ammunition, short reach, no projectile
-- [ ] The player starts with it and nothing else
-- [ ] Equipping swaps what shooting does
-- [ ] `1`-`5` choose a weapon, per the controls map
+- [x] A melee weapon: no ammunition, short reach, no projectile
+- [x] The player starts with it *in hand*  -- see below
+- [x] Equipping swaps what shooting does
+- [x] `1`-`5` choose a weapon, per the controls map
 
 **Melee is not a gun with range zero.** It has no projectile and no reload, so
 it is the case that proves a weapon is a definition rather than a subclass of
-the rifle.
+the rifle. A `Swing` has no speed and no range falloff: it exists for one step,
+cuts what is inside its arc and within reach, and dies.
+
+**The rifle is still carried, deliberately.** "Starts with the knife and
+nothing else" is the design, but there is no way to obtain a gun until the shop
+lands in AT41, and two merges of an unwinnable game is not worth the purity.
+So the knife is what a session *starts holding* and `2` still reaches the
+rifle. **AT41 takes the M16 out of the starting loadout and puts it behind the
+counter** -- one line, once there is somewhere to buy it.
+
+**A knife has no magazine, which is not the same as an empty one.** `loaded`
+and `reserve` are `None` rather than `0`, so the readout can tell "nothing to
+count" from "out of ammunition" instead of showing `0 / 0` beside a blade.
+
+**Status belongs to the weapon, not to the session.** `ammo_count` was one
+value on the session describing whichever weapon was in hand, so changing
+weapon wiped it -- which let the player cancel any reload by tapping `1` then
+`2`, and fire an empty gun once per swap. Each weapon now owns whether it can
+be used, and the session reads it. A gun stowed mid-reload goes on reloading.
+
+**Four bugs found on the way.** MAX_AMMO refilled whatever was in hand, so
+walking over one with the knife out refilled the knife -- it now restores every
+gun carried. Spending the last round with nothing in reserve reported nothing,
+leaving one more click able to spawn a bullet from an empty gun. `Melee.arc`
+was a dataclass field default and so bound at import while `reach` and `damage`
+beside it were live. And there is no knife art, so the readout falls back to the
+weapon's name rather than drawing nothing.
 
 ---
 
@@ -935,6 +961,7 @@ ammunition.
 **Dependencies:** AT39
 
 **Goals**
+- [ ] The M16 leaves the starting loadout and goes behind the counter
 - [ ] Four weapons that feel different: rate, spread, damage, reload
 - [ ] Rounds, shells and bolts as separate items in the backpack
 - [ ] An M16 icon, so the starting rifle stops borrowing the AK silhouette

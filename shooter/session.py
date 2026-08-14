@@ -22,17 +22,12 @@ from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
 from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
-from shooter.entities.projectiles import (
-    LETHAL,
-    Grenade,
-    Shot,
-    StunGrenade,
-)
+from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
 from shooter.render import blit_group
 from shooter.systems.waves import WaveSystem
-from shooter.ui.hud import HUD, Cash, GrenadeData, GunPanel, HealthBar
+from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel
 from shooter.ui.radar import RadarScreen
-from shooter.weapons import NO_AMMO, RELOAD, Gun
+from shooter.weapons import RELOAD, SLOTS, equip
 from shooter.viewport import visible_world
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
@@ -45,18 +40,27 @@ BACKGROUND = "Backgrounds/background_0.jpg"
 # being the interaction means the other buttons have their own jobs coming.
 LEFT_BUTTON = 1
 
+# `1`-`5` pick a weapon, in the order the controls map lists them.
+SLOT_KEYS = (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5)
+
 # How a game can finish. `None` means it is still being played.
 LOST, WON = "LOST", "WON"
 
 
-def collect_powerup(kind, human, zombie_group, gun):
-    """Apply a collected power-up. Returns instakill seconds to add, if any."""
+def collect_powerup(kind, human, zombie_group, carried):
+    """Apply a collected power-up. Returns instakill seconds to add, if any.
+
+    Ammunition is restored to everything carried rather than to whatever
+    happens to be in hand -- a pickup walked over with the knife out used to
+    refill the knife, which is to say nothing at all.
+    """
     if kind == powerup_kinds.NUKE:
         zombie_group.empty()
     elif kind == powerup_kinds.MAX_HEALTH:
         human.restore_health()
     elif kind == powerup_kinds.MAX_AMMO:
-        gun.refill()
+        for held in carried:
+            held.refill()
     elif kind == powerup_kinds.INSTAKILL:
         return INSTAKILL_SECONDS
     return 0.0
@@ -108,7 +112,6 @@ class Session:
 
         self.change_x = self.change_y = 0
         self.shooting = False
-        self.ammo_count = ""
 
         self.background = BackgroundSheet(BACKGROUND)
         self.human = Human(window)
@@ -122,11 +125,12 @@ class Session:
         self.powerups = pygame.sprite.Group(PowerUps())
 
         self.cash = Cash()
-        self.gun = Gun()
+        self.carried = [equip(which) for which in SLOTS]
+        self.equipped = self.carried[0]
         self.grenade_data = GrenadeData()
         self.heads_up_display = HUD(window)
         self.health_display = HealthBar(window)
-        self.gun_display = GunPanel(window)
+        self.weapon_display = WeaponPanel(window)
         self.radar = RadarScreen()
 
         self.rules = rules(window, self.zombies, self.cash, self.visible)
@@ -156,7 +160,7 @@ class Session:
         """Take no window: there is only ever one.
 
         AT25 replaced twenty copies of the render size with a single shared
-        `Viewport`, so the gun, the health bar and every zombie already read the
+        `Viewport`, so the readouts, the health bar and every zombie already read the
         new size the moment it changes. Accepting a window here would imply
         there are copies to update and quietly leave most of them stale -- the
         player is the only thing holding a position derived from it.
@@ -180,18 +184,25 @@ class Session:
         elif event.type == pygame.KEYDOWN:
             self._key(event.key)
 
+    @property
+    def ammo_count(self):
+        """Why the weapon in hand cannot be fired, or `None`.
+
+        Read from the weapon rather than remembered here. Holding it on the
+        session meant it described whichever weapon was equipped a moment ago,
+        and changing weapon wiped it.
+        """
+        return self.equipped.status
+
     def _shoot(self):
-        if self.ammo_count in (NO_AMMO, RELOAD):
+        if not self.equipped.ready:
             return
         self.shooting = True
-        self.bullets.add(
-            Shot(
-                *self._muzzle(),
-                *self.aim,
-                damage=LETHAL if self.instakill_seconds > 0 else self.gun.damage,
-            )
-        )
-        self.ammo_count = self.gun.fire()
+        self.bullets.add(self.equipped.attack(self._muzzle(), self.aim, self._damage()))
+        self.equipped.fire()
+
+    def _damage(self):
+        return LETHAL if self.instakill_seconds > 0 else self.equipped.damage
 
     def _key(self, key):
         if key == pygame.K_g and self.grenade_data.grenade_amount > 0:
@@ -201,7 +212,20 @@ class Session:
             self.stun_grenades.add(StunGrenade(*self._muzzle(), *self.aim))
             self.grenade_data.stun_grenade_amount -= 1
         elif key == pygame.K_r:
-            self.ammo_count = self.gun.manual_reload()
+            self.equipped.manual_reload()
+        elif key in SLOT_KEYS:
+            self._equip(SLOT_KEYS.index(key))
+
+    def _equip(self, slot):
+        """Hold something else.
+
+        Nothing is reset. A gun put away mid-reload goes on reloading and is
+        still locked when it comes back -- clearing that here let the player
+        cancel every reload, and fire an empty gun, with two keystrokes.
+        """
+        if slot >= len(self.carried):
+            return
+        self.equipped = self.carried[slot]
 
     def _muzzle(self):
         return (
@@ -225,8 +249,8 @@ class Session:
             0, max(-(config.WORLD[1] - self.window[1]), self.camera_y + self.change_y)
         )
 
-        if self.ammo_count == RELOAD:
-            self.ammo_count = self.gun.reloading(dt)
+        for held in self.carried:
+            held.tick(dt)
 
         self._animate_player(dt)
         self._advance_zombies(dt)
@@ -291,7 +315,7 @@ class Session:
                 continue
             if collected != powerup_kinds.EXPIRED:
                 self.instakill_seconds += collect_powerup(
-                    collected, self.human, self.zombies, self.gun
+                    collected, self.human, self.zombies, self.carried
                 )
             powerup.kill()
 
@@ -356,7 +380,7 @@ class Session:
 
         self.heads_up_display.update(screen, self.window)
         self.health_display.draw(screen, self.human.get_health())
-        self.gun_display.draw(screen, self.gun)
+        self.weapon_display.draw(screen, self.equipped)
         self.cash.update(screen, self.window)
 
         if self.ammo_count == RELOAD:

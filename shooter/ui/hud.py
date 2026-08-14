@@ -84,28 +84,39 @@ RESERVE_READOUT = (93, 60)
 GUN_ICON = (138, 42)
 
 
-class GunPanel:
-    """The bottom-right readout: what is loaded, what is left, and which gun.
+class WeaponPanel:
+    """The bottom-right readout: what is loaded, what is left, and what is held.
 
-    It holds no ammunition of its own -- it is handed a `Gun` and reports it, so
-    the sprite follows whatever is equipped rather than being the one gun that
-    existed when this was written.
+    It holds no ammunition of its own -- it is handed whatever is equipped and
+    reports that, so both the numbers and the picture follow the weapon rather
+    than being the one gun that existed when this was written.
     """
 
     def __init__(self, window):
         self.window = window
 
-    def draw(self, screen, gun):
+    def draw(self, screen, held):
         panel = BOTTOM_RIGHT.rect(self.window)
-        screen.blit(
-            pygame.font.Font(None, 55).render(str(gun.loaded), True, config.WHITE),
-            inside(panel, CLIP_READOUT),
-        )
-        screen.blit(
-            pygame.font.Font(None, 44).render(str(gun.reserve), True, config.WHITE),
-            inside(panel, RESERVE_READOUT),
-        )
-        screen.blit(load_image(gun.weapon.sprite), inside(panel, GUN_ICON))
+        if held.loaded is not None:
+            screen.blit(
+                pygame.font.Font(None, 55).render(str(held.loaded), True, config.WHITE),
+                inside(panel, CLIP_READOUT),
+            )
+            screen.blit(
+                pygame.font.Font(None, 44).render(
+                    str(held.reserve), True, config.WHITE
+                ),
+                inside(panel, RESERVE_READOUT),
+            )
+        screen.blit(self._picture(held.weapon), inside(panel, GUN_ICON))
+
+    def _picture(self, weapon):
+        """The weapon's art, or its name while it has none."""
+        if weapon.sprite is None:
+            return pygame.font.Font(None, 40).render(
+                weapon.name.upper(), True, config.WHITE
+            )
+        return load_image(weapon.sprite)
 
 
 class GrenadeData:

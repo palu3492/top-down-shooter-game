@@ -6,22 +6,29 @@ reload branches replaced by one, and with the literal `60` gone from all of
 them.
 """
 
+import math
+
 import pygame
 import pytest
 
 from shooter import config, items
 from shooter.assets import load_image
+from shooter.entities.projectiles import Shot, Swing
+from shooter.entities.zombie import Zombie
 from shooter.ui import hud
 from shooter.ui.anchor import inside
-from shooter.ui.hud import GunPanel
+from shooter.ui.hud import WeaponPanel
 from shooter.weapons import (
     NO_AMMO,
     RELOAD,
+    KNIFE,
     M16,
+    Blade,
     RIFLE_ROUNDS,
     Gun,
     UnknownWeaponError,
     Weapon,
+    equip,
     weapon,
     weapon_ids,
 )
@@ -57,8 +64,12 @@ def test_emptying_the_clip_triggers_an_automatic_reload(gun):
 
 def test_firing_every_round_ends_in_no_ammo(gun):
     shots = 0
-    while gun.fire() != NO_AMMO:
-        shots += 1
+    while gun.status != NO_AMMO:
+        if gun.ready:
+            gun.fire()
+            shots += 1
+        else:
+            gun.tick(gun.weapon.reload_seconds)
         assert shots < 1000, "the gun never ran dry"
 
     assert (gun.loaded, gun.reserve) == (0, 0)
@@ -104,13 +115,20 @@ def test_a_full_clip_is_never_overfilled(gun):
 
 def test_reload_counts_down_then_clears(gun):
     dt = config.SIM_DT
-    assert gun.reload_seconds == config.RELOAD_SECONDS
+    assert gun.locked_for == 0, "a fresh gun is not reloading"
 
-    for _ in range(int(config.RELOAD_SECONDS * config.SIM_HZ)):
-        assert gun.reloading(dt) == RELOAD
+    gun.loaded = 0
+    gun.reload()
+    assert gun.locked_for == config.RELOAD_SECONDS
 
-    assert gun.reloading(dt) is None
-    assert gun.reload_seconds == config.RELOAD_SECONDS
+    elapsed = 0.0
+    while gun.tick(dt) == RELOAD:
+        elapsed += dt
+        assert elapsed < config.RELOAD_SECONDS * 5, "the reload never finished"
+
+    assert elapsed == pytest.approx(config.RELOAD_SECONDS, abs=dt)
+    assert gun.locked_for == 0
+    assert gun.ready
 
 
 def test_two_guns_do_not_share_ammo(gun):
@@ -156,8 +174,8 @@ def test_a_short_reserve_still_only_fills_what_there_is(monkeypatch):
 # ----------------------------------------------------------------------
 
 
-def test_the_rifle_is_the_gun_that_exists():
-    assert weapon_ids() == (M16.id,)
+def test_the_knife_and_the_rifle_are_what_exist():
+    assert weapon_ids() == (KNIFE.id, M16.id)
 
 
 def test_a_weapon_carries_the_numbers_that_make_it_itself():
@@ -239,7 +257,7 @@ def test_the_readout_draws_the_equipped_guns_sprite(display, window):
     being true before it can equip a second."""
     screen = Recorder(window)
 
-    GunPanel(window).draw(screen, Gun(SHOTGUN))
+    WeaponPanel(window).draw(screen, Gun(SHOTGUN))
 
     assert load_image(SHOTGUN.sprite) in screen.sources
     assert load_image(weapon(M16.id).sprite) not in screen.sources
@@ -256,7 +274,7 @@ def test_the_clip_and_the_reserve_each_go_in_their_own_place(display, window):
     them changes nothing about where anything lands -- only what it says."""
     screen = Recorder(window)
 
-    GunPanel(window).draw(screen, Gun(SHOTGUN))
+    WeaponPanel(window).draw(screen, Gun(SHOTGUN))
 
     panel = hud.BOTTOM_RIGHT.rect(window)
     assert _pixels(screen.drawn[inside(panel, hud.CLIP_READOUT)]) == _pixels(
@@ -269,3 +287,186 @@ def test_the_clip_and_the_reserve_each_go_in_their_own_place(display, window):
 
 def _pixels(surface):
     return (surface.get_size(), pygame.image.tobytes(surface, "RGBA"))
+
+
+# ----------------------------------------------------------------------
+# The knife
+# ----------------------------------------------------------------------
+
+
+def test_a_knife_has_no_ammunition_at_all():
+    """`None` rather than zero: a knife does not have an empty magazine, it
+    has no magazine, and the readout has to tell those apart."""
+    knife = equip(KNIFE)
+
+    assert isinstance(knife, Blade)
+    assert (knife.loaded, knife.reserve) == (None, None)
+
+
+def test_a_knife_never_runs_out_and_never_reloads():
+    knife = equip(KNIFE)
+
+    for _ in range(500):
+        assert knife.fire() is None
+
+    assert knife.manual_reload() is None
+    assert knife.tick(config.SIM_DT) is None
+
+
+def test_a_knife_is_a_tool_the_backpack_can_hold():
+    assert items.item(KNIFE.id) is KNIFE
+    assert KNIFE.kind == items.TOOL
+
+
+def test_equipping_builds_whichever_kind_was_asked_for():
+    assert isinstance(equip(KNIFE), Blade)
+    assert isinstance(equip(M16), Gun)
+    assert isinstance(equip("knife"), Blade)
+    assert isinstance(equip("m16"), Gun)
+
+
+def test_a_knife_swings_and_a_rifle_shoots():
+    """The whole difference between the two, in the one call the session
+    makes. Melee is not a gun with range zero -- it produces something that
+    does not travel."""
+    swing = equip(KNIFE).attack((0, 0), (1, 0), 50)
+    shot = equip(M16).attack((0, 0), (1, 0), 20)
+
+    assert isinstance(swing, Swing)
+    assert isinstance(shot, Shot)
+    assert not hasattr(swing, "SPEED")
+
+
+# ----------------------------------------------------------------------
+# What a swing reaches
+# ----------------------------------------------------------------------
+
+
+def zombie_at(cash, x, y):
+    made = Zombie((1080, 720), cash)
+    made.rect.center = (x, y)
+    return made
+
+
+def swing_at(zombies, aim=(1, 0), damage=config.KNIFE_DAMAGE):
+    """One swing from the origin, resolved the way a step resolves it."""
+    hit = Swing(
+        0, 0, *aim, damage=damage, reach=config.KNIFE_REACH, arc=config.KNIFE_ARC
+    )
+    group = pygame.sprite.Group(*zombies)
+    pygame.sprite.Group(hit).update(0, 0, group, config.SIM_DT)
+    return hit
+
+
+def test_a_swing_hits_what_is_in_front_and_close(display, cash):
+    near = zombie_at(cash, config.KNIFE_REACH - 20, 0)
+
+    swing_at([near])
+
+    assert near.zombie_health == config.ZOMBIE_HEALTH - config.KNIFE_DAMAGE
+
+
+def test_a_swing_cannot_touch_what_is_out_of_reach(display, cash):
+    far = zombie_at(cash, config.KNIFE_REACH + 20, 0)
+
+    swing_at([far])
+
+    assert far.zombie_health == config.ZOMBIE_HEALTH
+
+
+def test_a_swing_does_not_hit_what_is_behind_the_player(display, cash):
+    """Short reach is only half of it. A knife that hits in every direction is
+    a nuke with a small radius."""
+    behind = zombie_at(cash, -(config.KNIFE_REACH - 20), 0)
+
+    swing_at([behind], aim=(1, 0))
+
+    assert behind.zombie_health == config.ZOMBIE_HEALTH
+
+
+def test_a_swing_reaches_whatever_it_is_pointed_at(display, cash):
+    above = zombie_at(cash, 0, -(config.KNIFE_REACH - 20))
+
+    swing_at([above], aim=(0, 1))
+
+    assert above.zombie_health == config.ZOMBIE_HEALTH - config.KNIFE_DAMAGE
+
+
+def test_two_swings_put_a_zombie_down(display, cash):
+    close = zombie_at(cash, 60, 0)
+
+    swing_at([close])
+    swing_at([close])
+
+    assert close.zombie_health <= 0
+    assert not close.alive()
+
+
+def test_one_swing_cuts_everything_it_sweeps(display, cash):
+    crowd = [zombie_at(cash, 60, 0), zombie_at(cash, 40, 40), zombie_at(cash, 90, -30)]
+
+    swing_at(crowd)
+
+    assert all(z.zombie_health < config.ZOMBIE_HEALTH for z in crowd)
+
+
+def test_a_swing_lasts_one_step_and_no_longer(display, cash):
+    """It is a moment, not a projectile: nothing to travel, nothing to expire
+    off screen, nothing left in the group to update again."""
+    hit = swing_at([])
+
+    assert not hit.alive()
+
+
+def test_the_readout_shows_no_ammunition_for_a_knife(display, window):
+    """A knife with `0 / 0` beside it reads as a gun that has run out."""
+    screen = Recorder(window)
+
+    WeaponPanel(window).draw(screen, equip(KNIFE))
+
+    panel = hud.BOTTOM_RIGHT.rect(window)
+    assert inside(panel, hud.CLIP_READOUT) not in screen.drawn
+    assert inside(panel, hud.RESERVE_READOUT) not in screen.drawn
+
+
+def test_the_readout_names_a_weapon_that_has_no_picture(display, window):
+    """There is no knife art. Drawing nothing at all would leave the corner of
+    the screen looking broken, so it says what is held instead."""
+    screen = Recorder(window)
+
+    WeaponPanel(window).draw(screen, equip(KNIFE))
+
+    panel = hud.BOTTOM_RIGHT.rect(window)
+    assert _pixels(screen.drawn[inside(panel, hud.GUN_ICON)]) == _pixels(
+        pygame.font.Font(None, 40).render("KNIFE", True, config.WHITE)
+    )
+
+
+def test_a_knife_reads_its_reach_from_config(monkeypatch):
+    monkeypatch.setattr(config, "KNIFE_REACH", 999)
+    monkeypatch.setattr(config, "KNIFE_DAMAGE", 12)
+
+    knife = equip(KNIFE)
+
+    assert knife.weapon.reach == 999
+    assert knife.damage == 12
+
+
+def test_a_knife_reads_its_arc_from_config_too(monkeypatch):
+    """A dataclass field default is evaluated once, when the class is created,
+    so `arc: float = config.KNIFE_ARC` was an import-bound copy while `reach`
+    and `damage` beside it were live -- the exact thing `weapon()` exists to
+    avoid."""
+    monkeypatch.setattr(config, "KNIFE_ARC", 20)
+
+    assert equip(KNIFE).weapon.arc == 20
+
+
+def test_a_swing_is_given_its_arc_rather_than_assuming_one(monkeypatch):
+    """`Swing`'s own default had the same problem, and the tests leaned on it."""
+    monkeypatch.setattr(config, "KNIFE_ARC", 20)
+    knife = equip(KNIFE)
+
+    swing = knife.attack((0, 0), (1, 0), 10)
+
+    assert swing.arc == math.radians(20)

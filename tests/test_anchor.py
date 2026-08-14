@@ -212,7 +212,7 @@ class RecordingSurface(pygame.Surface):
 @pytest.mark.parametrize("window", SIZES)
 def test_the_ammo_readout_is_drawn_on_its_panel(display, window):
     surface = RecordingSurface(window)
-    hud.GunPanel(window).draw(surface, Gun())
+    hud.WeaponPanel(window).draw(surface, Gun())
 
     panel = hud.BOTTOM_RIGHT.rect(window)
     assert surface.blits, "nothing was drawn"
