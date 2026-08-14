@@ -27,7 +27,7 @@ from shooter.render import blit_group
 from shooter.systems.waves import WaveSystem
 from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel
 from shooter.ui.radar import RadarScreen
-from shooter.weapons import RELOAD, SLOTS, equip
+from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
@@ -42,6 +42,11 @@ LEFT_BUTTON = 1
 
 # `1`-`5` pick a weapon, in the order the controls map lists them.
 SLOT_KEYS = (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5)
+
+# `0` fills those five slots with one of everything. A cheat, so it is behind
+# `DEV_TOOLS` and read live -- turning the setting off puts the key back to
+# doing nothing without restarting.
+GRANT_ALL = pygame.K_0
 
 # How a game can finish. `None` means it is still being played.
 LOST, WON = "LOST", "WON"
@@ -215,6 +220,18 @@ class Session:
             self.equipped.manual_reload()
         elif key in SLOT_KEYS:
             self._equip(SLOT_KEYS.index(key))
+        elif key == GRANT_ALL and config.DEV_TOOLS:
+            self._grant_everything()
+
+    def _grant_everything(self):
+        """Every weapon there is, loaded, on the number keys.
+
+        For trying the armoury without playing to it. What does not fit in the
+        slots is left out rather than made unreachable -- five keys is five
+        weapons, and which five is a choice AT41 gives the player properly.
+        """
+        self.carried = everything()[: len(SLOT_KEYS)]
+        self.equipped = self.carried[0]
 
     def _equip(self, slot):
         """Hold something else.

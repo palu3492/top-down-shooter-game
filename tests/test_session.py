@@ -15,7 +15,9 @@ import pytest
 from shooter import config, game, weapons
 from shooter.entities import powerups
 from shooter.entities.projectiles import LETHAL, Shot, Swing
+from shooter import session as session_module
 from shooter.session import Session, collect_powerup
+from shooter.ui import dev
 from shooter.viewport import Viewport
 
 WINDOW = (1080, 720)
@@ -620,3 +622,84 @@ def test_max_ammo_refills_every_gun_not_just_the_rifle(display):
     assert [gun.reserve for gun in session.carried[1:]] == [
         gun.weapon.reserve for gun in session.carried[1:]
     ]
+
+
+# ----------------------------------------------------------------------
+# The dev cheat
+# ----------------------------------------------------------------------
+
+
+def test_the_cheat_hands_over_every_weapon_there_is(session):
+    session.carried = session.carried[:1]
+
+    press_key(session, pygame.K_0)
+
+    assert [held.weapon.id for held in session.carried] == list(
+        weapons.weapon_ids()[: len(session_module.SLOT_KEYS)]
+    )
+
+
+def test_the_cheat_puts_them_on_the_number_keys(session):
+    session.carried = session.carried[:1]
+    press_key(session, pygame.K_0)
+
+    reached = []
+    for key in session_module.SLOT_KEYS:
+        press_key(session, key)
+        reached.append(session.equipped.weapon.id)
+
+    assert reached == [held.weapon.id for held in session.carried]
+    assert len(set(reached)) == len(reached)
+
+
+def test_the_cheat_hands_them_over_loaded(session):
+    for gun in session.carried[1:]:
+        gun.loaded = 0
+        gun.reserve = 0
+
+    press_key(session, pygame.K_0)
+
+    for held in session.carried:
+        if held.loaded is not None:
+            assert held.loaded == held.weapon.clip
+            assert held.reserve == held.weapon.reserve
+
+
+def test_the_cheat_leaves_the_knife_in_hand(session):
+    press_key(session, pygame.K_2)
+
+    press_key(session, pygame.K_0)
+
+    assert session.equipped is session.carried[0]
+    assert session.equipped.weapon.id == weapons.KNIFE.id
+
+
+def test_the_cheat_does_nothing_with_the_dev_tools_off(session, monkeypatch):
+    """It is read live, so turning the setting off takes the key away without
+    a restart."""
+    monkeypatch.setattr(config, "DEV_TOOLS", False)
+    session.carried = session.carried[:1]
+
+    press_key(session, pygame.K_0)
+
+    assert len(session.carried) == 1
+
+
+def test_the_cheat_never_grants_more_than_there_are_keys(session, monkeypatch):
+    """The armoury is free to outgrow the loadout -- AT40.1 is already a sixth
+    weapon -- and what does not fit must be left out rather than made
+    unreachable."""
+    # Captured first: the lambda would otherwise call its own replacement.
+    declared = weapons.weapon_ids()
+    monkeypatch.setattr(weapons, "weapon_ids", lambda: declared * 3)
+
+    press_key(session, pygame.K_0)
+
+    assert len(session.carried) == len(session_module.SLOT_KEYS)
+
+
+def test_the_dev_screen_says_what_the_cheat_is(display):
+    """The key is pressed in a game, so it cannot be a control on that form --
+    but that is where someone goes looking for it."""
+    assert pygame.key.name(session_module.GRANT_ALL) in dev.CHEATS
+    assert "weapon" in dev.CHEATS
