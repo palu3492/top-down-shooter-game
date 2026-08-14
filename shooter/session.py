@@ -237,7 +237,7 @@ class Session:
     # Simulation: one fixed step.
     # ------------------------------------------------------------------
 
-    def step(self, pressed, dt=config.SIM_DT):
+    def step(self, pressed, dt=config.SIM_DT, trigger=False):
         if self.human.alive():
             self._walk(pressed, dt)
 
@@ -251,6 +251,11 @@ class Session:
 
         for held in self.carried:
             held.tick(dt)
+
+        # Holding the button keeps an automatic weapon firing. Everything else
+        # is one pull per shot, and its rate is what stops the clicking.
+        if trigger and self.equipped.automatic:
+            self._shoot()
 
         self._animate_player(dt)
         self._advance_zombies(dt)

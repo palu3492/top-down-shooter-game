@@ -755,8 +755,8 @@ inventing a key and the last one losing.
 | key | does |
 |---|---|
 | `W` `A` `S` `D` | move |
-| left mouse | fire the equipped weapon |
-| `1`–`5` | knife, M16, shotgun, sniper, crossbow |
+| left mouse | fire the equipped weapon; hold, for an automatic one |
+| `1`–`5` | knife, M16, SMG, shotgun, sniper |
 | `R` | reload |
 | `G` / `F` | grenade / stun grenade |
 | `E` | interact -- buy, chop, strip |
@@ -953,22 +953,69 @@ weapon's name rather than drawing nothing.
 
 ---
 
-## AT40 — The armoury — TODO
+## AT40 — The armoury — DONE
 
-**Short description:** SMG, shotgun, sniper, crossbow, each with their own
-ammunition.
+**Short description:** SMG, shotgun and sniper, each with their own
+ammunition, rate and spread.
 
 **Dependencies:** AT39
 
 **Goals**
-- [ ] The M16 leaves the starting loadout and goes behind the counter
-- [ ] Four weapons that feel different: rate, spread, damage, reload
-- [ ] Rounds, shells and bolts as separate items in the backpack
+- [x] Weapons that feel different: rate, spread, damage, reload
+- [x] Rounds, shells and match rounds as separate items
+- [x] Holding the button keeps an automatic weapon firing
 - [ ] An M16 icon, so the starting rifle stops borrowing the AK silhouette
+- [ ] The crossbow -- see AT40.1
 
 **Ammunition is where the choice bites.** Per-weapon types mean a sniper and an
 SMG compete for space rather than sharing a pool, which is what makes carrying
-both a decision instead of an obvious yes.
+both a decision instead of an obvious yes. The types are declared here; they
+start competing for room when the reserve moves into the backpack.
+
+**Rate is what separates these, more than damage.** Firing was one shot per
+click, so the only limit on any weapon was how fast a mouse could be clicked --
+which made a sniper an M16 that hurt more. Rate belongs to the weapon, and the
+SMG is automatic so that twelve shots a second is the gun's doing rather than
+the player's finger.
+
+**A shotgun is not a gun with a big number.** It is several shots at once,
+scattered across a wedge, each worth far less than a rifle round -- eight
+pellets of fourteen against the M16's twenty. All eight land at point blank and
+almost none of them at range, which is the whole weapon.
+
+**Three guns, not four.** `1`-`5` is five slots and the knife takes one, so
+five weapons is what fits. The crossbow is the odd one out anyway -- a bolt is
+a projectile you would want back, and it should arc -- so it gets its own
+ticket rather than being a sniper with a different name.
+
+**Everything is still free.** AT41 is what puts them behind a counter and takes
+the M16 out of the starting loadout; that goal moved there, where the counter
+is. Carrying all five now is what makes them QA-able this merge.
+
+**A rate that fell a frame short.** Taking the step off a countdown sixty times
+a second leaves about 7e-18 behind, and a timer ending just above zero costs a
+whole extra frame -- the SMG's twelve shots a second came out as ten. Both the
+rate and the reload now treat anything under `SPENT` as spent.
+
+---
+
+## AT40.1 — The crossbow — TODO
+
+**Short description:** The fifth weapon, and the one that is not a gun.
+
+**Dependencies:** AT40
+
+**Goals**
+- [ ] A bolt that arcs rather than travelling flat
+- [ ] Bolts are recovered from what they hit, or from the ground
+- [ ] Silent: it does not draw a wave the way a gunshot does
+
+**It earns its own ticket by not being a sniper.** Recoverable ammunition is a
+different economy from a magazine, and an arc is a different `update` from a
+ray. Folding it into AT40 would have made it a rifle with a wooden sprite.
+
+**It needs a sixth slot, or a reason not to have one.** Five keys are full.
+Either the loadout grows, or choosing what to leave behind starts here.
 
 ---
 
@@ -981,6 +1028,7 @@ menu that appears between waves.
 
 **Goals**
 - [ ] A shop standing somewhere in the world
+- [ ] The starting loadout drops to the knife; the guns go behind the counter
 - [ ] Walking up to it offers to trade; `E` opens it
 - [ ] Coins buy a weapon and its ammunition
 - [ ] Usable mid-wave, at the risk of standing still to do it

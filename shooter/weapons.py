@@ -14,13 +14,21 @@ identity -- what the backpack carries, what the shop sells, what a slot shows.
 The `Weapon` is what it *does*, and one is built for each `Gun` that exists.
 """
 
+import math
+import random
 from dataclasses import dataclass
 
 from shooter import config, items
-from shooter.entities.projectiles import Shot, Swing
+from shooter.entities.projectiles import GUN_SHOT, Shot, Swing, play
 
 NO_AMMO = "no ammo"
 RELOAD = "reload"
+
+# Taking the step off a countdown sixty times a second leaves a few parts in a
+# quintillion behind, and a timer that ends at 7e-18 rather than 0 costs a whole
+# extra frame: twelve shots a second came out as ten. Anything under this is
+# spent, and it is far below what a player could feel.
+SPENT = 1e-9
 
 
 class UnknownWeaponError(KeyError):
@@ -38,6 +46,7 @@ class Melee:
     item: items.Item
     sprite: str | None
     damage: int
+    rate: float
     reach: int
     arc: float
 
@@ -56,6 +65,11 @@ class Weapon:
 
     `clip` is how many rounds it holds; `reserve` is how many it comes with
     outside the clip. A `Gun` starts full of both.
+
+    `rate` is shots per second, and it separates these five more than damage
+    does. `pellets` and `spread` are what a shotgun is: several shots at once,
+    scattered across a wedge, each doing far less than a rifle round.
+    `automatic` is whether holding the button keeps firing.
     """
 
     item: items.Item
@@ -64,7 +78,11 @@ class Weapon:
     clip: int
     reserve: int
     damage: int
+    rate: float
     reload_seconds: float
+    pellets: int = 1
+    spread: float = 0.0
+    automatic: bool = False
 
     @property
     def id(self):
@@ -110,6 +128,7 @@ register(
         item=KNIFE,
         sprite=None,
         damage=config.KNIFE_DAMAGE,
+        rate=config.KNIFE_RATE,
         reach=config.KNIFE_REACH,
         arc=config.KNIFE_ARC,
     ),
@@ -127,12 +146,71 @@ register(
         clip=config.CLIP_SIZE,
         reserve=config.RESERVE_SIZE,
         damage=config.BULLET_DAMAGE,
+        rate=6.0,
         reload_seconds=config.RELOAD_SECONDS,
     ),
 )
 
+NINE_MIL = items.register(items.Item("9mm", "9mm", items.AMMO, stack=60))
+SMG = items.register(items.Item("smg", "SMG", items.WEAPON))
 
-SLOTS = (KNIFE.id, M16.id)
+register(
+    SMG,
+    lambda: Weapon(
+        item=SMG,
+        ammo=NINE_MIL,
+        sprite=None,
+        clip=40,
+        reserve=200,
+        damage=12,
+        rate=12.0,
+        reload_seconds=1.2,
+        spread=5.0,
+        automatic=True,
+    ),
+)
+
+SHELLS = items.register(items.Item("shells", "12 Gauge", items.AMMO, stack=24))
+SHOTGUN = items.register(items.Item("shotgun", "Shotgun", items.WEAPON))
+
+register(
+    SHOTGUN,
+    lambda: Weapon(
+        item=SHOTGUN,
+        ammo=SHELLS,
+        sprite="HUD/gunShotty.png",
+        clip=8,
+        reserve=40,
+        damage=14,
+        rate=1.2,
+        reload_seconds=2.2,
+        pellets=8,
+        spread=22.0,
+    ),
+)
+
+MATCH_ROUNDS = items.register(items.Item("308", ".308", items.AMMO, stack=20))
+SNIPER = items.register(items.Item("sniper", "Sniper", items.WEAPON))
+
+register(
+    SNIPER,
+    lambda: Weapon(
+        item=SNIPER,
+        ammo=MATCH_ROUNDS,
+        sprite=None,
+        clip=5,
+        reserve=25,
+        damage=140,
+        rate=0.7,
+        reload_seconds=2.5,
+    ),
+)
+
+
+# What the player carries, in the order `1`-`5` reaches them. Five keys, five
+# slots: the armoury is deliberately larger than the loadout, because choosing
+# what to leave behind is the whole point of the arc.
+SLOTS = (KNIFE.id, M16.id, SMG.id, SHOTGUN.id, SNIPER.id)
 
 
 def equip(which):
@@ -145,7 +223,35 @@ def equip(which):
     return Blade(made) if isinstance(made, Melee) else Gun(made)
 
 
-class Blade:
+class Held:
+    """Something in the player's hands, and how soon it can be used again.
+
+    Rate belongs to the weapon rather than to the player. Firing was one shot
+    per click, so the only limit was how fast a mouse could be clicked -- which
+    made a sniper and an SMG differ in damage and nothing else.
+    """
+
+    def __init__(self, weapon):
+        self.weapon = weapon
+        self.cooling_for = 0.0
+
+    @property
+    def damage(self):
+        return self.weapon.damage
+
+    @property
+    def ready(self):
+        return self.status is None and self.cooling_for <= SPENT
+
+    def tick(self, dt=config.SIM_DT):
+        self.cooling_for = max(0.0, self.cooling_for - dt)
+        return self.status
+
+    def _spend(self):
+        self.cooling_for = 1 / self.weapon.rate
+
+
+class Blade(Held):
     """A knife in the hand. Nothing to load, so nothing to run out of.
 
     `loaded` and `reserve` are `None` rather than zero: a knife does not have
@@ -153,29 +259,29 @@ class Blade:
     tell those apart.
     """
 
+    automatic = False
+
     def __init__(self, which=KNIFE):
-        self.weapon = which if isinstance(which, Melee) else weapon(_id_of(which))
+        super().__init__(which if isinstance(which, Melee) else weapon(_id_of(which)))
         self.loaded = None
         self.reserve = None
-        self.locked_for = 0.0
-
-    @property
-    def damage(self):
-        return self.weapon.damage
 
     @property
     def status(self):
         """Never anything but usable."""
         return None
 
-    @property
-    def ready(self):
-        return True
-
     def attack(self, muzzle, aim, damage):
-        return Swing(
-            *muzzle, *aim, damage=damage, reach=self.weapon.reach, arc=self.weapon.arc
-        )
+        self._spend()
+        return [
+            Swing(
+                *muzzle,
+                *aim,
+                damage=damage,
+                reach=self.weapon.reach,
+                arc=self.weapon.arc,
+            )
+        ]
 
     def fire(self):
         return None
@@ -186,11 +292,8 @@ class Blade:
     def refill(self):
         """Nothing to refill. A knife is never out."""
 
-    def tick(self, dt=config.SIM_DT):
-        return None
 
-
-class Gun:
+class Gun(Held):
     """A weapon, and what is currently in it.
 
     `loaded` is what the clip holds now; `weapon.clip` is what it holds when
@@ -199,14 +302,14 @@ class Gun:
     """
 
     def __init__(self, which=M16):
-        self.weapon = which if isinstance(which, Weapon) else weapon(_id_of(which))
+        super().__init__(which if isinstance(which, Weapon) else weapon(_id_of(which)))
         self.loaded = self.weapon.clip
         self.reserve = self.weapon.reserve
         self.locked_for = 0.0
 
     @property
-    def damage(self):
-        return self.weapon.damage
+    def automatic(self):
+        return self.weapon.automatic
 
     @property
     def status(self):
@@ -217,18 +320,33 @@ class Gun:
         came back loaded and unlocked, and an empty one fired a free round on
         every swap. It belongs to the gun.
         """
-        if self.locked_for > 0:
+        if self.locked_for > SPENT:
             return RELOAD
         if self.loaded <= 0:
             return NO_AMMO
         return None
 
-    @property
-    def ready(self):
-        return self.status is None
-
     def attack(self, muzzle, aim, damage):
-        return Shot(*muzzle, *aim, damage=damage)
+        """One shot, or a shotgun's worth of them.
+
+        The sound is played once here rather than by each `Shot`, which would
+        have fired eight overlapping copies of it for one pull of the trigger.
+        """
+        self._spend()
+        play(GUN_SHOT)
+        return [
+            Shot(*muzzle, *self._scatter(aim), damage=damage)
+            for _ in range(self.weapon.pellets)
+        ]
+
+    def _scatter(self, aim):
+        """Nudge the aim within the weapon's cone. A sniper has none of it."""
+        if not self.weapon.spread:
+            return aim
+        half = math.radians(self.weapon.spread) / 2
+        angle = math.atan2(aim[1], aim[0]) + random.uniform(-half, half)
+        reach = math.hypot(*aim)
+        return (math.cos(angle) * reach, math.sin(angle) * reach)
 
     def fire(self):
         """Spend a round. Emptying the clip starts a reload if there is one.
@@ -265,14 +383,14 @@ class Gun:
         self.reserve = self.weapon.reserve
 
     def tick(self, dt=config.SIM_DT):
-        """Work off the reload, in hand or not.
+        """Work off the reload and the rate, in hand or not.
 
         A gun stowed mid-reload goes on reloading. Pausing it would make the
         lockout escapable by tapping two number keys, and the lockout is the
         entire cost of reloading.
         """
         self.locked_for = max(0.0, self.locked_for - dt)
-        return self.status
+        return super().tick(dt)
 
 
 def _id_of(which):

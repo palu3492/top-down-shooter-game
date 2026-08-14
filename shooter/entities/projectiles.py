@@ -49,7 +49,6 @@ class Shot(Interpolated, pygame.sprite.Sprite):
         self.bullet_x = start_x - (self.rect[0] / 2)
         self.bullet_y = start_y - (self.rect[1] / 2)
         self.remember_position()
-        play(GUN_SHOT)
 
     def update(self, camera_x, camera_y, zombie_group, dt=config.SIM_DT):
         self.remember_position()
