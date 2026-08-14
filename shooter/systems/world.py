@@ -10,8 +10,10 @@ level can be read, compared and tested without a display.
 
 from dataclasses import dataclass
 
+from shooter import items
 from shooter.entities import shapes
-from shooter.entities.props import Harvestable, Prop
+from shooter.entities.pickups import Pickup
+from shooter.entities.props import Harvestable, Prop, Yield
 
 STAND = "stand"
 TREE = "tree"
@@ -19,10 +21,21 @@ ROCK = "rock"
 
 STAND_SPRITE = "Wall Items/gun_on_wall.png"
 
-# Trees are worth about twice a rock and take longer. The numbers are health,
-# which AT43 turns into how much wood or metal comes out.
+WOOD = items.register(items.Item("wood", "Wood", items.RESOURCE, stack=25))
+METAL = items.register(items.Item("metal", "Metal", items.RESOURCE, stack=25))
+
+# What a pickup of each looks like on the ground. An `Item` carries an icon for
+# the pack; a `Pickup` carries its own picture, because a log lying in grass and
+# a wood icon in a slot are different pictures of the same thing.
+LOOKS = {WOOD.id: shapes.wood, METAL.id: shapes.metal}
+
+# Health is how much is left in a thing; these are what a whole one is worth.
+# Declared as a total and stored as a rate, so what a tree pays out is a
+# property of the tree rather than of how many swings it took to fell.
 TREE_HEALTH = 120
 ROCK_HEALTH = 200
+TREE_WOOD = 10
+ROCK_METAL = 8
 
 # Solid boxes, deliberately smaller than the pictures. A canopy is drawn far
 # wider than the part of a tree you would bump into, and a wood whose footprints
@@ -47,11 +60,23 @@ def make(standing):
         return Prop(STAND_SPRITE, x, y, label="GUN STAND", solid=STAND_SOLID)
     if standing.kind == TREE:
         return Harvestable(
-            shapes.tree(), x, y, TREE_HEALTH, label="CHOP", solid=TREE_SOLID
+            shapes.tree(),
+            x,
+            y,
+            TREE_HEALTH,
+            yields=Yield(WOOD, TREE_WOOD),
+            label="CHOP",
+            solid=TREE_SOLID,
         )
     if standing.kind == ROCK:
         return Harvestable(
-            shapes.rock(), x, y, ROCK_HEALTH, label="MINE", solid=ROCK_SOLID
+            shapes.rock(),
+            x,
+            y,
+            ROCK_HEALTH,
+            yields=Yield(METAL, ROCK_METAL),
+            label="MINE",
+            solid=ROCK_SOLID,
         )
     raise UnknownStandingError(standing.kind)
 
@@ -81,3 +106,19 @@ STARTER = (
     Standing(TREE, (2050, 880)),
     Standing(TREE, (2190, 1020)),
 )
+
+
+def spilled(item, count, at):
+    """A pickup of this, lying here.
+
+    Centred on the point rather than hung off it by a corner, so a pile drops
+    where the tree stood instead of down and to the right of it.
+    """
+    art = LOOKS[item.id]()
+    return Pickup(
+        item,
+        count,
+        at[0] - art.get_width() / 2,
+        at[1] - art.get_height() / 2,
+        art,
+    )

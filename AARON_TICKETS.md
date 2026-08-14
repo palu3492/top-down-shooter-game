@@ -1155,7 +1155,7 @@ and none is needed by harvesting, so they are not smuggled in here.
 
 ---
 
-## AT43 — Harvesting — TODO
+## AT43 — Harvesting — DONE
 
 **Short description:** Chop a tree, strip the plane. Wood and metal into the
 backpack.
@@ -1167,10 +1167,30 @@ overkill trimmed. This ticket multiplies that by a yield rate and mints the
 pickups.
 
 **Goals**
-- [ ] Hitting a world object with the right tool yields its resource
-- [ ] Yield is proportional to damage, so a better tool is faster not poorer
-- [ ] An object is used up, and its health says how much is left in it
-- [ ] What will not fit in the backpack stays on the ground
+- [x] Hitting a world object with the right tool yields its resource
+- [x] Yield is proportional to damage, so a better tool is faster not poorer
+- [x] An object is used up, and its health says how much is left in it
+- [x] What will not fit in the backpack stays on the ground
+
+**A yield is a total, not a rate per blow.** The plan said "items per point of
+damage", and that is right in spirit and wrong in arithmetic: fractions carried
+between swings drift, and a tree declared as ten wood paid out **nine** --
+0.333... plus 1.666... is 1.99999999 and the whole part of that is one. Worked
+out instead from how much of the thing is *gone*, it is exact at every tool
+strength from one damage a swing to five hundred.
+
+**The backpack is finally in the game.** AT37 built it four merges ago and
+nothing had held one. `Session` has one now, and walking over a pile is what
+fills it.
+
+**The rule that mattered most.** Room for five of twelve takes five and leaves
+**seven on the ground** -- the pile shrinks by exactly what was taken, which is
+what `Backpack.add` reporting its take was for. A pile that cannot be taken at
+all says `NO ROOM`, because walking over wood and seeing nothing happen reads
+as a bug.
+
+**Chopping the same tree tops up one pile.** Ten wood is one thing to look at
+and one thing to draw, never ten.
 
 ---
 
@@ -1178,7 +1198,11 @@ pickups.
 
 **Short description:** Zombies drop what they were carrying.
 
-**Dependencies:** AT37
+**Dependencies:** AT37, AT43
+
+**The pickup and the taking already exist.** `Pickup`, `Session._spill` and
+`_gather` came with AT43. This ticket is the drop table and where a corpse
+leaves it.
 
 **Goals**
 - [ ] A drop table per zombie kind

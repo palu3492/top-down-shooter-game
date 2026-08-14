@@ -29,7 +29,12 @@ def game(display):
 
 @pytest.fixture
 def tree(display):
-    return world.make(world.Standing(world.TREE, (1000, 1000)))
+    """In a group, because `Sprite.alive()` is about group membership -- a
+    loose sprite reports dead from the moment it is built, which made
+    `assert not tree.alive()` pass without anything being felled."""
+    made = world.make(world.Standing(world.TREE, (1000, 1000)))
+    pygame.sprite.Group(made)
+    return made
 
 
 ALONE = (world.Standing(world.TREE, (2000, 2000)),)

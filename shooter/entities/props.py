@@ -9,6 +9,7 @@ has health and a yield, and a shop is one that does not.
 """
 
 import math
+from dataclasses import dataclass
 
 import pygame
 
@@ -17,6 +18,20 @@ from shooter.assets import load_image
 from shooter.render import Interpolated
 
 REACH = 170
+
+
+@dataclass(frozen=True)
+class Yield:
+    """What comes out of a thing, and what a whole one is worth.
+
+    A total rather than a rate per swing, which is what makes a better tool
+    faster rather than poorer: "two per swing" would mean a sharper axe fells
+    the tree in fewer swings and comes away with less wood.
+    """
+
+    item: object
+    total: int
+
 
 BAR_HEIGHT = 8
 BAR_GAP = 14
@@ -94,11 +109,13 @@ class Harvestable(Prop):
     left cannot pay out as though it had forty.
     """
 
-    def __init__(self, art, x, y, health, tool=None, **rest):
+    def __init__(self, art, x, y, health, tool=None, yields=None, **rest):
         super().__init__(art, x, y, **rest)
         self.full = float(health)
         self.health = float(health)
         self.tool = tool
+        self.yields = yields
+        self.paid = 0
 
     @property
     def left(self):
@@ -135,3 +152,23 @@ class Harvestable(Prop):
         if self.health <= 0:
             self.kill()
         return spent
+
+    def harvest(self, damage, held):
+        """Land a blow, and report how many whole items it shook loose.
+
+        Proportional to the damage that actually landed, so the total a thing
+        pays out is a property of the thing rather than of how many swings it
+        took -- and the last blow cannot pay for more than was left in it,
+        because `hit` trims overkill before this ever sees it.
+        """
+        if not self.hit(damage, held) or self.yields is None:
+            return 0
+        # Worked out from how much of the thing is gone, not accumulated blow
+        # by blow. Fractions added up one swing at a time drift: a tree
+        # declared as ten wood paid out nine, because 0.333... + 1.666... is
+        # 1.99999999 and the whole part of that is one.
+        gone = (self.full - self.health) / self.full
+        minted = int(self.yields.total * gone)
+        won = minted - self.paid
+        self.paid = minted
+        return won
