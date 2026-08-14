@@ -23,11 +23,16 @@ STAND_SPRITE = "Wall Items/gun_on_wall.png"
 
 WOOD = items.register(items.Item("wood", "Wood", items.RESOURCE, stack=25))
 METAL = items.register(items.Item("metal", "Metal", items.RESOURCE, stack=25))
+CLOTH = items.register(items.Item("cloth", "Cloth", items.RESOURCE, stack=25))
 
 # What a pickup of each looks like on the ground. An `Item` carries an icon for
 # the pack; a `Pickup` carries its own picture, because a log lying in grass and
 # a wood icon in a slot are different pictures of the same thing.
-LOOKS = {WOOD.id: shapes.wood, METAL.id: shapes.metal}
+LOOKS = {
+    WOOD.id: shapes.wood,
+    METAL.id: shapes.metal,
+    CLOTH.id: shapes.cloth,
+}
 
 # Health is how much is left in a thing; these are what a whole one is worth.
 # Declared as a total and stored as a rate, so what a tree pays out is a

@@ -86,6 +86,9 @@ def spawn_margin(walking_speed=None):
 
 
 class Zombie(Interpolated, pygame.sprite.Sprite):
+    # What it drops is looked up by this. One kind today; a table, not a branch.
+    kind = "walker"
+
     def __init__(self, window_size, cash, visible=None):
         self.player_cash = cash
         pygame.sprite.Sprite.__init__(self)
@@ -97,6 +100,9 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         self.stun_seconds = 0.0
         self.animation_clock = 0.0
         self.zombie_health = config.ZOMBIE_HEALTH
+        # Killed, rather than merely gone. A nuke empties the group without
+        # anything being cut down, and what it vaporises leaves nothing behind.
+        self.killed = False
         self.window_size = window_size
         self.frames = {
             name: load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
@@ -271,6 +277,7 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         self.zombie_health -= damage
         if self.zombie_health <= 0:
             self.player_cash.increase_cash(config.KILL_REWARD)
+            self.killed = True
             return True
         return False
 
