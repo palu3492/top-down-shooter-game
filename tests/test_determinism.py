@@ -38,6 +38,8 @@ def simulate(steps, cash):
     human = Human(config.WINDOW)
     human.remove_health(20)
     gun = Gun()
+    gun.loaded = 0
+    gun.reload()
     camera_x = 0.0
 
     for _ in range(steps):
@@ -45,10 +47,10 @@ def simulate(steps, cash):
         zombie.move_toward_center(camera_x, 0, config.SIM_DT)
         zombie.zombie_speed_timer(config.SIM_DT)
         human.update_anim("MOVE", config.SIM_DT)
-        gun.reloading(config.SIM_DT)
+        gun.tick(config.SIM_DT)
 
     return fingerprint(
-        camera_x, zombie.zombie_x, zombie.zombie_y, human.health, gun.reload_seconds
+        camera_x, zombie.zombie_x, zombie.zombie_y, human.health, gun.locked_for
     )
 
 

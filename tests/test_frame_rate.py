@@ -87,10 +87,12 @@ def test_a_stun_lasts_the_same_time(window, cash, rate):
 @pytest.mark.parametrize("rate", RATES)
 def test_a_reload_takes_the_same_time(window, rate):
     gun = Gun()
+    gun.loaded = 0
+    gun.reload()
     dt = 1 / rate
 
     calls = 0
-    while gun.reloading(dt) == RELOAD:
+    while gun.tick(dt) == RELOAD:
         calls += 1
         assert calls < rate * 5, "reload never finished"
 

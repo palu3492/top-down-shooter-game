@@ -230,3 +230,51 @@ class StunDetonation(Interpolated, pygame.sprite.Sprite):
             self.life -= dt
         else:
             self.kill()
+
+
+class Swing(Interpolated, pygame.sprite.Sprite):
+    """A melee hit: a moment and a direction, not a thing that travels.
+
+    A knife is not a gun with range zero. This has no speed, no range falloff
+    and nothing to draw -- it exists for a single step, damages whatever is
+    inside its arc and within reach, and dies. The whole difference between a
+    blade and a barrel is in this class rather than in a branch somewhere.
+    """
+
+    def __init__(self, start_x, start_y, x, y, damage, reach, arc):
+        pygame.sprite.Sprite.__init__(self)
+        self.damage = damage
+        self.reach = reach
+        self.arc = math.radians(arc)
+        self.facing = math.atan2(y, x)
+        self.image = pygame.Surface((0, 0), pygame.SRCALPHA)
+        self.rect = self.image.get_rect()
+        self.swing_x = start_x
+        self.swing_y = start_y
+        self.remember_position()
+
+    @property
+    def world_x(self):
+        return self.swing_x
+
+    @property
+    def world_y(self):
+        return self.swing_y
+
+    def update(self, camera_x, camera_y, zombie_group, dt=config.SIM_DT):
+        origin = (self.swing_x + camera_x, self.swing_y + camera_y)
+        for zombie in list(zombie_group):
+            if self.reaches(origin, zombie) and zombie.remove_health(self.damage):
+                zombie.kill()
+        self.kill()
+
+    def reaches(self, origin, zombie):
+        """Within reach, and in front rather than anywhere at all."""
+        across = zombie.rect.centerx - origin[0]
+        # Screen y grows downward and `aim` is given with y upward, so this has
+        # to be flipped before the two angles can be compared.
+        up = origin[1] - zombie.rect.centery
+        if math.hypot(across, up) > self.reach:
+            return False
+        turn = math.atan2(up, across) - self.facing
+        return abs((turn + math.pi) % (2 * math.pi) - math.pi) <= self.arc / 2

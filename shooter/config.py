@@ -48,6 +48,13 @@ EXPLOSION_DAMAGE = 75
 STUN_SPEED = 180
 STUN_SECONDS = 200 / 60
 
+# The knife: two hits to put a zombie down, but only from close enough that
+# missing means being hit back. Reach is measured from the player's centre to
+# the zombie's, so it is a little shorter than it reads.
+KNIFE_DAMAGE = 50
+KNIFE_REACH = 140
+KNIFE_ARC = 100
+
 CLIP_SIZE = 60
 RESERVE_SIZE = 120
 RELOAD_SECONDS = 1.0

@@ -15,7 +15,7 @@ from shooter.entities.player import Human
 from shooter.entities.zombie import Zombie
 from shooter.gameplay import GameplayScene
 from shooter.settings import CATALOGUE, LIVE, Settings
-from shooter.ui.hud import HUD, Cash, GunPanel, HealthBar
+from shooter.ui.hud import HUD, Cash, HealthBar, WeaponPanel
 from shooter.scenes import SceneStack
 from shooter.ui.settings_screen import SettingsScreen
 from shooter.viewport import Viewport
@@ -56,7 +56,7 @@ def test_the_health_bar_follows_the_viewport(display, viewport):
 
 
 def test_the_gun_readout_follows_the_viewport(display, viewport):
-    readout = GunPanel(viewport)
+    readout = WeaponPanel(viewport)
     viewport.resize(LARGE)
     assert readout.window[0] == 1920
 
