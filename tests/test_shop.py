@@ -13,8 +13,8 @@ import pytest
 
 from shooter import config, weapons
 from shooter.entities.props import Prop
-from shooter.session import GUN_STAND, SLOT_KEYS, Session
-from shooter.systems import shop
+from shooter.session import SLOT_KEYS, Session
+from shooter.systems import shop, world
 from shooter.ui.hud import Cash
 from shooter.viewport import Viewport
 
@@ -38,8 +38,12 @@ def game(display):
     return Session(Viewport(WINDOW))
 
 
+def the_stand(session):
+    return next(prop for prop in session.props if prop.label == "GUN STAND")
+
+
 def at_the_stand(session):
-    stand = next(iter(session.props))
+    stand = the_stand(session)
     session.camera_x = session.window[0] / 2 - stand.middle[0]
     session.camera_y = session.window[1] / 2 - stand.middle[1]
     return session
@@ -156,7 +160,7 @@ def test_there_is_a_line_on_the_panel_for_every_offer():
 
 
 def test_a_prop_offers_itself_only_from_close_enough(display):
-    stand = Prop("Wall Items/gun_on_wall.png", 1000, 1000, label="GUN STAND")
+    stand = Prop(world.STAND_SPRITE, 1000, 1000, label="GUN STAND")
     middle = stand.middle
 
     assert stand.within(middle)
@@ -167,7 +171,7 @@ def test_a_prop_offers_itself_only_from_close_enough(display):
 def test_reach_is_measured_from_the_middle_not_the_corner(display):
     """A wide prop must not be easier to reach along its length than across
     it."""
-    stand = Prop("Wall Items/gun_on_wall.png", 1000, 1000)
+    stand = Prop(world.STAND_SPRITE, 1000, 1000)
     middle = stand.middle
     step_out = stand.reach - 1
 
@@ -180,8 +184,10 @@ def test_reach_is_measured_from_the_middle_not_the_corner(display):
 
 
 def test_the_stand_is_standing_in_the_world(game):
-    stand = next(iter(game.props))
-    assert (stand.prop_x, stand.prop_y) == GUN_STAND
+    placed = next(one for one in world.STARTER if one.kind == world.STAND)
+    stand = the_stand(game)
+
+    assert (stand.prop_x, stand.prop_y) == placed.at
     assert game.nearby is None, "not at the opening corner"
 
 

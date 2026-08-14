@@ -29,8 +29,6 @@ ROW_AT = 20
 PRICE_AT = 300
 SAYS_AT = 208
 
-PROMPT_TOP = 150
-
 SAYS = {
     shop.BOUGHT: "bought",
     shop.REFILLED: "ammunition topped up",
@@ -38,12 +36,6 @@ SAYS = {
     shop.NO_ROOM: "no slot free",
     shop.STOCKED: "already full",
 }
-
-
-def prompt(screen, window, label):
-    """What standing next to something says before you press anything."""
-    text = pygame.font.Font(None, 30).render(f"[E]  {label}", True, config.WHITE)
-    screen.blit(text, (window[0] / 2 - text.get_width() / 2, PROMPT_TOP))
 
 
 class ShopFront:

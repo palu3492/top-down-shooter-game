@@ -152,3 +152,21 @@ class Cash:
             ),
             inside(TOP_MIDDLE.rect(window), CASH_READOUT),
         )
+
+
+# Under the player rather than at a fixed height near the top, where the
+# between-wave banner already is -- the two were printing over each other.
+PROMPT_BELOW = 90
+
+
+def prompt(screen, window, label):
+    """What standing next to something says before you press anything.
+
+    Not in `shopfront`, where it started: a tree offers itself the same way the
+    gun stand does, and only one of them is a shop.
+    """
+    text = pygame.font.Font(None, 30).render(f"[E]  {label}", True, config.WHITE)
+    screen.blit(
+        text,
+        (window[0] / 2 - text.get_width() / 2, window[1] / 2 + PROMPT_BELOW),
+    )
