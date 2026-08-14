@@ -18,6 +18,10 @@ TRUNK = (86, 62, 40)
 CANOPY = (48, 104, 44)
 CANOPY_LIT = (74, 138, 58)
 STONE = (118, 118, 124)
+LOG = (122, 88, 54)
+LOG_END = (158, 122, 82)
+METAL = (140, 146, 156)
+METAL_LIT = (188, 194, 204)
 STONE_LIT = (156, 156, 162)
 
 
@@ -59,5 +63,29 @@ def rock(width=100, height=80):
             (width // 2, height // 4),
             (width // 2 + width // 8, height),
         ),
+    )
+    return surface
+
+
+@cache
+def wood(width=44, height=30):
+    """A short log, seen from above."""
+    surface = pygame.Surface((width, height), pygame.SRCALPHA)
+    pygame.draw.rect(surface, LOG, (0, height // 4, width, height // 2))
+    pygame.draw.ellipse(surface, LOG_END, (0, height // 4, width // 5, height // 2))
+    return surface
+
+
+@cache
+def metal(width=40, height=28):
+    """A plate of scrap."""
+    surface = pygame.Surface((width, height), pygame.SRCALPHA)
+    pygame.draw.polygon(
+        surface,
+        METAL,
+        ((0, height - 4), (width // 6, 4), (width - 2, 0), (width, height)),
+    )
+    pygame.draw.polygon(
+        surface, METAL_LIT, ((width // 5, height - 6), (width // 2, 6), (width - 8, 8))
     )
     return surface

@@ -16,7 +16,7 @@ import math
 
 import pygame
 
-from shooter import config
+from shooter import config, items
 from shooter.background import BackgroundSheet
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
@@ -54,6 +54,16 @@ INTERACT = pygame.K_e
 # read from `human.rect`, which grows and shrinks as the player turns -- a
 # hitbox that depends on where you are aiming is not a hitbox.
 PLAYER_SOLID = (70, 70)
+
+# Chopping the same tree twice tops up the pile already lying there rather than
+# starting a second one. Ten wood is one thing to look at, not ten.
+MERGE_WITHIN = 110
+
+# How long "+4 WOOD" or "NO ROOM" stays on the screen, and how far above the
+# player it sits -- fixed heights near the top are where the between-wave
+# banner already is, and the two printed over each other.
+NOTICE_SECONDS = 1.6
+NOTICE_ABOVE = 120
 
 # `0` fills the five slots with one of everything -- which is now a way past the
 # gun stand as well as past the armoury. A cheat, so it is behind `DEV_TOOLS`
@@ -146,6 +156,10 @@ class Session:
         self.equipped = self.carried[0]
         self.shopping = False
         self.shop_says = None
+        self.backpack = items.Backpack()
+        self.dropped = pygame.sprite.Group()
+        self.notice = None
+        self.notice_seconds = 0.0
         self.grenade_data = GrenadeData()
         self.heads_up_display = HUD(window)
         self.health_display = HealthBar(window)
@@ -279,10 +293,42 @@ class Session:
         if thing is None:
             return
         if isinstance(thing, Harvestable):
-            thing.hit(self.equipped.damage, self.equipped)
+            self._chop(thing)
             return
         self.shopping = True
         self.shop_says = None
+
+    def _chop(self, thing):
+        won = thing.harvest(self.equipped.damage, self.equipped)
+        if won:
+            self._spill(thing.yields.item, won, thing.middle)
+
+    def _spill(self, item, count, at):
+        """Drop this here, or add it to what is already lying here."""
+        for pile in self.dropped:
+            if pile.item is item and math.dist(pile.middle, at) <= MERGE_WITHIN:
+                pile.count += count
+                return
+        self.dropped.add(world.spilled(item, count, at))
+
+    def _gather(self):
+        """Take what is underfoot, as far as there is room for it.
+
+        A pile the pack cannot take is left exactly as it was and said out
+        loud: walking over wood and seeing nothing happen reads as a bug rather
+        than as a full backpack.
+        """
+        here = self._muzzle()
+        for pile in list(self.dropped):
+            if not pile.within(here):
+                continue
+            item = pile.item
+            taken = pile.take(self.backpack)
+            self.say(f"+{taken} {item.name.upper()}" if taken else "NO ROOM")
+
+    def say(self, message):
+        self.notice = message
+        self.notice_seconds = NOTICE_SECONDS
 
     def _shop_key(self, key):
         """While the stand is open the number keys buy rather than equip.
@@ -318,6 +364,12 @@ class Session:
 
         for held in self.carried:
             held.tick(dt)
+
+        self._gather()
+        if self.notice_seconds > 0:
+            self.notice_seconds = max(0.0, self.notice_seconds - dt)
+            if not self.notice_seconds:
+                self.notice = None
 
         # Walking away closes the stand. Nothing else would, and a shop that
         # follows the player across the map is not a place.
@@ -446,6 +498,7 @@ class Session:
             (0, 0),
         )
 
+        blit_group(screen, self.dropped, draw_x, draw_y, alpha)
         blit_group(screen, self.props, draw_x, draw_y, alpha)
         for prop in self.props:
             if isinstance(prop, Harvestable) and prop.left < 1:
@@ -502,6 +555,15 @@ class Session:
 
         if self.ammo_count == RELOAD:
             centred_text(screen, self.window, "Reloading", RELOADING_TOP, size=30)
+
+        if self.notice:
+            centred_text(
+                screen,
+                self.window,
+                self.notice,
+                self.window[1] / 2 - NOTICE_ABOVE,
+                size=30,
+            )
 
         if self.shopping:
             self.shop_display.draw(screen, self.cash, self.carried, self.shop_says)
