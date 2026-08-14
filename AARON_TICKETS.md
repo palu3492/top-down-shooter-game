@@ -1194,7 +1194,7 @@ and one thing to draw, never ten.
 
 ---
 
-## AT44 — Loot from the dead — TODO
+## AT44 — Loot from the dead — DONE
 
 **Short description:** Zombies drop what they were carrying.
 
@@ -1205,10 +1205,27 @@ and one thing to draw, never ten.
 leaves it.
 
 **Goals**
-- [ ] A drop table per zombie kind
-- [ ] One bulk pickup per drop, not one sprite per item
-- [ ] Walking over it takes what fits and subtracts exactly that
-- [ ] A full backpack leaves the remainder, and says why nothing happened
+- [x] A drop table per zombie kind
+- [x] One bulk pickup per drop, not one sprite per item
+- [x] Walking over it takes what fits and subtracts exactly that (AT43)
+- [x] A full backpack leaves the remainder, and says why nothing happened (AT43)
+
+**Loot is worked out from who is missing, not from the moment of death.** A
+zombie dies inside a bullet, a swing or an explosion -- three places with no
+business knowing what a pickup is. The session snapshots who was standing at
+the top of a step and sweeps for who is gone at the bottom.
+
+**Missing is not the same as killed.** A nuke empties the group without
+anything being cut down, and thirty piles for one power-up is not a reward, it
+is litter. `remove_health` marks the kill, in the same place it already pays
+the coins, and the sweep drops only for those.
+
+**A crowd leaves piles, not litter.** Five corpses close together merge into
+one pile per item, because AT43's spill already tops up what is lying nearby.
+
+**Cloth, because a zombie carrying firewood is silly.** It is what their
+clothes are worth, and it is what AT45 will want for bandages. Metal is the
+rarer line.
 
 ---
 

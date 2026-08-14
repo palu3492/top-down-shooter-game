@@ -25,7 +25,7 @@ from shooter.entities.powerups import PowerUps
 from shooter.entities.props import Harvestable
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
 from shooter.render import blit_group
-from shooter.systems import shop, world
+from shooter.systems import loot, shop, world
 from shooter.systems.waves import WaveSystem
 from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, prompt
 from shooter.ui.radar import RadarScreen
@@ -311,6 +311,18 @@ class Session:
                 return
         self.dropped.add(world.spilled(item, count, at))
 
+    def _drop_loot(self, standing):
+        """Leave behind what the fallen were carrying.
+
+        Only what was actually killed. A nuke empties the group without
+        anything being cut down, and the field should not be carpeted for it.
+        """
+        for zombie in standing - set(self.zombies):
+            if not zombie.killed:
+                continue
+            for item, count in loot.spoils(zombie.kind):
+                self._spill(item, count, zombie.get_position())
+
     def _gather(self):
         """Take what is underfoot, as far as there is room for it.
 
@@ -382,6 +394,11 @@ class Session:
             self._shoot()
 
         self._animate_player(dt)
+        # Who was standing before anything could cut them down. Loot is worked
+        # out from who is missing afterwards rather than at the moment of
+        # death, which happens inside a bullet, a swing and an explosion --
+        # three places with no business knowing what a pickup is.
+        standing = set(self.zombies)
         self._advance_zombies(dt)
         self._collect_powerups(dt)
 
@@ -392,6 +409,8 @@ class Session:
             self.camera_x, self.camera_y, self.stun_explosions, dt
         )
         self.stun_explosions.update(self.camera_x, self.camera_y, dt)
+
+        self._drop_loot(standing)
 
         if not self.zombies:
             self.rules.advance(self.window, self.zombies, self.cash, dt, self.visible)

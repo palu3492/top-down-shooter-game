@@ -22,6 +22,8 @@ LOG = (122, 88, 54)
 LOG_END = (158, 122, 82)
 METAL = (140, 146, 156)
 METAL_LIT = (188, 194, 204)
+RAG = (128, 116, 96)
+RAG_LIT = (162, 150, 128)
 STONE_LIT = (156, 156, 162)
 
 
@@ -87,5 +89,20 @@ def metal(width=40, height=28):
     )
     pygame.draw.polygon(
         surface, METAL_LIT, ((width // 5, height - 6), (width // 2, 6), (width - 8, 8))
+    )
+    return surface
+
+
+@cache
+def cloth(width=38, height=30):
+    """A torn rag."""
+    surface = pygame.Surface((width, height), pygame.SRCALPHA)
+    pygame.draw.polygon(
+        surface,
+        RAG,
+        ((2, height - 6), (0, 8), (width // 2, 0), (width, 10), (width - 6, height)),
+    )
+    pygame.draw.polygon(
+        surface, RAG_LIT, ((8, height - 10), (width // 3, 6), (width - 12, 12))
     )
     return surface
