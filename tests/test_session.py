@@ -115,8 +115,25 @@ def test_the_camera_is_clamped_to_the_world(session):
 
 
 def arm(session):
-    """Hold the rifle. The knife is what a session starts with now."""
-    session.handle(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2))
+    """Hold the rifle. A game starts with a knife and buys the rest."""
+    session.carried.append(weapons.equip(weapons.M16))
+    session.equipped = session.carried[-1]
+    return session
+
+
+def stock(session):
+    """Every weapon there is, for the tests that need to reach all five."""
+    made = [weapons.equip(which) for which in weapons.weapon_ids()]
+    session.carried = made[: weapons.MAX_SLOTS]
+    session.equipped = session.carried[0]
+    return session
+
+
+def at_the_stand(session):
+    """Put the player next to the gun stand."""
+    stand = next(iter(session.props))
+    session.camera_x = session.window[0] / 2 - stand.middle[0]
+    session.camera_y = session.window[1] / 2 - stand.middle[1]
     return session
 
 
@@ -288,6 +305,7 @@ def test_a_new_session_starts_with_the_knife_in_hand(session):
 
 
 def test_the_number_keys_choose_what_is_held(session):
+    stock(session)
     press_key(session, pygame.K_2)
     assert session.equipped.weapon.id == weapons.M16.id
 
@@ -299,6 +317,7 @@ def test_a_slot_with_nothing_in_it_changes_nothing(session):
     """Every slot is full today, and AT41 empties them again when the guns go
     behind the counter. Pressing a key past the end must not put an empty hand
     on the screen -- or raise."""
+    stock(session)
     del session.carried[2:]
     press_key(session, pygame.K_2)
 
@@ -316,6 +335,7 @@ def test_swinging_the_knife_makes_no_bullet(session):
 
 
 def test_what_is_held_decides_what_shooting_does(session):
+    stock(session)
     """The one line the session runs is the same for both; only the weapon
     differs. That is the seam the armoury is built on."""
     session.aim_at((900, 300))
@@ -332,6 +352,7 @@ def test_what_is_held_decides_what_shooting_does(session):
 
 
 def test_a_knife_swing_spends_no_ammunition(session):
+    stock(session)
     session.aim_at((900, 300))
     for _ in range(20):
         session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
@@ -480,7 +501,7 @@ def test_instakill_makes_the_knife_lethal_too(session):
 def test_max_ammo_refills_a_rifle_that_is_not_in_hand(display):
     """Walking over a pickup with the knife out used to refill the knife,
     which is to say nothing at all."""
-    session = Session(Viewport(WINDOW))
+    session = arm(Session(Viewport(WINDOW)))
     rifle = session.carried[1]
     rifle.reserve = 3
 
@@ -538,15 +559,17 @@ def attacks_while_held(session, seconds, trigger=True):
 
 
 def test_every_slot_reaches_a_different_weapon(session):
+    stock(session)
     reached = []
     for key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5):
         press_key(session, key)
         reached.append(session.equipped.weapon.id)
 
-    assert reached == list(weapons.SLOTS)
+    assert reached == [held.weapon.id for held in session.carried]
 
 
 def test_holding_the_trigger_keeps_the_smg_firing(session):
+    stock(session)
     press_key(session, pygame.K_3)
     assert session.equipped.weapon.id == weapons.SMG.id
     session.aim_at((900, 300))
@@ -555,6 +578,7 @@ def test_holding_the_trigger_keeps_the_smg_firing(session):
 
 
 def test_holding_the_trigger_does_nothing_for_the_rest(session):
+    stock(session)
     """One pull per shot for everything that is not automatic, whatever the
     button is doing."""
     for key in (pygame.K_1, pygame.K_2, pygame.K_4, pygame.K_5):
@@ -567,6 +591,7 @@ def test_holding_the_trigger_does_nothing_for_the_rest(session):
 
 
 def test_the_smg_fires_at_its_rate_and_not_the_frame_rate(session):
+    stock(session)
     press_key(session, pygame.K_3)
     session.aim_at((900, 300))
     rate = session.equipped.weapon.rate
@@ -577,6 +602,7 @@ def test_the_smg_fires_at_its_rate_and_not_the_frame_rate(session):
 
 
 def test_clicking_faster_than_the_sniper_reloads_wastes_the_clicks(session):
+    stock(session)
     """The rate has to be the weapon's. A click is a click however fast they
     come."""
     press_key(session, pygame.K_5)
@@ -591,6 +617,7 @@ def test_clicking_faster_than_the_sniper_reloads_wastes_the_clicks(session):
 
 
 def test_one_pull_of_a_shotgun_puts_eight_pellets_in_the_air(session):
+    stock(session)
     press_key(session, pygame.K_4)
     session.aim_at((900, 300))
 
@@ -601,6 +628,7 @@ def test_one_pull_of_a_shotgun_puts_eight_pellets_in_the_air(session):
 
 
 def test_a_shotgun_spends_one_round_not_one_per_pellet(session):
+    stock(session)
     press_key(session, pygame.K_4)
     session.aim_at((900, 300))
     clip = session.equipped.loaded
@@ -613,7 +641,7 @@ def test_a_shotgun_spends_one_round_not_one_per_pellet(session):
 
 
 def test_max_ammo_refills_every_gun_not_just_the_rifle(display):
-    session = Session(Viewport(WINDOW))
+    session = stock(Session(Viewport(WINDOW)))
     for gun in session.carried[1:]:
         gun.reserve = 0
 

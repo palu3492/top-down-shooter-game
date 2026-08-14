@@ -1047,32 +1047,51 @@ Either the loadout grows, or choosing what to leave behind starts here.
 
 ---
 
-## AT41 — The shop on the wall — TODO
+## AT41 — The shop on the wall — DONE
 
 **Short description:** Somewhere on the map you walk up to and buy from, not a
 menu that appears between waves.
 
-**Dependencies:** AT40, AT42
+**Dependencies:** AT40
 
 **Goals**
-- [ ] A shop standing somewhere in the world
-- [ ] The starting loadout drops to the knife; the guns go behind the counter
-- [ ] Walking up to it offers to trade; `E` opens it
-- [ ] Coins buy a weapon and its ammunition
-- [ ] Usable mid-wave, at the risk of standing still to do it
+- [x] A shop standing somewhere in the world
+- [x] The starting loadout drops to the knife; the guns go behind the counter
+- [x] Walking up to it offers to trade; `E` opens it
+- [x] Coins buy a weapon and its ammunition
+- [x] Usable mid-wave, at the risk of standing still to do it
 
 **A place rather than a moment.** The first plan was a between-wave menu, which
 is a screen and nothing else. Putting it on the map makes buying a decision
 about *where the player is* -- worth crossing the field for, dangerous with a
 wave inbound -- and costs nothing extra once AT42 exists.
 
-**Which is why AT42 now comes first.** A shop on the map is a world object like
-any other; it should be that layer's first user rather than its own kind of
-thing.
+**AT42 was going to come first, and it did not.** The plan had the world-object
+layer built before its first user. But the shop needs only a small part of what
+AT42 is -- a thing at a position you can be near -- and none of the harvesting.
+Building `Prop` here means it is shaped by a real user rather than guessed at,
+and it is 40 lines rather than a layer. AT42 adds health, tools and yields on
+top of it.
+
+**Not a scene, on purpose.** A scene pushed over gameplay stops the fixed step;
+that is what pausing *is*. Standing still to shop is meant to cost the player
+something, so the stand is an overlay the session draws and the wave keeps
+coming while it is open. That is also why it is worked by the number keys:
+aiming at a menu with zombies closing in is a different game.
+
+**The art sets the price.** `gun_on_wall.png` has $500 painted on it, so that
+is what the rifle costs, and a test says so -- changing one without the other
+makes the sign a lie.
+
+**The slot cap cannot be hit yet.** Five slots and five weapons means a full
+loadout already holds everything. `NO_ROOM` becomes reachable the moment AT40.1
+adds the crossbow, which is what it is there for.
 
 **Most of it was written in 2019 and never called.** `Cash.cash_add_remove`
-already returns whether a purchase can be afforded, with a comment saying so,
-and `Assets/Wall Items/gun_on_wall.png` had never been referenced by anything.
+already returned whether a purchase can be afforded, with a comment saying so,
+and nothing had ever called it -- it is the affordability check now.
+`Assets/Wall Items/gun_on_wall.png` had never been referenced by anything
+either.
 
 **The advertisement is gone.** The wave banner printed `[AMMO]  [HEALTH]  [GUN]`
 for seven years for a shop nobody wrote. AT34 already stopped the player seeing
@@ -1083,6 +1102,11 @@ than left to be honoured by something else entirely.
 ---
 
 ## AT42 — Things in the world — TODO
+
+**The interaction layer already exists.** AT41 built `entities/props.py` -- a
+thing at a world position with a reach, `Session.nearby`, the `[E]` prompt and
+the key that acts on it. This ticket adds health, tools and yields to that,
+rather than inventing a second way to stand next to something.
 
 **Short description:** A layer of objects that stay where they are. Nothing is
 harvestable until something exists to harvest.
