@@ -26,6 +26,9 @@ WINDOW = (1080, 720)
 class CountingRules:
     """A stand-in for WaveSystem, to show the slot a campaign mode would fill."""
 
+    # A mode says what stands in its world. Nothing is a legal answer.
+    layout = ()
+
     def __init__(self, window, zombies, cash, visible):
         self.window = window
         self.advances = 0

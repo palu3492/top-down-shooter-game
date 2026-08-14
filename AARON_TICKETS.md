@@ -1101,7 +1101,7 @@ than left to be honoured by something else entirely.
 
 ---
 
-## AT42 — Things in the world — TODO
+## AT42 — Things in the world — DONE
 
 **The interaction layer already exists.** AT41 built `entities/props.py` -- a
 thing at a world position with a reach, `Session.nearby`, the `[E]` prompt and
@@ -1114,21 +1114,44 @@ harvestable until something exists to harvest.
 **Dependencies:** AT27
 
 **Goals**
-- [ ] World objects with a position, a footprint and health
-- [ ] They occlude, collide, and survive the camera moving
-- [ ] Standing near one offers an interaction; `E` takes it
-- [ ] Placed from a level definition rather than scattered at random
+- [x] World objects with a position, a footprint and health
+- [x] They collide, and survive the camera moving
+- [ ] They occlude -- see below, deliberately not done
+- [x] Standing near one offers an interaction; `E` takes it (AT41)
+- [x] Placed from a level definition rather than scattered at random
 
 **This is the hidden cost in the resource half.** The world is a 5000x5000
 background *image*. `Session` has groups for zombies, bullets, grenades and
 power-ups -- everything that moves and nothing that stays. Trees, a downed plane
 and a house are not more sprites, they are a layer the game has never had.
 
-**It moved ahead of the shop.** Making the shop a thing on the map rather than a
-menu means it needs this, so the weapon arc now waits one phase longer than the
-coins-first ordering was chosen to avoid. Worth it: a shop you walk to is a
-better game than a shop that appears, and the interaction built here is the same
-one harvesting needs.
+**It moved ahead of the shop, and then it did not.** AT41 needed only the small
+part of this -- a thing at a position you can be near -- so `Prop` was built
+there and this ticket added health, footprints and placement on top. The layer
+ended up shaped by a real user rather than guessed at.
+
+**A footprint is smaller than a picture.** A canopy is drawn far wider than the
+part of a tree you would bump into, and a wood whose footprints match its
+sprites is a maze. Collision is per-axis, so walking into a tree at an angle
+slides along it; and anything already overlapping is let through in either
+direction, because a player who ends up inside a footprint should be able to
+walk out rather than be held there.
+
+**Health is how much is left in it, not how close to dead.** `hit` returns the
+damage that actually landed and trims overkill, so a tree with two health in it
+is worth two however hard the last swing was. That return value is what AT43
+multiplies into wood -- the whole reason yield is proportional to damage.
+
+**Placeholder art is drawn in code, not committed.** There is no tree or rock
+sprite, so `entities/shapes.py` draws them. In code rather than as placeholder
+PNGs so replacing one means deleting a function, not working out which file was
+temporary. It also means a choppable tree stands next to a painted background
+tree that is only scenery, which is confusing and wants real art.
+
+**Three things deliberately not done.** Props do not occlude -- there is no
+y-sorting, so the player draws over a tree rather than behind it. Bullets pass
+straight through them. Zombies walk through them. All three are worth having
+and none is needed by harvesting, so they are not smuggled in here.
 
 ---
 
@@ -1138,6 +1161,10 @@ one harvesting needs.
 backpack.
 
 **Dependencies:** AT37, AT42
+
+**The damage is already reported.** `Harvestable.hit` returns what landed, with
+overkill trimmed. This ticket multiplies that by a yield rate and mints the
+pickups.
 
 **Goals**
 - [ ] Hitting a world object with the right tool yields its resource

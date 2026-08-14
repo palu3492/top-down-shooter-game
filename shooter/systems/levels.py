@@ -17,6 +17,7 @@ import pygame
 from shooter import config
 from shooter.entities.zombie import Zombie
 from shooter.session import WON
+from shooter.systems import world
 from shooter.systems.waves import WaveSystem
 from shooter.ui.anchor import CENTRE, TOP, place
 
@@ -29,6 +30,7 @@ class Level:
     waves: int
     opening: int
     growth: int
+    props: tuple = world.STARTER
 
     @property
     def title(self):
@@ -75,6 +77,11 @@ class LevelRules(WaveSystem):
         self.wave_count = 0
         self.wave_seconds = 0.0
         self._spawn(window, zombie_group, player_cash, visible, self.level.opening)
+
+    @property
+    def layout(self):
+        """What stands in this level. A level owns its world, not the mode."""
+        return self.level.props
 
     @property
     def outcome(self):

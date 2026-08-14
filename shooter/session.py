@@ -22,14 +22,14 @@ from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
 from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
-from shooter.entities.props import Prop
+from shooter.entities.props import Harvestable
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
 from shooter.render import blit_group
-from shooter.systems import shop
+from shooter.systems import shop, world
 from shooter.systems.waves import WaveSystem
-from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel
+from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, prompt
 from shooter.ui.radar import RadarScreen
-from shooter.ui.shopfront import ShopFront, prompt
+from shooter.ui.shopfront import ShopFront
 from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
 
@@ -50,10 +50,10 @@ SLOT_KEYS = (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5)
 # the mouse is aiming; not `Tab`, because that is the backpack.
 INTERACT = pygame.K_e
 
-# Where the gun stand is. Near enough to the opening corner to be reached on the
-# first wave with nothing but a knife, far enough that it is a walk.
-GUN_STAND = (1350, 620)
-STAND_SPRITE = "Wall Items/gun_on_wall.png"
+# What the player bumps into. Smaller than the sprite, and fixed rather than
+# read from `human.rect`, which grows and shrinks as the player turns -- a
+# hitbox that depends on where you are aiming is not a hitbox.
+PLAYER_SOLID = (70, 70)
 
 # `0` fills the five slots with one of everything -- which is now a way past the
 # gun stand as well as past the armoury. A cheat, so it is behind `DEV_TOOLS`
@@ -144,9 +144,6 @@ class Session:
         self.cash = Cash()
         self.carried = [equip(which) for which in SLOTS]
         self.equipped = self.carried[0]
-        self.props = pygame.sprite.Group(
-            Prop(STAND_SPRITE, *GUN_STAND, label="GUN STAND")
-        )
         self.shopping = False
         self.shop_says = None
         self.grenade_data = GrenadeData()
@@ -157,6 +154,8 @@ class Session:
         self.radar = RadarScreen()
 
         self.rules = rules(window, self.zombies, self.cash, self.visible)
+        # After the rules, because what stands in a level is the level's to say.
+        self.props = pygame.sprite.Group(*world.build(self.rules.layout))
 
     @property
     def outcome(self):
@@ -275,9 +274,15 @@ class Session:
         self.equipped = self.carried[slot]
 
     def _interact(self):
-        if self.nearby is not None:
-            self.shopping = True
-            self.shop_says = None
+        """Use what is at hand: a stand sells, a tree is chopped."""
+        thing = self.nearby
+        if thing is None:
+            return
+        if isinstance(thing, Harvestable):
+            thing.hit(self.equipped.damage, self.equipped)
+            return
+        self.shopping = True
+        self.shop_says = None
 
     def _shop_key(self, key):
         """While the stand is open the number keys buy rather than equip.
@@ -309,12 +314,7 @@ class Session:
             self._walk(pressed, dt)
 
         self.previous_camera = self.camera
-        self.camera_x = min(
-            0, max(-(config.WORLD[0] - self.window[0]), self.camera_x + self.change_x)
-        )
-        self.camera_y = min(
-            0, max(-(config.WORLD[1] - self.window[1]), self.camera_y + self.change_y)
-        )
+        self._advance_camera()
 
         for held in self.carried:
             held.tick(dt)
@@ -347,6 +347,42 @@ class Session:
         self.instakill_seconds = max(0.0, self.instakill_seconds - dt)
         self.change_x = self.change_y = 0
         self.shooting = False
+
+    def _advance_camera(self):
+        """Move, unless something is in the way.
+
+        One axis at a time, so walking into a tree at an angle slides along it
+        rather than stopping dead. Anything already overlapping is let through
+        in either direction -- a player who somehow ends up inside a footprint
+        should be able to walk out of it rather than be held there.
+        """
+        stuck = self._blocked(self.camera_x, self.camera_y)
+
+        wanted = self._on_the_map(self.camera_x + self.change_x, 0)
+        if stuck or not self._blocked(wanted, self.camera_y):
+            self.camera_x = wanted
+
+        wanted = self._on_the_map(self.camera_y + self.change_y, 1)
+        if stuck or not self._blocked(self.camera_x, wanted):
+            self.camera_y = wanted
+
+    def _on_the_map(self, camera, axis):
+        return min(0, max(-(config.WORLD[axis] - self.window[axis]), camera))
+
+    def _standing_at(self, camera_x, camera_y):
+        box = pygame.Rect(0, 0, *PLAYER_SOLID)
+        box.center = (
+            self.window[0] / 2 - camera_x,
+            self.window[1] / 2 - camera_y,
+        )
+        return box
+
+    def _blocked(self, camera_x, camera_y):
+        here = self._standing_at(camera_x, camera_y)
+        return any(
+            prop.footprint is not None and prop.footprint.colliderect(here)
+            for prop in self.props
+        )
 
     def _walk(self, pressed, dt):
         if pressed[pygame.K_w]:
@@ -411,6 +447,9 @@ class Session:
         )
 
         blit_group(screen, self.props, draw_x, draw_y, alpha)
+        for prop in self.props:
+            if isinstance(prop, Harvestable) and prop.left < 1:
+                prop.health_bar(screen, prop.draw_position(draw_x, draw_y, alpha))
         blit_group(screen, self.powerups, draw_x, draw_y, alpha)
         for zombie in self.zombies:
             zombie.health_bar(screen, zombie.draw_position(draw_x, draw_y, alpha))

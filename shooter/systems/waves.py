@@ -1,6 +1,7 @@
 import pygame
 
 from shooter import config
+from shooter.systems import world
 from shooter.entities.zombie import Zombie
 from shooter.ui.anchor import CENTRE, TOP, place
 
@@ -20,6 +21,7 @@ class WaveSystem:
 
     outcome = None
     level = None
+    layout = world.STARTER
 
     def __init__(self, window, zombie_group, player_cash, visible=None):
         self.wave_count = 0
