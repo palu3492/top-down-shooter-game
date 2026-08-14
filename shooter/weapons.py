@@ -119,6 +119,15 @@ def weapon_ids():
     return tuple(BUILDERS)
 
 
+def everything():
+    """One of each, fresh and full. The dev cheat, and nothing else.
+
+    Built rather than listed, so a weapon added to the armoury is in it without
+    anyone remembering to say so.
+    """
+    return [equip(which) for which in weapon_ids()]
+
+
 KNIFE = items.register(items.Item("knife", "Knife", items.TOOL))
 
 register(

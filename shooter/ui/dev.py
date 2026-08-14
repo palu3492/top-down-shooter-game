@@ -41,6 +41,9 @@ RULER_HEIGHT = 14
 BUTTON_HEIGHT = 54
 HALF_SPAN = 6
 HINT = "twelve columns; every rectangle below is measured in them"
+# Cheats are keys pressed during a game, so they cannot live on this form --
+# but this is where someone comes looking for them.
+CHEATS = "in a game:  [0] every weapon, loaded, on [1]-[5]"
 
 
 class DevScreen(FormScreen):
@@ -49,9 +52,11 @@ class DevScreen(FormScreen):
     def open(self):
         grid = Grid(pygame.Rect((0, 0), self.window), padding=PADDING)
         self.add(widgets.title(grid.row(TITLE_HEIGHT).rest(), self.title, self.manager))
-        self.hint = self.add(
-            widgets.hint(grid.row(HINT_HEIGHT).rest(), HINT, self.manager)
-        )
+        # Both on one row: a second one costs 26 pixels the shortest window
+        # this screen claims to support does not have.
+        hints = grid.row(HINT_HEIGHT)
+        self.hint = self.add(widgets.hint(hints.cell(HALF_SPAN), HINT, self.manager))
+        self.cheats = self.add(widgets.hint(hints.rest(), CHEATS, self.manager))
         self._build_ruler(grid)
 
         body = grid.row(grid.free_height - BUTTON_HEIGHT - grid.gutter)
