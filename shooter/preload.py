@@ -22,6 +22,7 @@ SPRITES = (
     ("HUD/brHUD.png", False),
     ("HUD/tmHUD.png", False),
     ("HUD/gunAK47.png", False),
+    ("Wall Items/gun_on_wall.png", True),
     ("Power Ups/instakill.png", False),
     ("Power Ups/Nuke.png", False),
     ("Power Ups/MaxAmmo.png", False),

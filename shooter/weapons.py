@@ -216,10 +216,13 @@ register(
 )
 
 
-# What the player carries, in the order `1`-`5` reaches them. Five keys, five
-# slots: the armoury is deliberately larger than the loadout, because choosing
-# what to leave behind is the whole point of the arc.
-SLOTS = (KNIFE.id, M16.id, SMG.id, SHOTGUN.id, SNIPER.id)
+# Five keys, so five slots. The armoury is deliberately larger than the loadout,
+# because choosing what to leave behind is the whole point of the arc.
+MAX_SLOTS = 5
+
+# What a game starts with: a knife, and nothing else. Everything with a barrel
+# is bought from the gun stand.
+SLOTS = (KNIFE.id,)
 
 
 def equip(which):

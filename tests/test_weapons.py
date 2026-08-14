@@ -32,6 +32,7 @@ from shooter.weapons import (
     Gun,
     UnknownWeaponError,
     equip,
+    MAX_SLOTS,
     SLOTS,
     weapon,
     weapon_ids,
@@ -491,12 +492,13 @@ def test_no_two_guns_feel_the_same():
     assert len({gun.clip for gun in made}) == len(made)
 
 
-def test_the_loadout_is_smaller_than_the_armoury_can_grow():
-    """Five keys, five slots. The catalogue is free to outgrow them, which is
-    what makes what to leave behind a choice."""
-    assert len(SLOTS) == 5
-    assert SLOTS[0] == KNIFE.id
-    assert set(SLOTS) <= set(weapon_ids())
+def test_a_game_starts_with_a_knife_and_nothing_else():
+    """Everything with a barrel is bought. Five keys means five slots, and the
+    catalogue is free to outgrow them -- which is what makes what to leave
+    behind a choice."""
+    assert list(SLOTS) == [KNIFE.id]
+    assert MAX_SLOTS == 5
+    assert len(weapon_ids()) >= MAX_SLOTS
 
 
 @pytest.mark.parametrize("which", ARMOURY)

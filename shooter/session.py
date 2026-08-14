@@ -22,11 +22,14 @@ from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
 from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
+from shooter.entities.props import Prop
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
 from shooter.render import blit_group
+from shooter.systems import shop
 from shooter.systems.waves import WaveSystem
 from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel
 from shooter.ui.radar import RadarScreen
+from shooter.ui.shopfront import ShopFront, prompt
 from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
 
@@ -43,9 +46,18 @@ LEFT_BUTTON = 1
 # `1`-`5` pick a weapon, in the order the controls map lists them.
 SLOT_KEYS = (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5)
 
-# `0` fills those five slots with one of everything. A cheat, so it is behind
-# `DEV_TOOLS` and read live -- turning the setting off puts the key back to
-# doing nothing without restarting.
+# `E` uses whatever the player is standing next to. Not a mouse button, because
+# the mouse is aiming; not `Tab`, because that is the backpack.
+INTERACT = pygame.K_e
+
+# Where the gun stand is. Near enough to the opening corner to be reached on the
+# first wave with nothing but a knife, far enough that it is a walk.
+GUN_STAND = (1350, 620)
+STAND_SPRITE = "Wall Items/gun_on_wall.png"
+
+# `0` fills the five slots with one of everything -- which is now a way past the
+# gun stand as well as past the armoury. A cheat, so it is behind `DEV_TOOLS`
+# and read live: turning the setting off puts the key back to doing nothing.
 GRANT_ALL = pygame.K_0
 
 # How a game can finish. `None` means it is still being played.
@@ -132,10 +144,16 @@ class Session:
         self.cash = Cash()
         self.carried = [equip(which) for which in SLOTS]
         self.equipped = self.carried[0]
+        self.props = pygame.sprite.Group(
+            Prop(STAND_SPRITE, *GUN_STAND, label="GUN STAND")
+        )
+        self.shopping = False
+        self.shop_says = None
         self.grenade_data = GrenadeData()
         self.heads_up_display = HUD(window)
         self.health_display = HealthBar(window)
         self.weapon_display = WeaponPanel(window)
+        self.shop_display = ShopFront(window)
         self.radar = RadarScreen()
 
         self.rules = rules(window, self.zombies, self.cash, self.visible)
@@ -200,7 +218,7 @@ class Session:
         return self.equipped.status
 
     def _shoot(self):
-        if not self.equipped.ready:
+        if self.shopping or not self.equipped.ready:
             return
         self.shooting = True
         self.bullets.add(self.equipped.attack(self._muzzle(), self.aim, self._damage()))
@@ -209,7 +227,19 @@ class Session:
     def _damage(self):
         return LETHAL if self.instakill_seconds > 0 else self.equipped.damage
 
+    @property
+    def nearby(self):
+        """What the player is standing close enough to use, if anything."""
+        here = self._muzzle()
+        return next((prop for prop in self.props if prop.within(here)), None)
+
     def _key(self, key):
+        if self.shopping:
+            self._shop_key(key)
+            return
+        if key == INTERACT:
+            self._interact()
+            return
         if key == pygame.K_g and self.grenade_data.grenade_amount > 0:
             self.grenades.add(Grenade(*self._muzzle(), *self.aim))
             self.grenade_data.grenade_amount -= 1
@@ -244,6 +274,26 @@ class Session:
             return
         self.equipped = self.carried[slot]
 
+    def _interact(self):
+        if self.nearby is not None:
+            self.shopping = True
+            self.shop_says = None
+
+    def _shop_key(self, key):
+        """While the stand is open the number keys buy rather than equip.
+
+        The panel is showing exactly those numbers against exactly those guns,
+        so there is nothing to remember -- and firing and reloading are off,
+        because both hands are busy.
+        """
+        if key == INTERACT:
+            self.shopping = False
+            return
+        if key in SLOT_KEYS:
+            line = SLOT_KEYS.index(key)
+            if line < len(shop.STOCK):
+                self.shop_says = shop.buy(shop.STOCK[line], self.cash, self.carried)
+
     def _muzzle(self):
         return (
             (self.window[0] / 2.0) - self.camera_x,
@@ -268,6 +318,11 @@ class Session:
 
         for held in self.carried:
             held.tick(dt)
+
+        # Walking away closes the stand. Nothing else would, and a shop that
+        # follows the player across the map is not a place.
+        if self.shopping and self.nearby is None:
+            self.shopping = False
 
         # Holding the button keeps an automatic weapon firing. Everything else
         # is one pull per shot, and its rate is what stops the clicking.
@@ -355,6 +410,7 @@ class Session:
             (0, 0),
         )
 
+        blit_group(screen, self.props, draw_x, draw_y, alpha)
         blit_group(screen, self.powerups, draw_x, draw_y, alpha)
         for zombie in self.zombies:
             zombie.health_bar(screen, zombie.draw_position(draw_x, draw_y, alpha))
@@ -407,3 +463,8 @@ class Session:
 
         if self.ammo_count == RELOAD:
             centred_text(screen, self.window, "Reloading", RELOADING_TOP, size=30)
+
+        if self.shopping:
+            self.shop_display.draw(screen, self.cash, self.carried, self.shop_says)
+        elif self.nearby is not None:
+            prompt(screen, self.window, self.nearby.label)
