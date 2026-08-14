@@ -756,7 +756,7 @@ inventing a key and the last one losing.
 |---|---|
 | `W` `A` `S` `D` | move |
 | left mouse | fire the equipped weapon |
-| `1`–`5` | knife, SMG, shotgun, sniper, crossbow |
+| `1`–`5` | knife, M16, shotgun, sniper, crossbow |
 | `R` | reload |
 | `G` / `F` | grenade / stun grenade |
 | `E` | interact -- buy, chop, strip |
@@ -879,7 +879,7 @@ visual component, and bundling it with a screen would hide it behind UI review.
 
 ---
 
-## AT38 — Weapons become data — TODO
+## AT38 — Weapons become data — DONE
 
 **Short description:** Lift `GunData` out of `ui/hud.py` and make a weapon a
 definition rather than a class. Behaviour preserved; still one gun.
@@ -887,9 +887,10 @@ definition rather than a class. Behaviour preserved; still one gun.
 **Dependencies:** AT37
 
 **Goals**
-- [ ] A weapon definition: clip, reserve, damage, reload, sprite, ammunition
-- [ ] The current shotgun is one entry in a table
-- [ ] The literal `60` stops being written eleven times
+- [x] A weapon definition: clip, reserve, damage, reload, sprite, ammunition
+- [x] The one gun -- a semi-automatic rifle -- is one entry in a table
+- [x] The literal `60` stops being written eleven times
+- [x] Firing is the left mouse button, not any button at all
 
 **A weapon model inside the HUD cannot grow.** `GunData` is in `ui/hud.py`,
 which is where it was put when there was one gun and it was a readout. Weapon
@@ -922,7 +923,7 @@ which.
 
 **Melee is not a gun with range zero.** It has no projectile and no reload, so
 it is the case that proves a weapon is a definition rather than a subclass of
-the shotgun.
+the rifle.
 
 ---
 
@@ -936,7 +937,7 @@ ammunition.
 **Goals**
 - [ ] Four weapons that feel different: rate, spread, damage, reload
 - [ ] Rounds, shells and bolts as separate items in the backpack
-- [ ] `gunAK47.png` finally referenced by something
+- [ ] An M16 icon, so the starting rifle stops borrowing the AK silhouette
 
 **Ammunition is where the choice bites.** Per-weapon types mean a sniper and an
 SMG compete for space rather than sharing a pool, which is what makes carrying

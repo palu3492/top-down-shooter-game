@@ -53,13 +53,13 @@ def test_two_games_share_nothing(display):
     first = Session(Viewport(WINDOW))
     first.human.remove_health(40)
     first.cash.increase_cash(500)
-    first.gun.shooting_bullet()
+    first.gun.fire()
 
     second = Session(Viewport(WINDOW))
 
     assert second.human.get_health() == config.PLAYER_HEALTH
     assert second.cash.cash_amount == 0
-    assert second.gun.clip_size == config.CLIP_SIZE
+    assert second.gun.loaded == config.CLIP_SIZE
     assert second.zombies is not first.zombies
 
 
@@ -115,7 +115,32 @@ def test_shooting_spends_a_bullet(session):
     session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
 
     assert len(session.bullets) == 1
-    assert session.gun.clip_size == config.CLIP_SIZE - 1
+    assert session.gun.loaded == config.CLIP_SIZE - 1
+
+
+def test_a_bullet_carries_the_damage_the_weapon_declares(display, monkeypatch):
+    """Damage was read from a copy `projectiles` bound at import. Putting it in
+    the weapon table is only worth anything if the shot actually reads it."""
+    monkeypatch.setattr(config, "BULLET_DAMAGE", 77)
+    session = Session(Viewport(WINDOW))
+    session.aim_at((900, 300))
+
+    session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
+
+    assert session.gun.damage == 77
+    assert [shot.damage for shot in session.bullets] == [77]
+
+
+@pytest.mark.parametrize("button", [2, 3, 4, 5])
+def test_only_the_left_button_fires(session, button):
+    """Firing ran on any `MOUSEBUTTONDOWN` with no check at all, so a
+    right-click, a middle-click and both side buttons each emptied a round --
+    and `E` being the interaction key means those buttons have jobs coming."""
+    session.aim_at((900, 300))
+    session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=button))
+
+    assert len(session.bullets) == 0
+    assert session.gun.loaded == config.CLIP_SIZE
 
 
 def test_a_grenade_is_spent_when_thrown(session):
@@ -157,7 +182,7 @@ def test_drawing_does_not_advance_the_world(session):
 def test_everything_in_a_session_follows_a_resize(display):
     """The earlier version of this test passed a fresh Viewport and checked only
     `session.window` and the player -- the two things that did update -- while
-    the gun, the health bar and every zombie silently kept the old size.
+    the readouts, the health bar and every zombie silently kept the old size.
     """
     window = Viewport(WINDOW)
     session = Session(window)
@@ -169,7 +194,7 @@ def test_everything_in_a_session_follows_a_resize(display):
     assert session.window == (1920, 1080)
     assert session.human.rect.centerx == pytest.approx(960, abs=1)
     assert session.human.rect.centery == pytest.approx(540, abs=1)
-    assert tuple(session.gun.window) == (1920, 1080)
+    assert tuple(session.gun_display.window) == (1920, 1080)
     assert tuple(session.health_display.window_size) == (1920, 1080)
     assert tuple(zombie.window_size) == (1920, 1080), (
         "an existing zombie walks at half the window, so a stale size sends it "

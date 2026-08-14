@@ -84,75 +84,28 @@ RESERVE_READOUT = (93, 60)
 GUN_ICON = (138, 42)
 
 
-class GunData:
-    CLIP = config.CLIP_SIZE
-    RESERVE = config.RESERVE_SIZE
+class GunPanel:
+    """The bottom-right readout: what is loaded, what is left, and which gun.
+
+    It holds no ammunition of its own -- it is handed a `Gun` and reports it, so
+    the sprite follows whatever is equipped rather than being the one gun that
+    existed when this was written.
+    """
 
     def __init__(self, window):
         self.window = window
-        self.clip_size = self.CLIP
-        self.ammo_amount = self.RESERVE
-        self.reload_seconds = config.RELOAD_SECONDS
-        self.gun_type = load_image("HUD/gunShotty.png")
 
-    def shooting_bullet(self):
-        if self.clip_size > 1:
-            self.clip_size -= 1
-        elif self.clip_size == 1:
-            self.clip_size -= 1
-            if self.ammo_amount > 0:
-                return self.reload_ammo()
-        else:
-            return "no ammo"
-
-    def reload_ammo(self):
-        # if clip is empty and ammo has at least 60 bullets
-        if self.ammo_amount >= 60 and self.clip_size == 0:
-            self.ammo_amount -= 60
-            self.clip_size = 60
-        # if clip is empty and ammo does not have 60 bullets in it
-        elif self.ammo_amount < 60 and self.clip_size == 0:
-            self.clip_size = self.ammo_amount
-            self.ammo_amount = 0
-        # if clip has bullets in it and ammo has enough to fill it
-        elif self.clip_size != 0 and self.ammo_amount >= 60 - self.clip_size:
-            self.ammo_amount -= 60 - self.clip_size
-            self.clip_size = 60
-        # if clip has bullets in it and ammo cant fill it
-        elif self.clip_size != 0 and self.ammo_amount < 60 - self.clip_size:
-            self.clip_size += self.ammo_amount
-            self.ammo_amount = 0
-        return "reload"
-
-    def refill(self):
-        self.ammo_amount = self.RESERVE
-
-    def manual_reload(self):
-        if self.ammo_amount > 0:
-            return self.reload_ammo()
-        elif self.clip_size == 0:
-            return "no ammo"
-
-    def reloading(self, dt=config.SIM_DT):
-        if self.reload_seconds > 0:
-            self.reload_seconds -= dt
-            return "reload"
-        self.reload_seconds = config.RELOAD_SECONDS
-        return None
-
-    def update(self, screen):
+    def draw(self, screen, gun):
         panel = BOTTOM_RIGHT.rect(self.window)
         screen.blit(
-            pygame.font.Font(None, 55).render(str(self.clip_size), True, config.WHITE),
+            pygame.font.Font(None, 55).render(str(gun.loaded), True, config.WHITE),
             inside(panel, CLIP_READOUT),
         )
         screen.blit(
-            pygame.font.Font(None, 44).render(
-                str(self.ammo_amount), True, config.WHITE
-            ),
+            pygame.font.Font(None, 44).render(str(gun.reserve), True, config.WHITE),
             inside(panel, RESERVE_READOUT),
         )
-        screen.blit(self.gun_type, inside(panel, GUN_ICON))
+        screen.blit(load_image(gun.weapon.sprite), inside(panel, GUN_ICON))
 
 
 class GrenadeData:

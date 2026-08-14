@@ -12,7 +12,7 @@ from shooter.entities.player import Human
 from shooter.entities.projectiles import Shot
 from shooter.entities.zombie import Zombie
 from shooter.systems.waves import WaveSystem
-from shooter.ui.hud import GunData
+from shooter.weapons import RELOAD, Gun
 
 RATES = [30, 60, 144]
 
@@ -86,11 +86,11 @@ def test_a_stun_lasts_the_same_time(window, cash, rate):
 
 @pytest.mark.parametrize("rate", RATES)
 def test_a_reload_takes_the_same_time(window, rate):
-    gun = GunData(window)
+    gun = Gun()
     dt = 1 / rate
 
     calls = 0
-    while gun.reloading(dt) == "reload":
+    while gun.reloading(dt) == RELOAD:
         calls += 1
         assert calls < rate * 5, "reload never finished"
 

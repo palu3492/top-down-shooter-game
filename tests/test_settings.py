@@ -25,7 +25,8 @@ from shooter.settings import (
     Settings,
     settings_path,
 )
-from shooter.ui.hud import Cash, GunData
+from shooter.ui.hud import Cash
+from shooter.weapons import Gun
 
 
 @pytest.fixture
@@ -250,7 +251,7 @@ def test_new_entities_is_a_promise_about_new_ones_only(window, monkeypatch):
 
 def test_a_new_entity_setting_reaches_the_next_one_built(window, monkeypatch):
     monkeypatch.setattr(config, "RELOAD_SECONDS", 9.0)
-    assert GunData(window).reload_seconds == 9.0
+    assert Gun().reload_seconds == 9.0
 
 
 def test_a_boot_setting_is_only_read_at_startup():

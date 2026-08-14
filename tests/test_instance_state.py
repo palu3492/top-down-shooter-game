@@ -23,11 +23,12 @@ from shooter.entities.projectiles import (
 )
 from shooter.entities.zombie import Zombie
 from shooter.systems.waves import WaveSystem
-from shooter.ui.hud import Cash, GrenadeData, GunData
+from shooter.ui.hud import Cash, GrenadeData
+from shooter.weapons import Gun
 
 MUTABLE = {
     "Cash": ["cash_amount"],
-    "GunData": ["clip_size", "ammo_amount", "reload_seconds"],
+    "Gun": ["loaded", "reserve", "reload_seconds"],
     "GrenadeData": ["grenade_amount", "stun_grenade_amount"],
     "WaveSystem": ["wave_count", "wave_seconds"],
     "PowerUps": ["powerup_selected", "alive_seconds"],
@@ -46,7 +47,7 @@ def built(window, cash):
     group = pygame.sprite.Group()
     return {
         "Cash": Cash(),
-        "GunData": GunData(window),
+        "Gun": Gun(),
         "GrenadeData": GrenadeData(),
         "WaveSystem": WaveSystem(window, group, cash),
         "PowerUps": PowerUps(),

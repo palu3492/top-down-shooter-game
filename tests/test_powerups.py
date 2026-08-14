@@ -15,7 +15,7 @@ from shooter.entities.powerups import (
 )
 from shooter.entities.zombie import Zombie
 from shooter.session import INSTAKILL_SECONDS, collect_powerup
-from shooter.ui.hud import GunData
+from shooter.weapons import Gun
 
 EVERY_KIND = [INSTAKILL, NUKE, MAX_AMMO, MAX_HEALTH]
 
@@ -135,22 +135,22 @@ def test_max_health_restores_the_player(window):
 
 
 def test_max_ammo_refills_the_reserve(window):
-    gun = GunData(window)
-    gun.ammo_amount = 7
+    gun = Gun()
+    gun.reserve = 7
 
     collect_powerup(MAX_AMMO, None, None, gun)
 
-    assert gun.ammo_amount == GunData.RESERVE
+    assert gun.reserve == gun.weapon.reserve
 
 
 def test_max_ammo_leaves_the_clip_alone(window):
-    gun = GunData(window)
-    gun.clip_size = 12
-    gun.ammo_amount = 0
+    gun = Gun()
+    gun.loaded = 12
+    gun.reserve = 0
 
     collect_powerup(MAX_AMMO, None, None, gun)
 
-    assert gun.clip_size == 12
+    assert gun.loaded == 12
 
 
 def test_instakill_grants_thirty_seconds():
@@ -162,9 +162,7 @@ def test_instakill_grants_thirty_seconds():
 
 @pytest.mark.parametrize("kind", [NUKE, MAX_AMMO, MAX_HEALTH])
 def test_other_kinds_grant_no_buff(window, cash, kind):
-    granted = collect_powerup(
-        kind, Human(window), pygame.sprite.Group(), GunData(window)
-    )
+    granted = collect_powerup(kind, Human(window), pygame.sprite.Group(), Gun())
 
     assert granted == 0
 

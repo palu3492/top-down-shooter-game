@@ -6,7 +6,7 @@ from shooter.entities.player import Human
 from shooter.entities.projectiles import Shot
 from shooter.entities.zombie import Zombie
 from shooter.systems.waves import WaveSystem
-from shooter.ui.hud import GunData
+from shooter.weapons import Gun
 from shooter.ui.radar import RadarScreen
 
 
@@ -64,8 +64,8 @@ def test_entities_read_their_tunables_from_config(window, cash):
     assert zombie.zombie_speed == pytest.approx(config.ZOMBIE_SPEED, rel=0.2)
     assert Zombie(window, cash).zombie_health == config.ZOMBIE_HEALTH
     assert Human(window).health == config.PLAYER_HEALTH
-    assert GunData(window).clip_size == config.CLIP_SIZE
-    assert GunData(window).ammo_amount == config.RESERVE_SIZE
+    assert Gun().loaded == config.CLIP_SIZE
+    assert Gun().reserve == config.RESERVE_SIZE
     assert Shot(0, 0, 1, 0).damage == config.BULLET_DAMAGE
 
 
