@@ -276,6 +276,17 @@ class Session:
         self.carried = everything()[: len(SLOT_KEYS)]
         self.equipped = self.carried[0]
 
+    def equip_slot(self, slot):
+        """Hold slot `n`. The backpack screen reaches for this by name."""
+        self._equip(slot)
+
+    def drop(self, item, count):
+        """Put something down at your feet, and report how much went down."""
+        given = self.backpack.remove(item, count)
+        if given:
+            self._spill(item, given, self._muzzle())
+        return given
+
     def _equip(self, slot):
         """Hold something else.
 

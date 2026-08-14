@@ -21,6 +21,7 @@ from shooter.scenes import Scene
 from shooter.session import Session
 
 PAUSE = "PAUSE"
+BACKPACK = "BACKPACK"
 
 
 class GameplayScene(Scene):
@@ -41,8 +42,11 @@ class GameplayScene(Scene):
         """Nothing to tear down. Dropping the scene drops the session with it."""
 
     def handle(self, event):
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            return PAUSE
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                return PAUSE
+            if event.key == pygame.K_TAB:
+                return BACKPACK
         self.session.handle(event)
         return None
 

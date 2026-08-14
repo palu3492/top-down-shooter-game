@@ -1242,20 +1242,49 @@ rarer line.
 
 ---
 
-## AT46 — The backpack screen — TODO
+## AT46 — The backpack screen — DONE
 
 **Short description:** Look at what you are carrying, equip, and drop.
 
 **Dependencies:** AT40, AT44
 
 **Goals**
-- [ ] `Tab` opens a grid of slots on the AT22 layout
-- [ ] Equip and drop from it
-- [ ] It pauses the game, like every other screen on the stack
+- [x] `Tab` opens a grid of slots on the AT22 layout
+- [x] Equip and drop from it
+- [x] It pauses the game, like every other screen on the stack
 
 **Last on purpose, and cheap when it arrives.** AT22 built the grid, AT24 built
-the widgets and the form, AT29 made a screen a scene. By the time this is
-reached it is a layout over a container that already works.
+the widgets and the form, AT29 made a screen a scene. By the time this was
+reached it was a layout over a container that already worked.
+
+**A scene, not an overlay -- unlike the gun stand.** AT41's shop is drawn by
+the session precisely so the wave keeps coming while you buy; standing still to
+shop is meant to cost something. Looking at your own pack is not, so this goes
+on the stack and the world stops.
+
+That choice pays for itself twice: `_sync_pointer` already gives the system
+cursor back to any scene that does not simulate, so a screen worked with the
+mouse gets one for free. An overlay would have had to arrange that by hand.
+
+**No widgets.** A slot is a rectangle, an icon and a count in the corner, and
+the slots are rebuilt every time the screen opens. `pygame_gui` would have made
+that heavier rather than lighter -- which is not an argument against the form
+widgets, only against using them for a grid of pictures.
+
+**It shows what is in hand as well as what is in the pack.** Weapons are not in
+the backpack -- `carried` is its own list -- but "what am I carrying" is one
+question and answering half of it would be strange.
+
+**A backing panel, not just the veil.** The radar and the between-wave banner
+are drawn underneath and were reading as part of the pack.
+
+**The grid is fitted to the pack, not to a constant.** A pack can be made
+bigger -- that is the whole point of `Backpack.resize`, and what a better
+backpack would be -- and a fixed slot size meant twenty-four of them overflowed
+the layout by six pixels. `open` raised, `open_scene` swallowed it exactly as
+it is meant to, and `Tab` visibly did nothing. Both runs of slots are now sized
+together before a row is handed out, so neither can starve the other, and the
+slots shrink only as far as they must.
 
 ---
 
