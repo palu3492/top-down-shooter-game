@@ -764,6 +764,7 @@ inventing a key and the last one losing.
 | `SPACE` | start the next wave early |
 | `Esc` | pause |
 | `\` | fullscreen |
+| `0` | *dev only* -- every weapon, loaded, on `1`-`5` |
 
 **`E` interacts rather than opening the pack.** Both are traditional and they
 come from different lineages: Minecraft made `E` the inventory for a whole
@@ -996,6 +997,33 @@ is. Carrying all five now is what makes them QA-able this merge.
 a second leaves about 7e-18 behind, and a timer ending just above zero costs a
 whole extra frame -- the SMG's twelve shots a second came out as ten. Both the
 rate and the reload now treat anything under `SPENT` as spent.
+
+---
+
+## AT40.2 — A cheat for every weapon — DONE
+
+**Short description:** `0`, in a game, hands over one of everything on the
+number keys.
+
+**Dependencies:** AT40
+
+**Goals**
+- [x] One of each weapon, loaded, on `1`-`5`
+- [x] Behind `DEV_TOOLS`, read live
+- [x] Named on the dev screen, where someone would look
+
+**Trying the armoury should not mean playing to it.** Five weapons and only the
+first two reachable without a shop makes the other three untestable by hand,
+and that gets worse in AT41 when they all go behind a counter.
+
+**Built rather than listed.** `everything()` asks the armoury, so a weapon
+added to the table is in the cheat without anyone remembering to say so -- and
+what will not fit in five slots is left out rather than made unreachable.
+
+**The dev screen names it but cannot offer it.** It is a key pressed during a
+game, so it is not a control on a form. The hint shares a row with the existing
+one: a second row costs 26 pixels the shortest window that screen supports does
+not have.
 
 ---
 
