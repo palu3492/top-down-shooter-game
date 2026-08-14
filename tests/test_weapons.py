@@ -21,14 +21,18 @@ from shooter.ui.hud import WeaponPanel
 from shooter.weapons import (
     NO_AMMO,
     RELOAD,
+    SPENT,
     KNIFE,
     M16,
+    SHOTGUN,
+    SMG,
+    SNIPER,
     Blade,
     RIFLE_ROUNDS,
     Gun,
     UnknownWeaponError,
-    Weapon,
     equip,
+    SLOTS,
     weapon,
     weapon_ids,
 )
@@ -174,8 +178,8 @@ def test_a_short_reserve_still_only_fills_what_there_is(monkeypatch):
 # ----------------------------------------------------------------------
 
 
-def test_the_knife_and_the_rifle_are_what_exist():
-    assert weapon_ids() == (KNIFE.id, M16.id)
+def test_the_armoury_holds_every_weapon_there_is():
+    assert weapon_ids() == (KNIFE.id, M16.id, SMG.id, SHOTGUN.id, SNIPER.id)
 
 
 def test_a_weapon_carries_the_numbers_that_make_it_itself():
@@ -224,16 +228,6 @@ def test_a_gun_deals_its_weapons_damage(gun):
 # The readout
 # ----------------------------------------------------------------------
 
-SHOTGUN = Weapon(
-    item=items.Item("test-shotgun", "Test Shotgun", items.WEAPON),
-    ammo=items.Item("test-shells", "Test Shells", items.AMMO, stack=40),
-    sprite="HUD/gunShotty.png",
-    clip=8,
-    reserve=24,
-    damage=25,
-    reload_seconds=1.5,
-)
-
 
 class Recorder(pygame.Surface):
     """A screen that remembers what was drawn onto it."""
@@ -252,21 +246,21 @@ class Recorder(pygame.Surface):
 
 
 def test_the_readout_draws_the_equipped_guns_sprite(display, window):
-    """The panel used to load one gun by name in its constructor, which
-    looked right while there was one gun and is exactly what AT39 needs to stop
-    being true before it can equip a second."""
+    """The panel used to load one gun by name in its constructor, which looked
+    right while there was one gun and stopped being true the moment there were
+    five."""
     screen = Recorder(window)
 
-    WeaponPanel(window).draw(screen, Gun(SHOTGUN))
+    WeaponPanel(window).draw(screen, equip(SHOTGUN))
 
-    assert load_image(SHOTGUN.sprite) in screen.sources
+    assert load_image("HUD/gunShotty.png") in screen.sources
     assert load_image(weapon(M16.id).sprite) not in screen.sources
 
 
 def test_the_readout_reports_the_gun_it_is_given(display, window):
-    gun = Gun(SHOTGUN)
-    assert (gun.loaded, gun.reserve) == (8, 24)
-    assert gun.damage == 25
+    gun = equip(SHOTGUN)
+    assert (gun.loaded, gun.reserve) == (8, 40)
+    assert gun.damage == 14
 
 
 def test_the_clip_and_the_reserve_each_go_in_their_own_place(display, window):
@@ -274,14 +268,14 @@ def test_the_clip_and_the_reserve_each_go_in_their_own_place(display, window):
     them changes nothing about where anything lands -- only what it says."""
     screen = Recorder(window)
 
-    WeaponPanel(window).draw(screen, Gun(SHOTGUN))
+    WeaponPanel(window).draw(screen, equip(SHOTGUN))
 
     panel = hud.BOTTOM_RIGHT.rect(window)
     assert _pixels(screen.drawn[inside(panel, hud.CLIP_READOUT)]) == _pixels(
         pygame.font.Font(None, 55).render("8", True, config.WHITE)
     )
     assert _pixels(screen.drawn[inside(panel, hud.RESERVE_READOUT)]) == _pixels(
-        pygame.font.Font(None, 44).render("24", True, config.WHITE)
+        pygame.font.Font(None, 44).render("40", True, config.WHITE)
     )
 
 
@@ -329,8 +323,8 @@ def test_a_knife_swings_and_a_rifle_shoots():
     """The whole difference between the two, in the one call the session
     makes. Melee is not a gun with range zero -- it produces something that
     does not travel."""
-    swing = equip(KNIFE).attack((0, 0), (1, 0), 50)
-    shot = equip(M16).attack((0, 0), (1, 0), 20)
+    (swing,) = equip(KNIFE).attack((0, 0), (1, 0), 50)
+    (shot,) = equip(M16).attack((0, 0), (1, 0), 20)
 
     assert isinstance(swing, Swing)
     assert isinstance(shot, Shot)
@@ -467,6 +461,161 @@ def test_a_swing_is_given_its_arc_rather_than_assuming_one(monkeypatch):
     monkeypatch.setattr(config, "KNIFE_ARC", 20)
     knife = equip(KNIFE)
 
-    swing = knife.attack((0, 0), (1, 0), 10)
+    (swing,) = knife.attack((0, 0), (1, 0), 10)
 
     assert swing.arc == math.radians(20)
+
+
+# ----------------------------------------------------------------------
+# Five weapons that are not the same weapon
+# ----------------------------------------------------------------------
+
+ARMOURY = (M16.id, SMG.id, SHOTGUN.id, SNIPER.id)
+
+
+def test_every_gun_carries_its_own_ammunition():
+    """A shared pool would make carrying a second gun free. Separate types are
+    what turn the backpack into a decision."""
+    kinds = [weapon(which).ammo for which in ARMOURY]
+
+    assert len(set(kinds)) == len(kinds)
+    assert all(kind.kind == items.AMMO for kind in kinds)
+    assert all(items.item(kind.id) is kind for kind in kinds)
+
+
+def test_no_two_guns_feel_the_same():
+    made = [weapon(which) for which in ARMOURY]
+
+    assert len({gun.rate for gun in made}) == len(made)
+    assert len({gun.damage for gun in made}) == len(made)
+    assert len({gun.clip for gun in made}) == len(made)
+
+
+def test_the_loadout_is_smaller_than_the_armoury_can_grow():
+    """Five keys, five slots. The catalogue is free to outgrow them, which is
+    what makes what to leave behind a choice."""
+    assert len(SLOTS) == 5
+    assert SLOTS[0] == KNIFE.id
+    assert set(SLOTS) <= set(weapon_ids())
+
+
+@pytest.mark.parametrize("which", ARMOURY)
+def test_a_gun_will_not_fire_faster_than_its_rate(which):
+    """Firing was one shot per click, so the only limit was the mouse."""
+    gun = equip(which)
+    interval = 1 / gun.weapon.rate
+
+    gun.attack((0, 0), (1, 0), gun.damage)
+
+    assert not gun.ready, "a second shot was allowed straight away"
+    gun.tick(interval / 2)
+    assert not gun.ready
+    gun.tick(interval)
+    assert gun.ready
+
+
+def test_the_smg_empties_its_clip_far_quicker_than_the_sniper():
+    def seconds_to_empty(which):
+        gun = equip(which)
+        taken = 0.0
+        while gun.loaded > 0:
+            if gun.ready:
+                gun.attack((0, 0), (1, 0), gun.damage)
+                gun.fire()
+            else:
+                taken += config.SIM_DT
+                gun.tick(config.SIM_DT)
+            assert taken < 120, "the clip never emptied"
+        return taken
+
+    assert seconds_to_empty(SMG.id) < seconds_to_empty(SNIPER.id)
+
+
+# ----------------------------------------------------------------------
+# Spread
+# ----------------------------------------------------------------------
+
+
+def test_a_shotgun_fires_a_handful_at_once(display):
+    shotgun = equip(SHOTGUN)
+
+    pellets = shotgun.attack((0, 0), (100, 0), shotgun.damage)
+
+    assert len(pellets) == weapon(SHOTGUN.id).pellets == 8
+    assert all(isinstance(pellet, Shot) for pellet in pellets)
+
+
+def test_a_shotgun_scatters_and_a_sniper_does_not(display):
+    spread = equip(SHOTGUN).attack((0, 0), (100, 0), 10)
+    aimed = [equip(SNIPER).attack((0, 0), (100, 0), 10)[0] for _ in range(8)]
+
+    assert len({pellet.small_change_y for pellet in spread}) > 1
+    assert len({shot.small_change_y for shot in aimed}) == 1
+
+
+def test_scatter_stays_inside_the_cone(display):
+    shotgun = equip(SHOTGUN)
+    half = math.radians(weapon(SHOTGUN.id).spread) / 2
+
+    for _ in range(50):
+        shotgun.cooling_for = 0
+        for pellet in shotgun.attack((0, 0), (100, 0), 10):
+            off = math.atan2(-pellet.small_change_y, pellet.small_change_x)
+            assert abs(off) <= half + 1e-9, math.degrees(off)
+
+
+def test_one_pellet_does_far_less_than_a_rifle_round():
+    """Eight of them together are worth more than an M16 round, and one alone
+    is worth much less -- which is what makes range the shotgun's cost."""
+    shotgun = weapon(SHOTGUN.id)
+    rifle = weapon(M16.id)
+
+    assert shotgun.damage < rifle.damage
+    assert shotgun.damage * shotgun.pellets > rifle.damage
+
+
+# ----------------------------------------------------------------------
+# Holding the trigger
+# ----------------------------------------------------------------------
+
+
+def test_only_the_smg_keeps_firing_while_held():
+    assert equip(SMG.id).automatic is True
+    assert [equip(which).automatic for which in (M16.id, SHOTGUN.id, SNIPER.id)] == [
+        False,
+        False,
+        False,
+    ]
+    assert equip(KNIFE).automatic is False
+
+
+def test_a_rate_is_not_rounded_down_by_a_whole_frame(display):
+    """Taking the step off the countdown sixty times a second left a residue of
+    about 7e-18, and a timer ending just above zero costs an extra frame. The
+    SMG's twelve shots a second came out as ten."""
+    for which in ARMOURY:
+        gun = equip(which)
+        interval = 1 / gun.weapon.rate
+
+        gun.attack((0, 0), (1, 0), 10)
+        steps = 0
+        while not gun.ready:
+            gun.tick(config.SIM_DT)
+            steps += 1
+            assert steps < 1000, which
+
+        assert steps == math.ceil(interval * config.SIM_HZ - SPENT), which
+
+
+def test_a_reload_is_not_rounded_up_either(display):
+    gun = equip(SNIPER.id)
+    gun.loaded = 0
+    gun.reload()
+
+    steps = 0
+    while gun.status == RELOAD:
+        gun.tick(config.SIM_DT)
+        steps += 1
+        assert steps < 1000
+
+    assert steps == math.ceil(gun.weapon.reload_seconds * config.SIM_HZ - SPENT)

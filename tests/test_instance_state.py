@@ -28,8 +28,8 @@ from shooter.weapons import Blade, Gun
 
 MUTABLE = {
     "Cash": ["cash_amount"],
-    "Gun": ["loaded", "reserve", "locked_for"],
-    "Blade": ["loaded", "reserve", "locked_for"],
+    "Gun": ["loaded", "reserve", "locked_for", "cooling_for"],
+    "Blade": ["loaded", "reserve", "cooling_for"],
     "GrenadeData": ["grenade_amount", "stun_grenade_amount"],
     "WaveSystem": ["wave_count", "wave_seconds"],
     "PowerUps": ["powerup_selected", "alive_seconds"],

@@ -48,7 +48,7 @@ class GameplayScene(Scene):
 
     def update(self, inputs, dt=config.SIM_DT):
         self.session.aim_at(inputs.pointer)
-        self.session.step(inputs.pressed, dt)
+        self.session.step(inputs.pressed, dt, inputs.trigger)
 
     def tick(self, seconds):
         """Report an ending once.

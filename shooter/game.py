@@ -27,7 +27,8 @@ LOADING_AT = (100, 100)
 CURSOR_OFFSET = pygame.Vector2(-23, -22)
 FPS_READOUT = (0, 0)
 
-Inputs = namedtuple("Inputs", "pressed pointer")
+# `trigger` is the left button *held*, which only an automatic weapon reads.
+Inputs = namedtuple("Inputs", "pressed pointer trigger", defaults=(False,))
 
 
 def open_display(window):
@@ -197,7 +198,9 @@ def game_loop():
     while running:
         screen = match_resolution(window, scenes) or screen
         pointer = pygame.mouse.get_pos()
-        inputs = Inputs(pygame.key.get_pressed(), pointer)
+        inputs = Inputs(
+            pygame.key.get_pressed(), pointer, pygame.mouse.get_pressed()[0]
+        )
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:

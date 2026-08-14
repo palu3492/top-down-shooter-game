@@ -294,8 +294,10 @@ def test_the_number_keys_choose_what_is_held(session):
 
 
 def test_a_slot_with_nothing_in_it_changes_nothing(session):
-    """`3`, `4` and `5` are the shotgun, sniper and crossbow, and none of them
-    have been built. Pressing one must not put an empty hand on the screen."""
+    """Every slot is full today, and AT41 empties them again when the guns go
+    behind the counter. Pressing a key past the end must not put an empty hand
+    on the screen -- or raise."""
+    del session.carried[2:]
     press_key(session, pygame.K_2)
 
     for key in (pygame.K_3, pygame.K_4, pygame.K_5):
@@ -496,3 +498,125 @@ def test_a_frame_draws_with_a_knife_in_hand_and_a_swing_pending(session, display
     session.draw(display, 0.5)
 
     assert len(session.bullets) == 0
+
+
+# ----------------------------------------------------------------------
+# The armoury, in hand
+# ----------------------------------------------------------------------
+
+
+def held(session, seconds, trigger=True):
+    idle = dict.fromkeys(range(512), False)
+    for _ in range(int(seconds * config.SIM_HZ)):
+        session.step(idle, config.SIM_DT, trigger)
+
+
+def attacks_while_held(session, seconds, trigger=True):
+    """What was fired, not what survived.
+
+    A bullet travels 9000 pixels a second and is culled past 1000, so counting
+    the group after a second of firing counts nothing at all.
+    """
+    made = []
+    group = session.bullets
+    original = group.add
+
+    def spy(*sprites):
+        # `Group.add` recurses into sequences, so it is seen once with the list
+        # and again with each sprite. Count only the sprites.
+        made.extend(one for one in sprites if isinstance(one, pygame.sprite.Sprite))
+        original(*sprites)
+
+    group.add = spy
+    try:
+        held(session, seconds, trigger)
+    finally:
+        group.add = original
+    return made
+
+
+def test_every_slot_reaches_a_different_weapon(session):
+    reached = []
+    for key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5):
+        press_key(session, key)
+        reached.append(session.equipped.weapon.id)
+
+    assert reached == list(weapons.SLOTS)
+
+
+def test_holding_the_trigger_keeps_the_smg_firing(session):
+    press_key(session, pygame.K_3)
+    assert session.equipped.weapon.id == weapons.SMG.id
+    session.aim_at((900, 300))
+
+    assert len(attacks_while_held(session, 1.0)) > 1
+
+
+def test_holding_the_trigger_does_nothing_for_the_rest(session):
+    """One pull per shot for everything that is not automatic, whatever the
+    button is doing."""
+    for key in (pygame.K_1, pygame.K_2, pygame.K_4, pygame.K_5):
+        press_key(session, key)
+        session.aim_at((900, 300))
+
+        fired = attacks_while_held(session, 1.0)
+
+        assert fired == [], session.equipped.weapon.id
+
+
+def test_the_smg_fires_at_its_rate_and_not_the_frame_rate(session):
+    press_key(session, pygame.K_3)
+    session.aim_at((900, 300))
+    rate = session.equipped.weapon.rate
+
+    fired = attacks_while_held(session, 1.0)
+
+    assert len(fired) == pytest.approx(rate, abs=2)
+
+
+def test_clicking_faster_than_the_sniper_reloads_wastes_the_clicks(session):
+    """The rate has to be the weapon's. A click is a click however fast they
+    come."""
+    press_key(session, pygame.K_5)
+    session.aim_at((900, 300))
+    before = session.equipped.loaded
+
+    for _ in range(10):
+        session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
+
+    assert len(session.bullets) == 1
+    assert session.equipped.loaded == before - 1
+
+
+def test_one_pull_of_a_shotgun_puts_eight_pellets_in_the_air(session):
+    press_key(session, pygame.K_4)
+    session.aim_at((900, 300))
+
+    session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
+
+    assert len(session.bullets) == 8
+    assert session.equipped.loaded == weapons.weapon(weapons.SHOTGUN.id).clip - 1
+
+
+def test_a_shotgun_spends_one_round_not_one_per_pellet(session):
+    press_key(session, pygame.K_4)
+    session.aim_at((900, 300))
+    clip = session.equipped.loaded
+
+    session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
+    held(session, 2.0, trigger=False)
+    session.handle(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1))
+
+    assert session.equipped.loaded == clip - 2
+
+
+def test_max_ammo_refills_every_gun_not_just_the_rifle(display):
+    session = Session(Viewport(WINDOW))
+    for gun in session.carried[1:]:
+        gun.reserve = 0
+
+    collect_powerup(powerups.MAX_AMMO, session.human, session.zombies, session.carried)
+
+    assert [gun.reserve for gun in session.carried[1:]] == [
+        gun.weapon.reserve for gun in session.carried[1:]
+    ]

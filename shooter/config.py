@@ -52,6 +52,7 @@ STUN_SECONDS = 200 / 60
 # missing means being hit back. Reach is measured from the player's centre to
 # the zombie's, so it is a little shorter than it reads.
 KNIFE_DAMAGE = 50
+KNIFE_RATE = 2.5
 KNIFE_REACH = 140
 KNIFE_ARC = 100
 
