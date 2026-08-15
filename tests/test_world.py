@@ -9,7 +9,7 @@ import pygame
 import pytest
 
 from shooter import config, weapons
-from shooter.entities import shapes
+from shooter.assets import load_scaled
 from shooter.entities.props import Harvestable, Prop
 from shooter.session import PLAYER_SOLID, Session
 from shooter.systems import world
@@ -118,7 +118,7 @@ def test_what_is_left_is_what_the_health_says(tree):
 
 
 def test_nothing_lands_with_the_wrong_tool(display):
-    fussy = Harvestable(shapes.tree(), 0, 0, 100, tool=weapons.M16.id)
+    fussy = Harvestable(pygame.Surface((120, 140)), 0, 0, 100, tool=weapons.M16.id)
 
     assert fussy.hit(50, knife()) == 0
     assert fussy.health == 100
@@ -141,19 +141,61 @@ def test_a_blow_that_is_not_one_does_nothing(tree, damage):
 # ----------------------------------------------------------------------
 
 
-def test_what_blocks_is_smaller_than_what_is_drawn(tree):
-    """A canopy is drawn far wider than the part of a tree you would bump into,
-    and a wood whose footprints match its sprites is a maze."""
+def test_what_blocks_excludes_transparent_padding(tree):
     assert tree.footprint.width < tree.rect.width
     assert tree.footprint.height < tree.rect.height
 
 
-def test_a_footprint_sits_where_the_thing_is(tree):
-    assert tree.footprint.center == pytest.approx(tree.middle)
+def test_a_footprint_tracks_the_opaque_part_of_the_art(tree):
+    assert tree.footprint == pygame.Rect(1009, 1001, 120, 147)
+
+
+@pytest.mark.parametrize(
+    ("kind", "asset", "scale", "size", "solid"),
+    (
+        (world.TREE, world.TREE_SPRITE, world.TREE_SCALE, (138, 161), world.TREE_SOLID),
+        (world.ROCK, world.ROCK_SPRITE, world.ROCK_SCALE, (130, 104), world.ROCK_SOLID),
+    ),
+)
+def test_harvestable_art_comes_from_the_cached_asset_pipeline(
+    display, kind, asset, scale, size, solid
+):
+    standing = world.make(world.Standing(kind, (0, 0)))
+
+    assert standing.image is load_scaled(asset, scale, True)
+    assert standing.image.get_size() == size
+    assert standing.footprint == pygame.Rect(solid)
+
+
+@pytest.mark.parametrize(
+    ("kind", "damage_art", "scale", "exact_footprint"),
+    (
+        (world.TREE, world.TREE_DAMAGE_SPRITES, world.TREE_SCALE, False),
+        (world.ROCK, world.ROCK_DAMAGE_SPRITES, world.ROCK_SCALE, True),
+    ),
+)
+def test_mining_swaps_in_progressively_destroyed_art(
+    display, kind, damage_art, scale, exact_footprint
+):
+    standing = world.make(world.Standing(kind, (0, 0)))
+    blow = standing.full / (len(damage_art) + 1)
+    size = standing.image.get_size()
+    footprint = standing.image.get_bounding_rect(min_alpha=1)
+    anchor = footprint.midbottom
+
+    for expected in standing.damage_art:
+        standing.hit(blow, knife())
+        assert standing.image is expected
+        assert standing.image.get_size() == size
+        damaged_anchor = standing.image.get_bounding_rect(min_alpha=1).midbottom
+        assert damaged_anchor[1] == anchor[1]
+        assert abs(damaged_anchor[0] - anchor[0]) <= 1
+        if exact_footprint:
+            assert standing.image.get_bounding_rect(min_alpha=1) == footprint
 
 
 def test_most_things_are_not_solid_at_all(display):
-    assert Prop(shapes.rock(), 0, 0).footprint is None
+    assert Prop(pygame.Surface((100, 80)), 0, 0).footprint is None
 
 
 # ----------------------------------------------------------------------

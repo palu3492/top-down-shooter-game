@@ -424,17 +424,19 @@ def test_the_readout_shows_no_ammunition_for_a_knife(display, window):
     assert inside(panel, hud.RESERVE_READOUT) not in screen.drawn
 
 
-def test_the_readout_names_a_weapon_that_has_no_picture(display, window):
-    """There is no knife art. Drawing nothing at all would leave the corner of
-    the screen looking broken, so it says what is held instead."""
+def test_the_weapon_picture_is_larger_and_centred_in_its_circle(display, window):
     screen = Recorder(window)
 
     WeaponPanel(window).draw(screen, equip(KNIFE))
 
-    panel = hud.BOTTOM_RIGHT.rect(window)
-    assert _pixels(screen.drawn[inside(panel, hud.GUN_ICON)]) == _pixels(
-        pygame.font.Font(None, 40).render("KNIFE", True, config.WHITE)
+    active = hud.weapon_hud_rects(window)[-1]
+    picture = WeaponPanel(window)._picture(
+        weapon(KNIFE.id), hud.WEAPON_PICTURE_SIZE
     )
+    expected_at = picture.get_rect(center=active.center)
+
+    assert _pixels(screen.drawn[expected_at.topleft]) == _pixels(picture)
+    assert expected_at.center == active.center
 
 
 def test_a_knife_reads_its_reach_from_config(monkeypatch):

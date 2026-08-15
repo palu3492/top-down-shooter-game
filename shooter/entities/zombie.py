@@ -4,12 +4,15 @@ import random
 import pygame
 
 from shooter import config
-from shooter.assets import load_animation, load_sized
+from shooter.assets import load_animation
 from shooter.render import Interpolated
 
 ANIMATIONS = {
     "IDLE": ("Zombie Animations/zombie_idle", "skeleton-idle_", 17),
-    "MOVE": ("Zombie Animations/zombie_move", "skeleton-move_", 17),
+    # A fixed-body, two-leg rig moves both legs through opposing arcs.  Sixteen
+    # small steps keep the feet moving continuously through each stride and
+    # preserve the source sprite's exact body, palette and registration.
+    "MOVE": ("Zombie Animations/zombie_walk_rigged", "zombie-walk-", 16),
     "ATTACK": ("Zombie Animations/zombie_attack", "skeleton-attack_", 9),
 }
 
@@ -108,13 +111,12 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
             name: load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
             for name, (directory, prefix, count) in ANIMATIONS.items()
         }
-        self.upright = load_sized(
-            "Zombie Animations/zombie_idle/skeleton-idle_0.png",
-            *config.ZOMBIE_SIZE,
-            True,
-        )
+        self.upright = self.frames["IDLE"][0]
         self.image = self.upright
-        self.rect = self.image.get_rect()
+        # Animation poses use differently sized source canvases. Collision and
+        # movement need one stable footprint; artwork is centred over it.
+        self.rect = pygame.Rect((0, 0), config.ZOMBIE_SIZE)
+        self._centre_image()
         self.spawn_zombie(visible)
         self.remember_position()
 
@@ -149,33 +151,22 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
             return pygame.Rect(visible)
         return pygame.Rect(0, 0, self.window_size[0], self.window_size[1])
 
-    def update_anim(self, type, dt=1 / config.ANIMATION_FPS):
-        if type != "Null":
+    def update_anim(self, type, dt=1 / config.ZOMBIE_ANIMATION_FPS):
+        if type != "Null" and type != self.type:
             self.type = type
+            self.animation_clock = 0.0
+            setattr(self, f"current_{type.lower()}", 0)
 
-        self.animation_clock += dt * config.ANIMATION_FPS
+        self.animation_clock += dt * config.ZOMBIE_ANIMATION_FPS
         steps, self.animation_clock = divmod(self.animation_clock, 1)
         for _ in range(int(steps)):
             self._advance()
         self._show()
 
     def _advance(self):
-
-        if self.type == "IDLE":
-            if self.current_idle < 16:
-                self.current_idle += 1
-            else:
-                self.current_idle = 0
-        elif self.type == "MOVE":
-            if self.current_move < 16:
-                self.current_move += 1
-            else:
-                self.current_move = 0
-        elif self.type == "ATTACK":
-            if self.current_attack < 8:
-                self.current_attack += 1
-            else:
-                self.current_attack = 0
+        counter = f"current_{self.type.lower()}"
+        frame = (getattr(self, counter) + 1) % len(self.frames[self.type])
+        setattr(self, counter, frame)
 
     def _show(self):
         frame = {
@@ -185,7 +176,13 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         }[self.type]
         self.upright = self.frames[self.type][frame]
         self.image = self.upright
-        self.rect = self.upright.get_rect(topleft=self.rect.topleft)
+        self._centre_image()
+
+    def _centre_image(self):
+        self.image_offset = (
+            (self.rect.width - self.image.get_width()) / 2,
+            (self.rect.height - self.image.get_height()) / 2,
+        )
 
     @property
     def world_x(self):
@@ -217,14 +214,22 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
 
     def move_toward_center(self, camera_x, camera_y, dt=config.SIM_DT):
         self.remember_position()
-        zombie_pos = self.rect.x, self.rect.y
-        distance_from_center_x = (self.window_size[0] / 2.0) - zombie_pos[0] - 120
-        distance_from_center_y = (self.window_size[1] / 2.0) - zombie_pos[1] - 110
-        angle = math.atan2(
-            distance_from_center_x, distance_from_center_y
-        )  # find angle of zombie toward center
-        move_x_amount = self.zombie_speed * math.sin(angle) * dt
-        move_y_amount = self.zombie_speed * math.cos(angle) * dt
+        # Use the floating-point world position, not pygame.Rect's rounded
+        # screen coordinates, or a perfectly horizontal approach drifts by a
+        # fraction of a pixel on every simulation step.
+        distance_from_center_x = (
+            self.window_size[0] / 2.0
+            - (self.zombie_x + camera_x + self.rect.width / 2.0)
+        )
+        distance_from_center_y = (
+            self.window_size[1] / 2.0
+            - (self.zombie_y + camera_y + self.rect.height / 2.0)
+        )
+        distance = math.hypot(distance_from_center_x, distance_from_center_y)
+        if not distance:
+            return
+        move_x_amount = self.zombie_speed * distance_from_center_x / distance * dt
+        move_y_amount = self.zombie_speed * distance_from_center_y / distance * dt
         self.zombie_x += move_x_amount
         self.zombie_y += move_y_amount
         self.move_position(camera_x, camera_y)
@@ -244,18 +249,16 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
             return
 
         upright = self.upright
-        turned = pygame.transform.rotate(
-            upright, math.degrees(math.atan2(-towards_y, towards_x))
-        )
+        # The source skeleton points toward the top of its image. Convert the
+        # desired screen-space heading into a rotation relative to that pose.
+        heading = math.degrees(math.atan2(-towards_y, towards_x))
+        turned = pygame.transform.rotate(upright, heading - 90)
         # `rect` is deliberately left alone. A rotated sprite needs a bigger
         # surface, and letting the footprint grow with it would mean a zombie
         # coming at forty-five degrees reached the player before one walking
         # straight in -- the hitbox goes from 144x155 to 201x205 on the turn.
         self.image = turned
-        self.image_offset = (
-            (upright.get_width() - turned.get_width()) / 2,
-            (upright.get_height() - turned.get_height()) / 2,
-        )
+        self._centre_image()
 
     def health_bar(self, screen, at=None):
         x, y = at if at else self.rect.topleft

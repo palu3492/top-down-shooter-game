@@ -84,6 +84,10 @@ while you stay untouched.
 
 ## Development
 
+Before creating or revising visual assets, read [ART_DIRECTION.md](ART_DIRECTION.md).
+It identifies the current reference assets and the style rules for world art,
+characters, animation, effects, and HUD work.
+
 ```bash
 uv sync              # includes the dev group: pytest + ruff
 uv run pytest        # run the suite

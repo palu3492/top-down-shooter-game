@@ -132,10 +132,9 @@ KNIFE = items.register(items.Item("knife", "Knife", items.TOOL))
 
 register(
     KNIFE,
-    # No knife art exists, so the readout falls back to the name. AT40 owns it.
     lambda: Melee(
         item=KNIFE,
-        sprite=None,
+        sprite="HUD/knife.png",
         damage=config.KNIFE_DAMAGE,
         rate=config.KNIFE_RATE,
         reach=config.KNIFE_REACH,

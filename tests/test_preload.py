@@ -12,10 +12,9 @@ from shooter import config, preload
 from shooter.assets import (
     load_animation,
     load_image,
-    load_sheet,
     load_sized,
 )
-from shooter.background import BackgroundSheet
+from shooter.background import TiledBackground
 from shooter.entities import powerups
 from shooter.entities.powerups import PowerUps
 from shooter.session import Session
@@ -100,15 +99,13 @@ def test_a_second_session_reads_nothing(warmed, reads):
     second = Session(Viewport(WINDOW))
 
     assert reads == []
-    assert second.background.sheet is first.background.sheet
+    assert second.background.tile is first.background.tile
 
 
-def test_the_background_is_shared_rather_than_reloaded(warmed):
-    """5000x5000 and 180ms: paid once for the process, not once per game."""
-    assert (
-        BackgroundSheet(preload.SHEETS[0]).sheet
-        is BackgroundSheet(preload.SHEETS[0]).sheet
-    )
+def test_the_background_tile_is_shared_rather_than_reloaded(warmed):
+    assert TiledBackground(preload.BACKGROUND_TILE).tile is TiledBackground(
+        preload.BACKGROUND_TILE
+    ).tile
 
 
 def test_preload_can_be_called_twice(warmed, reads):
@@ -121,15 +118,14 @@ def test_every_listed_asset_exists(display):
 
     for relative, _ in preload.SPRITES:
         assert (ASSETS_DIR / relative).is_file(), relative
-    for relative in preload.SHEETS:
-        assert (ASSETS_DIR / relative).is_file(), relative
+    assert (ASSETS_DIR / preload.BACKGROUND_TILE).is_file()
     assert (ASSETS_DIR / preload.ZOMBIE_STILL).is_file()
 
 
 def test_the_manifest_matches_what_a_cold_start_actually_needs(display):
     """Clears every cache, preloads, then plays -- so the list is checked
     against a genuinely cold process rather than one warmed by other tests."""
-    for cache in (load_image, load_sheet, load_sized, load_animation):
+    for cache in (load_image, load_sized, load_animation):
         cache.cache_clear()
 
     preload.preload()

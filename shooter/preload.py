@@ -13,16 +13,28 @@ what keeps the list honest -- it fails if anything reaches disk during play.
 """
 
 from shooter import config
-from shooter.assets import load_animation, load_image, load_sheet, load_sized
+from shooter.assets import load_animation, load_image, load_scaled, load_sized
 from shooter.entities import player, zombie
 
 SPRITES = (
     ("cursor.png", False),
-    ("HUD/blHUD.png", False),
     ("HUD/brHUD.png", False),
-    ("HUD/tmHUD.png", False),
     ("HUD/gunAK47.png", False),
-    ("Wall Items/gun_on_wall.png", True),
+    ("HUD/knife.png", False),
+    ("HUD/icons/coin.png", True),
+    ("HUD/icons/heart.png", True),
+    ("HUD/throwables/grenade-hud.png", True),
+    ("HUD/throwables/stun-grenade-hud.png", True),
+    ("Props/gun_stand.png", True),
+    ("Props/tree.png", True),
+    ("Props/tree_damaged.png", True),
+    ("Props/tree_critical.png", True),
+    ("Props/rock.png", True),
+    ("Props/rock_damaged.png", True),
+    ("Props/rock_critical.png", True),
+    ("Props/rock_ruined.png", True),
+    ("Pickups/log.png", True),
+    ("Pickups/rock.png", True),
     ("Power Ups/instakill.png", False),
     ("Power Ups/Nuke.png", False),
     ("Power Ups/MaxAmmo.png", False),
@@ -34,7 +46,7 @@ SPRITES = (
     ("Effects/stunexplosion.png", True),
 )
 
-SHEETS = ("Backgrounds/background_0.jpg",)
+BACKGROUND_TILE = "Backgrounds/grass_tile.png"
 MENU_ART = "Backgrounds/menu_pixel.png"
 
 ZOMBIE_STILL = "Zombie Animations/zombie_idle/skeleton-idle_0.png"
@@ -45,10 +57,14 @@ def preload():
     for relative, alpha in SPRITES:
         load_image(relative, alpha)
 
-    load_image(MENU_ART)
+    load_scaled("Props/tree_damaged.png", 1.15, True)
+    load_scaled("Props/tree_critical.png", 1.15, True)
+    load_scaled("Props/rock_damaged.png", 1.30, True)
+    load_scaled("Props/rock_critical.png", 1.30, True)
+    load_scaled("Props/rock_ruined.png", 1.30, True)
 
-    for relative in SHEETS:
-        load_sheet(relative)
+    load_image(MENU_ART)
+    load_image(BACKGROUND_TILE)
 
     for directory, prefix, count in player.ANIMATIONS.values():
         load_animation(directory, prefix, count, config.PLAYER_SCALE)

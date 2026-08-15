@@ -77,14 +77,18 @@ class Prop(Interpolated, pygame.sprite.Sprite):
     def footprint(self):
         """What cannot be walked through, in world coordinates.
 
-        Smaller than the picture and `None` for most things: a canopy is drawn
-        far wider than the part of a tree you would actually bump into, and a
-        footprint the size of the sprite makes a wood feel like a maze.
+        `solid` may be a width/height centred on the picture, or an x/y/width/
+        height box measured from its top-left. The latter lets irregular art
+        exclude transparent padding without shifting its collision box.
         """
         if self.solid is None:
             return None
-        box = pygame.Rect(0, 0, *self.solid)
-        box.center = self.middle
+        if len(self.solid) == 2:
+            box = pygame.Rect(0, 0, *self.solid)
+            box.center = self.middle
+        else:
+            box = pygame.Rect(self.solid)
+            box.move_ip(self.prop_x, self.prop_y)
         return box
 
     def within(self, point):
@@ -109,13 +113,67 @@ class Harvestable(Prop):
     left cannot pay out as though it had forty.
     """
 
-    def __init__(self, art, x, y, health, tool=None, yields=None, **rest):
+    def __init__(
+        self,
+        art,
+        x,
+        y,
+        health,
+        tool=None,
+        yields=None,
+        damage_art=(),
+        fit_damage_art=False,
+        **rest,
+    ):
         super().__init__(art, x, y, **rest)
+        self.fit_damage_art = fit_damage_art
+        self.damage_art = tuple(
+            self._match_art_footprint(
+                art if isinstance(art, pygame.Surface) else load_image(art, True)
+            )
+            for art in damage_art
+        )
         self.full = float(health)
         self.health = float(health)
         self.tool = tool
         self.yields = yields
         self.paid = 0
+
+    def _match_art_footprint(self, art):
+        """Put alternate art on the intact art's canvas and ground anchor.
+
+        Damage variants are often exported with the object a few pixels higher
+        or lower inside an otherwise equal-sized PNG. Swapping those canvases
+        directly makes a stationary prop appear to jump. Keep every state the
+        same size and align the visible artwork by its bottom-centre point. Art
+        that changes silhouette dramatically can opt into the intact visible
+        bounds as well, preventing its footprint from pulsing between frames.
+        """
+        canvas = pygame.Surface(self.image.get_size(), pygame.SRCALPHA)
+        intact = self.image.get_bounding_rect(min_alpha=1)
+        alternate = art.get_bounding_rect(min_alpha=1)
+        if intact and alternate:
+            if self.fit_damage_art:
+                visible = art.subsurface(alternate)
+                canvas.blit(pygame.transform.smoothscale(visible, intact.size), intact)
+                return canvas
+            dx = intact.centerx - alternate.centerx
+            dy = intact.bottom - alternate.bottom
+        else:
+            dx = dy = 0
+        canvas.blit(art, (dx, dy))
+        return canvas
+
+    def _show_damage(self):
+        """Make depletion visible without changing the prop's world position."""
+        if not self.damage_art:
+            return
+        # Variants divide the remaining health evenly across the intact and
+        # progressively damaged appearances.
+        stages = len(self.damage_art)
+        stage = min(int((1.0 - self.left) * (stages + 1)), stages)
+        if stage:
+            self.image = self.damage_art[stage - 1]
 
     @property
     def left(self):
@@ -151,6 +209,8 @@ class Harvestable(Prop):
         self.health -= spent
         if self.health <= 0:
             self.kill()
+        else:
+            self._show_damage()
         return spent
 
     def harvest(self, damage, held):

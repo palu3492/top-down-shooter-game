@@ -17,7 +17,7 @@ import math
 import pygame
 
 from shooter import config, items
-from shooter.background import BackgroundSheet
+from shooter.background import TiledBackground
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
 from shooter.entities.zombie import keep_apart
@@ -36,7 +36,7 @@ from shooter.viewport import visible_world
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 INSTAKILL_TOP = 40
 RELOADING_TOP = 100
-BACKGROUND = "Backgrounds/background_0.jpg"
+BACKGROUND = "Backgrounds/grass_tile.png"
 
 # Firing is the left button only. Any `MOUSEBUTTONDOWN` used to do it, so a
 # right-click, a middle-click or either side button emptied the clip -- and `E`
@@ -94,11 +94,12 @@ def collect_powerup(kind, human, zombie_group, carried):
 
 
 def is_zombie_attacking(human, zombie, dt=config.SIM_DT):
-    if pygame.sprite.collide_rect(human, zombie):
-        zombie.update_anim("ATTACK", dt)
+    attacking = pygame.sprite.collide_rect(human, zombie)
+    zombie.update_anim("ATTACK" if attacking else "MOVE", dt)
+    if attacking:
         if human.remove_health(config.ZOMBIE_DAMAGE * dt):
-            zombie.update_anim("IDLE", dt)
             human.kill()
+    return attacking
 
 
 def explosion_touching_zombie(zombie, explosion):
@@ -140,7 +141,7 @@ class Session:
         self.change_x = self.change_y = 0
         self.shooting = False
 
-        self.background = BackgroundSheet(BACKGROUND)
+        self.background = TiledBackground(BACKGROUND)
         self.human = Human(window)
         self.human_group = pygame.sprite.Group(self.human)
         self.zombies = pygame.sprite.Group()
@@ -163,7 +164,7 @@ class Session:
         self.grenade_data = GrenadeData()
         self.heads_up_display = HUD(window)
         self.health_display = HealthBar(window)
-        self.weapon_display = WeaponPanel(window)
+        self.weapon_display = WeaponPanel(window, self.grenade_data)
         self.shop_display = ShopFront(window)
         self.radar = RadarScreen()
 
@@ -481,9 +482,11 @@ class Session:
 
     def _advance_zombies(self, dt):
         for zombie in self.zombies:
-            zombie.update_anim("MOVE", dt)
-            is_zombie_attacking(self.human, zombie, dt)
-            zombie.move_toward_center(self.camera_x, self.camera_y, dt)
+            attacking = is_zombie_attacking(self.human, zombie, dt)
+            if attacking:
+                zombie.face_player()
+            else:
+                zombie.move_toward_center(self.camera_x, self.camera_y, dt)
             for explosion in self.explosions:
                 explosion_touching_zombie(zombie, explosion)
             for stun_explosion in self.stun_explosions:
@@ -510,12 +513,7 @@ class Session:
     def draw(self, screen, alpha):
         draw_x, draw_y = self._interpolated_camera(alpha)
 
-        screen.blit(
-            self.background.image_at(
-                (0 - draw_x, 0 - draw_y, self.window[0], self.window[1])
-            ),
-            (0, 0),
-        )
+        self.background.draw(screen, -draw_x, -draw_y)
 
         blit_group(screen, self.dropped, draw_x, draw_y, alpha)
         blit_group(screen, self.props, draw_x, draw_y, alpha)

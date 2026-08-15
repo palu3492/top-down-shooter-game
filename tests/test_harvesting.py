@@ -108,21 +108,24 @@ def test_yield_keeps_pace_with_what_has_been_taken_out(tree):
 
 
 def test_nothing_comes_out_of_a_thing_that_yields_nothing(display):
-    from shooter.entities import shapes
     from shooter.entities.props import Harvestable
 
-    bare = Harvestable(shapes.rock(), 0, 0, 50)
+    bare = Harvestable(pygame.Surface((100, 80)), 0, 0, 50)
     pygame.sprite.Group(bare)
 
     assert bare.harvest(50, Tool(50)) == 0
 
 
 def test_the_wrong_tool_shakes_nothing_loose(display):
-    from shooter.entities import shapes
     from shooter.entities.props import Harvestable
 
     fussy = Harvestable(
-        shapes.tree(), 0, 0, 100, tool=weapons.M16.id, yields=Yield(world.WOOD, 5)
+        pygame.Surface((120, 140)),
+        0,
+        0,
+        100,
+        tool=weapons.M16.id,
+        yields=Yield(world.WOOD, 5),
     )
     pygame.sprite.Group(fussy)
 

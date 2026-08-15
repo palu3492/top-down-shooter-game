@@ -37,6 +37,7 @@ BULLET_SPEED = 9000
 BULLET_STEP = 14  # max pixels between collision checks
 EXPLOSION_SECONDS = 1 / 60
 ANIMATION_FPS = 60
+ZOMBIE_ANIMATION_FPS = 18
 MAX_FRAME_SECONDS = 0.1  # clamp: a stalled frame must not teleport anything
 BULLET_DAMAGE = 20
 BULLET_RANGE = 1000
