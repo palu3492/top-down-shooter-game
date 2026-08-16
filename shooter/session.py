@@ -96,9 +96,8 @@ def collect_powerup(kind, human, zombie_group, carried):
 def is_zombie_attacking(human, zombie, dt=config.SIM_DT):
     attacking = pygame.sprite.collide_rect(human, zombie)
     zombie.update_anim("ATTACK" if attacking else "MOVE", dt)
-    if attacking:
-        if human.remove_health(config.ZOMBIE_DAMAGE * dt):
-            human.kill()
+    if attacking and human.remove_health(config.ZOMBIE_DAMAGE * dt):
+        human.kill()
     return attacking
 
 

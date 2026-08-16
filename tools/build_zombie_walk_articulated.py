@@ -26,7 +26,9 @@ def run(*args: str | Path) -> None:
     subprocess.run([str(arg) for arg in args], check=True)
 
 
-def point_on_cycle(side: str, frame: int) -> tuple[tuple[float, float], tuple[float, float], bool]:
+def point_on_cycle(
+    side: str, frame: int
+) -> tuple[tuple[float, float], tuple[float, float], bool]:
     """Return hip, ankle, and stance-state for one persistent leg."""
     phase = frame if side == "left" else (frame + FRAME_COUNT // 2) % FRAME_COUNT
     hip_x = 130.0 if side == "left" else 158.0
@@ -63,7 +65,12 @@ def knee_for(
     distance = max(1.0, math.hypot(dx, dy))
     midpoint = ((hip[0] + ankle[0]) / 2.0, (hip[1] + ankle[1]) / 2.0)
     perpendicular = (-dy / distance, dx / distance)
-    outward = 1.0 if (side == "left" and perpendicular[0] < 0) or (side == "right" and perpendicular[0] > 0) else -1.0
+    outward = (
+        1.0
+        if (side == "left" and perpendicular[0] < 0)
+        or (side == "right" and perpendicular[0] > 0)
+        else -1.0
+    )
 
     if stance:
         t = phase / 8.0

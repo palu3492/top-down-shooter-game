@@ -217,13 +217,11 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         # Use the floating-point world position, not pygame.Rect's rounded
         # screen coordinates, or a perfectly horizontal approach drifts by a
         # fraction of a pixel on every simulation step.
-        distance_from_center_x = (
-            self.window_size[0] / 2.0
-            - (self.zombie_x + camera_x + self.rect.width / 2.0)
+        distance_from_center_x = self.window_size[0] / 2.0 - (
+            self.zombie_x + camera_x + self.rect.width / 2.0
         )
-        distance_from_center_y = (
-            self.window_size[1] / 2.0
-            - (self.zombie_y + camera_y + self.rect.height / 2.0)
+        distance_from_center_y = self.window_size[1] / 2.0 - (
+            self.zombie_y + camera_y + self.rect.height / 2.0
         )
         distance = math.hypot(distance_from_center_x, distance_from_center_y)
         if not distance:

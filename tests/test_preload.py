@@ -103,9 +103,10 @@ def test_a_second_session_reads_nothing(warmed, reads):
 
 
 def test_the_background_tile_is_shared_rather_than_reloaded(warmed):
-    assert TiledBackground(preload.BACKGROUND_TILE).tile is TiledBackground(
-        preload.BACKGROUND_TILE
-    ).tile
+    assert (
+        TiledBackground(preload.BACKGROUND_TILE).tile
+        is TiledBackground(preload.BACKGROUND_TILE).tile
+    )
 
 
 def test_preload_can_be_called_twice(warmed, reads):

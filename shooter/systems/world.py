@@ -82,8 +82,7 @@ def make(standing):
             y,
             TREE_HEALTH,
             damage_art=tuple(
-                load_scaled(sprite, TREE_SCALE, True)
-                for sprite in TREE_DAMAGE_SPRITES
+                load_scaled(sprite, TREE_SCALE, True) for sprite in TREE_DAMAGE_SPRITES
             ),
             yields=Yield(WOOD, TREE_WOOD),
             label="CHOP",
@@ -96,8 +95,7 @@ def make(standing):
             y,
             ROCK_HEALTH,
             damage_art=tuple(
-                load_scaled(sprite, ROCK_SCALE, True)
-                for sprite in ROCK_DAMAGE_SPRITES
+                load_scaled(sprite, ROCK_SCALE, True) for sprite in ROCK_DAMAGE_SPRITES
             ),
             fit_damage_art=True,
             yields=Yield(METAL, ROCK_METAL),

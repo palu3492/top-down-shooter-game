@@ -430,9 +430,7 @@ def test_the_weapon_picture_is_larger_and_centred_in_its_circle(display, window)
     WeaponPanel(window).draw(screen, equip(KNIFE))
 
     active = hud.weapon_hud_rects(window)[-1]
-    picture = WeaponPanel(window)._picture(
-        weapon(KNIFE.id), hud.WEAPON_PICTURE_SIZE
-    )
+    picture = WeaponPanel(window)._picture(weapon(KNIFE.id), hud.WEAPON_PICTURE_SIZE)
     expected_at = picture.get_rect(center=active.center)
 
     assert _pixels(screen.drawn[expected_at.topleft]) == _pixels(picture)
