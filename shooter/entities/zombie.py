@@ -9,10 +9,10 @@ from shooter.render import Interpolated
 
 ANIMATIONS = {
     "IDLE": ("Zombie Animations/zombie_idle", "skeleton-idle_", 17),
-    # A fixed-body, two-leg rig moves both legs through opposing arcs.  Sixteen
-    # small steps keep the feet moving continuously through each stride and
-    # preserve the source sprite's exact body, palette and registration.
-    "MOVE": ("Zombie Animations/zombie_walk_rigged", "zombie-walk-", 16),
+    # A fixed-body, articulated two-leg rig moves each planted foot north to
+    # south, then bends the knee to return it for the next stride. Sixteen
+    # small steps preserve the source palette and close the loop without a snap.
+    "MOVE": ("Zombie Animations/zombie_walk_articulated", "zombie-walk-", 16),
     "ATTACK": ("Zombie Animations/zombie_attack", "skeleton-attack_", 9),
 }
 
