@@ -235,6 +235,32 @@ def test_the_drawn_sprite_stays_centred_on_the_footprint(display, cash):
     assert zombie.image_offset == pytest.approx((-grown_x / 2, -grown_y / 2))
 
 
+def test_up_facing_source_art_points_toward_player(display, cash):
+    zombie = Zombie(WINDOW, cash)
+    zombie.update_anim("MOVE", 0)
+    zombie.rect.center = (100, WINDOW[1] // 2)
+    zombie.face_player()
+
+    # Turning from the source's upward heading to the player on the right is
+    # a clockwise quarter-turn, swapping width and height.
+    assert zombie.image.get_size() == (
+        zombie.upright.get_height(),
+        zombie.upright.get_width(),
+    )
+
+
+def test_movement_aims_the_hitbox_center_at_the_player(display, cash):
+    zombie = Zombie(WINDOW, cash)
+    zombie.set_position(0, WINDOW[1] / 2 - zombie.rect.height / 2)
+    zombie.move_position(0, 0)
+    before = zombie.get_position()
+
+    zombie.move_toward_center(0, 0, config.SIM_DT)
+
+    assert zombie.zombie_x > before[0]
+    assert zombie.zombie_y == pytest.approx(before[1])
+
+
 def test_a_zombie_on_the_player_does_not_spin(display, cash):
     """No direction to face, and atan2(0, 0) would point it east."""
     zombie = Zombie(WINDOW, cash)

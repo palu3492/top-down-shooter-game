@@ -37,7 +37,7 @@ class Offer:
         return weapons.weapon(self.weapon).name
 
 
-# The M16 costs what the sign says: `gun_on_wall.png` has $500 painted on it.
+# The M16 is the stand's entry-level firearm.
 STOCK = (
     Offer(weapons.M16.id, 500, 100),
     Offer(weapons.SHOTGUN.id, 750, 150),

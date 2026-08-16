@@ -83,42 +83,24 @@ def test_inside_measures_from_the_panel_not_the_window():
     assert inside(panel, (13, 57)) == (813, 657)
 
 
-HISTORIC = {
-    "blHUD": (40, 720 - 76),
-    "brHUD": (1080 - 263, 720 - 162),
-    "tmHUD": (1080 / 2.0 - 225, 0),
-    "health": (70, 720 - 77),
-    "meter": (480, 10),
-    "clip": (1080 - 250, 720 - 105),
-    "reserve": (1080 - 170, 720 - 102),
-    "gun": (1080 - 125, 720 - 120),
-    "cash": (400, 7),
-}
-
-
 def current_positions(display, window=WINDOW):
-    bottom_left = hud.BOTTOM_LEFT.rect(window)
     bottom_right = hud.BOTTOM_RIGHT.rect(window)
-    top_middle = hud.TOP_MIDDLE.rect(window)
+    cash, health = hud.top_panels(window)
     return {
-        "blHUD": bottom_left.topleft,
         "brHUD": bottom_right.topleft,
-        "tmHUD": top_middle.topleft,
-        "health": inside(bottom_left, hud.HEALTH_READOUT),
-        "meter": inside(top_middle, hud.HEALTH_METER),
+        "cash": cash.topleft,
+        "health": health.topleft,
         "clip": inside(bottom_right, hud.CLIP_READOUT),
         "reserve": inside(bottom_right, hud.RESERVE_READOUT),
         "gun": inside(bottom_right, hud.GUN_ICON),
-        "cash": inside(top_middle, hud.CASH_READOUT),
     }
 
 
-@pytest.mark.parametrize("name", HISTORIC)
-def test_the_hud_is_unchanged_at_the_resolution_it_was_tuned_for(display, name):
-    """Anchoring is meant to change what happens at *other* sizes. At 1080x720
-    every piece must land on the pixel it always did."""
-    placed = current_positions(display)[name]
-    assert tuple(map(int, placed)) == tuple(map(int, HISTORIC[name]))
+def test_the_reference_panels_are_centred_as_one_group(display):
+    cash, health = hud.top_panels(WINDOW)
+    assert cash.left == WINDOW[0] - health.right
+    assert health.left - cash.right == hud.HUD_GAP
+    assert cash.top == health.top == hud.HUD_TOP
 
 
 @pytest.mark.parametrize("window", SIZES)
@@ -134,10 +116,11 @@ def test_the_bottom_right_panel_tracks_the_bottom_right(display, window):
 
 
 @pytest.mark.parametrize("window", SIZES)
-def test_the_top_panel_stays_centred(display, window):
-    panel = hud.TOP_MIDDLE.rect(window)
-    assert panel.centerx == pytest.approx(window[0] / 2)
-    assert panel.top == 0
+def test_the_top_panels_stay_centred(display, window):
+    cash, health = hud.top_panels(window)
+    group = cash.union(health)
+    assert group.centerx == pytest.approx(window[0] / 2)
+    assert group.top == hud.HUD_TOP
 
 
 @pytest.mark.parametrize("window", SIZES)
@@ -154,8 +137,8 @@ def test_the_hud_panels_move_when_the_window_does(display):
     small = current_positions(display, (1080, 720))
     large = current_positions(display, (1920, 1080))
     assert small["brHUD"] != large["brHUD"]
-    assert small["blHUD"][0] == large["blHUD"][0], "the left edge should not move"
-    assert small["blHUD"][1] != large["blHUD"][1], "the bottom edge should"
+    assert small["cash"][0] != large["cash"][0]
+    assert small["cash"][1] == large["cash"][1] == hud.HUD_TOP
 
 
 @pytest.mark.parametrize("window", SIZES)
@@ -226,10 +209,11 @@ def test_the_health_readout_is_drawn_on_its_panel(display, window):
     surface = RecordingSurface(window)
     hud.HealthBar(window).draw(surface, 100)
 
-    panel = hud.BOTTOM_LEFT.rect(window)
-    left, top = surface.blits[0]
-    assert panel.left <= left <= panel.right
-    assert panel.top - 5 <= top <= panel.bottom
+    _, panel = hud.top_panels(window)
+    assert surface.blits, "nothing was drawn"
+    for left, top in surface.blits:
+        assert panel.left <= left <= panel.right
+        assert panel.top <= top <= panel.bottom
 
 
 @pytest.mark.parametrize("window", SIZES)
@@ -237,10 +221,26 @@ def test_the_cash_readout_is_drawn_on_its_panel(display, window):
     surface = RecordingSurface(window)
     hud.Cash().update(surface, window)
 
-    panel = hud.TOP_MIDDLE.rect(window)
-    left, top = surface.blits[0]
-    assert panel.left <= left <= panel.right
-    assert panel.top <= top <= panel.bottom
+    panel, _ = hud.top_panels(window)
+    assert surface.blits, "nothing was drawn"
+    for left, top in surface.blits:
+        assert panel.left <= left <= panel.right
+        assert panel.top <= top <= panel.bottom
+
+
+def test_the_top_readouts_use_smooth_full_resolution_text(display):
+    text = hud._hud_text("100 / 100", 28)
+    alpha = {
+        text.get_at((x, y)).a
+        for x in range(text.get_width())
+        for y in range(text.get_height())
+    }
+
+    # Antialiased glyph edges contain partial alpha values. The old readout was
+    # rendered at half size without antialiasing and enlarged into square blocks.
+    assert any(0 < value < 255 for value in alpha)
+    expected = pygame.font.Font(None, 28).render("100 / 100", True, hud.config.WHITE)
+    assert text.get_size() == expected.get_size()
 
 
 @pytest.mark.parametrize("window", SIZES)
@@ -265,7 +265,7 @@ def test_the_health_meter_is_drawn_on_the_top_panel(display, window, monkeypatch
     monkeypatch.setattr(pygame.draw, "rect", record)
     hud.HealthBar(window).draw(pygame.Surface(window), 100)
 
-    panel = hud.TOP_MIDDLE.rect(window)
+    _, panel = hud.top_panels(window)
     assert drawn, "the meter was never drawn"
     for meter in drawn:
         assert panel.contains(meter), (meter, panel)

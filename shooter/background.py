@@ -1,26 +1,23 @@
-import pygame
-
-from shooter.assets import load_sheet
+from shooter.assets import load_image
 
 
-class BackgroundSheet:
-    """A window onto one large image.
+class TiledBackground:
+    """Repeat one seamless texture beneath an arbitrarily large world.
 
-    The sheet is shared rather than owned: `image_at` only ever reads from it,
-    so every session can sample the same surface instead of each paying 180ms
-    to load its own copy.
+    Tile placement is derived from world coordinates, not remembered between
+    frames. The texture therefore stays fixed to the ground as the camera moves,
+    including when the camera crosses zero or jumps by more than one tile.
     """
 
     def __init__(self, relative):
-        self.sheet = load_sheet(relative)
+        self.tile = load_image(relative)
 
-    def image_at(self, rectangle, colorkey=None):
-        "Loads image from x,y,x+offset,y+offset"
-        rect = pygame.Rect(rectangle)
-        image = pygame.Surface(rect.size).convert()
-        image.blit(self.sheet, (0, 0), rect)
-        if colorkey is not None:
-            if colorkey == -1:
-                colorkey = image.get_at((0, 0))
-            image.set_colorkey(colorkey, pygame.RLEACCEL)
-        return image
+    def draw(self, screen, world_left, world_top):
+        """Cover `screen`, starting at this world-space top-left coordinate."""
+        tile_width, tile_height = self.tile.get_size()
+        start_x = -(int(world_left) % tile_width)
+        start_y = -(int(world_top) % tile_height)
+
+        for top in range(start_y, screen.get_height(), tile_height):
+            for left in range(start_x, screen.get_width(), tile_width):
+                screen.blit(self.tile, (left, top))

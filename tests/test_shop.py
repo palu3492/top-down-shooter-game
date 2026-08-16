@@ -136,9 +136,8 @@ def test_a_weapon_that_will_not_fit_is_not_charged_for(wallet, carried):
     assert len(carried) == weapons.MAX_SLOTS
 
 
-def test_the_sign_and_the_price_agree():
-    """`gun_on_wall.png` has $500 painted on it, so that is what the rifle
-    costs. Changing one without the other makes the art a lie."""
+def test_the_entry_level_rifle_keeps_its_price():
+    """Pricing is shop data, independent of the stand's world art."""
     assert M16.price == 500
     assert M16.weapon == weapons.M16.id
 

@@ -66,7 +66,7 @@ def test_the_hud_places_itself_from_whatever_it_is_given(display):
     small = hud.positions(SMALL)
     large = hud.positions(LARGE)
     assert small != large
-    assert large[1][0] == 1920 - 263
+    assert large[0][0] == 1920 - 263
 
 
 def test_a_zombie_walks_at_the_new_centre_not_the_old_one(display, viewport):

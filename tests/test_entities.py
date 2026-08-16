@@ -122,14 +122,13 @@ def test_zombie_animation_advances(zombie):
     assert len(seen) > 1
 
 
-def test_zombie_rect_matches_the_pose_it_is_drawing(zombie):
+def test_zombie_hitbox_stays_stable_between_different_sized_poses(zombie):
     zombie.update_anim("MOVE")
     moving = zombie.rect.size
-    assert moving == zombie.image.get_size()
+    assert moving == config.ZOMBIE_SIZE
 
     zombie.update_anim("ATTACK")
-    assert zombie.rect.size == zombie.image.get_size()
-    assert zombie.rect.size != moving
+    assert zombie.rect.size == moving
 
 
 def test_changing_pose_does_not_teleport_the_zombie(zombie):

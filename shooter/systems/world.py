@@ -11,6 +11,7 @@ level can be read, compared and tested without a display.
 from dataclasses import dataclass
 
 from shooter import items
+from shooter.assets import load_image, load_scaled
 from shooter.entities import shapes
 from shooter.entities.pickups import Pickup
 from shooter.entities.props import Harvestable, Prop, Yield
@@ -19,7 +20,17 @@ STAND = "stand"
 TREE = "tree"
 ROCK = "rock"
 
-STAND_SPRITE = "Wall Items/gun_on_wall.png"
+STAND_SPRITE = "Props/gun_stand.png"
+TREE_SPRITE = "Props/tree.png"
+ROCK_SPRITE = "Props/rock.png"
+TREE_DAMAGE_SPRITES = ("Props/tree_damaged.png", "Props/tree_critical.png")
+ROCK_DAMAGE_SPRITES = (
+    "Props/rock_damaged.png",
+    "Props/rock_critical.png",
+    "Props/rock_ruined.png",
+)
+WOOD_PICKUP_SPRITE = "Pickups/log.png"
+ROCK_PICKUP_SPRITE = "Pickups/rock.png"
 
 WOOD = items.register(items.Item("wood", "Wood", items.RESOURCE, stack=25))
 METAL = items.register(items.Item("metal", "Metal", items.RESOURCE, stack=25))
@@ -29,8 +40,8 @@ CLOTH = items.register(items.Item("cloth", "Cloth", items.RESOURCE, stack=25))
 # the pack; a `Pickup` carries its own picture, because a log lying in grass and
 # a wood icon in a slot are different pictures of the same thing.
 LOOKS = {
-    WOOD.id: shapes.wood,
-    METAL.id: shapes.metal,
+    WOOD.id: lambda: load_image(WOOD_PICKUP_SPRITE, True),
+    METAL.id: lambda: load_image(ROCK_PICKUP_SPRITE, True),
     CLOTH.id: shapes.cloth,
 }
 
@@ -42,12 +53,13 @@ ROCK_HEALTH = 200
 TREE_WOOD = 10
 ROCK_METAL = 8
 
-# Solid boxes, deliberately smaller than the pictures. A canopy is drawn far
-# wider than the part of a tree you would bump into, and a wood whose footprints
-# match its sprites is a maze.
-TREE_SOLID = (34, 34)
-ROCK_SOLID = (78, 44)
-STAND_SOLID = (110, 110)
+# The art and its opaque bounds. Four-part solid boxes are relative to the
+# sprite's top-left, so transparent padding is not mistaken for scenery.
+TREE_SCALE = 1.15
+ROCK_SCALE = 1.30
+TREE_SOLID = (9, 1, 120, 147)
+ROCK_SOLID = (27, 10, 73, 75)
+STAND_SOLID = (140, 90)
 
 
 @dataclass(frozen=True)
@@ -65,20 +77,27 @@ def make(standing):
         return Prop(STAND_SPRITE, x, y, label="GUN STAND", solid=STAND_SOLID)
     if standing.kind == TREE:
         return Harvestable(
-            shapes.tree(),
+            load_scaled(TREE_SPRITE, TREE_SCALE, True),
             x,
             y,
             TREE_HEALTH,
+            damage_art=tuple(
+                load_scaled(sprite, TREE_SCALE, True) for sprite in TREE_DAMAGE_SPRITES
+            ),
             yields=Yield(WOOD, TREE_WOOD),
             label="CHOP",
             solid=TREE_SOLID,
         )
     if standing.kind == ROCK:
         return Harvestable(
-            shapes.rock(),
+            load_scaled(ROCK_SPRITE, ROCK_SCALE, True),
             x,
             y,
             ROCK_HEALTH,
+            damage_art=tuple(
+                load_scaled(sprite, ROCK_SCALE, True) for sprite in ROCK_DAMAGE_SPRITES
+            ),
+            fit_damage_art=True,
             yields=Yield(METAL, ROCK_METAL),
             label="MINE",
             solid=ROCK_SOLID,
