@@ -481,6 +481,12 @@ class Session:
 
     def _advance_zombies(self, dt):
         for zombie in self.zombies:
+            # The player moves through the world by moving the camera. Keep the
+            # zombie's screen-space collision box in step with that camera
+            # before deciding whether it is still touching the player. An
+            # attacking zombie does not call move_toward_center(), so without
+            # this sync its old box can remain on the player indefinitely.
+            zombie.move_position(self.camera_x, self.camera_y)
             attacking = is_zombie_attacking(self.human, zombie, dt)
             if attacking:
                 zombie.face_player()

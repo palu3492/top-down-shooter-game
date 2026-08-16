@@ -38,6 +38,7 @@ SPRITES = (
     ("Props/rock_ruined.png", True),
     ("Pickups/log.png", True),
     ("Pickups/rock.png", True),
+    ("Pickups/cloth.png", True),
     ("Power Ups/instakill.png", False),
     ("Power Ups/Nuke.png", False),
     ("Power Ups/MaxAmmo.png", False),
@@ -73,7 +74,13 @@ def preload():
         for directory, prefix, count in animations.values():
             load_animation(directory, prefix, count, config.PLAYER_SCALE, True)
 
-    for directory, prefix, count in zombie.ANIMATIONS.values():
-        load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
+    for name, (directory, prefix, count) in zombie.ANIMATIONS.items():
+        load_animation(
+            directory,
+            prefix,
+            count,
+            config.ZOMBIE_SCALE * zombie.ANIMATION_SCALE[name],
+            True,
+        )
 
     load_sized(ZOMBIE_STILL, *config.ZOMBIE_SIZE, True)

@@ -16,6 +16,16 @@ ANIMATIONS = {
     "ATTACK": ("Zombie Animations/zombie_attack", "skeleton-attack_", 9),
 }
 
+# The attack drawings use a larger source rig than the idle and articulated
+# walk drawings. Applying the global scale directly makes the zombie's body
+# swell by roughly a third as soon as it reaches the player. Normalize that
+# source rig while retaining the naturally wider reaching-arm poses.
+ANIMATION_SCALE = {
+    "IDLE": 1.0,
+    "MOVE": 1.0,
+    "ATTACK": 0.74,
+}
+
 
 # A crowd all moving at exactly one speed reads as a single object. Each
 # zombie gets its own pace, so a wave arrives strung out rather than in rank.
@@ -26,6 +36,10 @@ PACE_SPREAD = 0.18
 # sprite without turning the crowd into a pinball table.
 PERSONAL_SPACE = 76
 SHOVE = 1.8
+# Several neighbours can push on the same zombie at once. Cap their combined
+# effect below its chase speed so crowd pressure makes it sidestep without
+# knocking it backwards and producing a pinball-like rebound.
+MAX_SHOVE_SPEED = 0.45
 
 
 def keep_apart(zombies, camera, dt=config.SIM_DT):
@@ -66,6 +80,12 @@ def keep_apart(zombies, camera, dt=config.SIM_DT):
 
     for zombie, (push_x, push_y) in zip(crowd, pushes, strict=True):
         if push_x or push_y:
+            push_length = math.hypot(push_x, push_y)
+            max_push = zombie.zombie_speed * MAX_SHOVE_SPEED * dt
+            if push_length > max_push:
+                scale = max_push / push_length
+                push_x *= scale
+                push_y *= scale
             zombie.zombie_x += push_x
             zombie.zombie_y += push_y
             zombie.move_position(*camera)
@@ -108,7 +128,13 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         self.killed = False
         self.window_size = window_size
         self.frames = {
-            name: load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
+            name: load_animation(
+                directory,
+                prefix,
+                count,
+                config.ZOMBIE_SCALE * ANIMATION_SCALE[name],
+                True,
+            )
             for name, (directory, prefix, count) in ANIMATIONS.items()
         }
         self.upright = self.frames["IDLE"][0]
