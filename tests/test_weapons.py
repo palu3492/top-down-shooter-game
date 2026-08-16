@@ -413,15 +413,19 @@ def test_a_swing_lasts_one_step_and_no_longer(display, cash):
     assert not hit.alive()
 
 
-def test_the_readout_shows_no_ammunition_for_a_knife(display, window):
-    """A knife with `0 / 0` beside it reads as a gun that has run out."""
+def test_the_readout_shows_zero_ammunition_for_a_knife(display, window):
+    """The ammo HUD stays visible while the knife is equipped."""
     screen = Recorder(window)
 
     WeaponPanel(window).draw(screen, equip(KNIFE))
 
     panel = hud.BOTTOM_RIGHT.rect(window)
-    assert inside(panel, hud.CLIP_READOUT) not in screen.drawn
-    assert inside(panel, hud.RESERVE_READOUT) not in screen.drawn
+    assert _pixels(screen.drawn[inside(panel, hud.CLIP_READOUT)]) == _pixels(
+        pygame.font.Font(None, 55).render("0", True, config.WHITE)
+    )
+    assert _pixels(screen.drawn[inside(panel, hud.RESERVE_READOUT)]) == _pixels(
+        pygame.font.Font(None, 44).render("0", True, config.WHITE)
+    )
 
 
 def test_the_weapon_picture_is_larger_and_centred_in_its_circle(display, window):

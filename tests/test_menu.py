@@ -229,9 +229,9 @@ def test_the_world_stops_while_a_screen_is_open(straight_to_game, monkeypatch):
     ticks = []
     real = session.Human.update_anim
 
-    def counting(self, kind, dt=config.SIM_DT):
+    def counting(self, kind, dt=config.SIM_DT, weapon_id=None):
         ticks.append(kind)
-        return real(self, kind, dt)
+        return real(self, kind, dt, weapon_id)
 
     monkeypatch.setattr(session.Human, "update_anim", counting)
     frames = drive(press(pygame.K_ESCAPE, pygame.K_ESCAPE), monkeypatch)

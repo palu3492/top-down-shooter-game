@@ -473,7 +473,7 @@ class Session:
             animation = "IDLE"
         if self.shooting:
             animation = "SHOOT"
-        self.human.update_anim(animation, dt)
+        self.human.update_anim(animation, dt, self.equipped.weapon.id)
         # Rotation resizes human.rect, which collision reads, so it has to
         # happen exactly once per step -- in the render pass it compounded with
         # frame rate and inflated the hitbox.

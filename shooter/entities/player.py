@@ -5,9 +5,31 @@ from shooter.assets import load_animation
 from shooter import config
 
 ANIMATIONS = {
-    "IDLE": ("Player Animations/Idle Knife", "survivor-idle_knife_", 20),
-    "MOVE": ("Player Animations/Move Knife", "survivor-move_knife_", 20),
-    "SHOOT": ("Player Animations/Attack Knife", "survivor-attack_knife_", 3),
+    "knife": {
+        "IDLE": ("Player Animations/Idle Knife", "survivor-idle_knife_", 20),
+        "MOVE": ("Player Animations/Move Knife", "survivor-move_knife_", 20),
+        "SHOOT": ("Player Animations/Attack Knife", "survivor-attack_knife_", 3),
+    },
+    **{
+        weapon: {
+            "IDLE": (
+                f"Player Animations/{weapon.upper()}/IDLE",
+                f"survivor-idle_{weapon}_",
+                20,
+            ),
+            "MOVE": (
+                f"Player Animations/{weapon.upper()}/MOVE",
+                f"survivor-move_{weapon}_",
+                20,
+            ),
+            "SHOOT": (
+                f"Player Animations/{weapon.upper()}/SHOOT",
+                f"survivor-shoot_{weapon}_",
+                3,
+            ),
+        }
+        for weapon in ("m16", "smg", "shotgun", "sniper")
+    },
 }
 
 
@@ -21,10 +43,15 @@ class Human(pygame.sprite.Sprite):
         self.health = config.PLAYER_HEALTH
         self.animation_clock = 0.0
         self.frame = 0
-        self.frames = {
-            name: load_animation(directory, prefix, count, config.PLAYER_SCALE)
-            for name, (directory, prefix, count) in ANIMATIONS.items()
+        self.animation_sets = {
+            weapon: {
+                name: load_animation(directory, prefix, count, config.PLAYER_SCALE, True)
+                for name, (directory, prefix, count) in animations.items()
+            }
+            for weapon, animations in ANIMATIONS.items()
         }
+        self.weapon_id = "knife"
+        self.frames = self.animation_sets[self.weapon_id]
         self.image = self.frames["IDLE"][0]
         self.rect = self.image.get_rect()
         self.recentre(window_size)
@@ -41,7 +68,10 @@ class Human(pygame.sprite.Sprite):
         self.image = pygame.transform.rotate(self.image, angle)
         self.rect = self.image.get_rect(center=centre)
 
-    def update_anim(self, type, dt=1 / config.ANIMATION_FPS):
+    def update_anim(self, type, dt=1 / config.ANIMATION_FPS, weapon_id=None):
+        if weapon_id is not None and weapon_id != self.weapon_id:
+            self.weapon_id = weapon_id
+            self.frames = self.animation_sets[weapon_id]
         self.type = type
         self.animation_clock += dt * config.ANIMATION_FPS
         steps, self.animation_clock = divmod(self.animation_clock, 1)

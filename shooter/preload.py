@@ -20,6 +20,9 @@ SPRITES = (
     ("cursor.png", False),
     ("HUD/brHUD.png", False),
     ("HUD/gunAK47.png", False),
+    ("HUD/gunShotty.png", False),
+    ("HUD/gunSMG.png", False),
+    ("HUD/gunSniper.png", False),
     ("HUD/knife.png", False),
     ("HUD/icons/coin.png", True),
     ("HUD/icons/heart.png", True),
@@ -66,8 +69,9 @@ def preload():
     load_image(MENU_ART)
     load_image(BACKGROUND_TILE)
 
-    for directory, prefix, count in player.ANIMATIONS.values():
-        load_animation(directory, prefix, count, config.PLAYER_SCALE)
+    for animations in player.ANIMATIONS.values():
+        for directory, prefix, count in animations.values():
+            load_animation(directory, prefix, count, config.PLAYER_SCALE, True)
 
     for directory, prefix, count in zombie.ANIMATIONS.values():
         load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)

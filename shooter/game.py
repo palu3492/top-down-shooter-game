@@ -166,7 +166,16 @@ def route(action, scenes, window, settings, progress=None):
             scenes, settings_screen.SettingsScreen(window, scenes.manager, settings)
         )
     elif action == menu.DEV:
-        open_scene(scenes, dev.DevScreen(window, scenes.manager, settings))
+        playing = next(
+            (
+                scene.session
+                for scene in reversed(scenes.visible())
+                if getattr(scene, "session", None) is not None
+            ),
+            None,
+        )
+        cash = playing.cash if playing is not None else None
+        open_scene(scenes, dev.DevScreen(window, scenes.manager, settings, cash))
     elif action == menu.QUIT:
         return False
     return True
