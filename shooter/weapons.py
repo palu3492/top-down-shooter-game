@@ -167,7 +167,7 @@ register(
     lambda: Weapon(
         item=SMG,
         ammo=NINE_MIL,
-        sprite=None,
+        sprite="HUD/gunSMG.png",
         clip=40,
         reserve=200,
         damage=12,
@@ -205,7 +205,7 @@ register(
     lambda: Weapon(
         item=SNIPER,
         ammo=MATCH_ROUNDS,
-        sprite=None,
+        sprite="HUD/gunSniper.png",
         clip=5,
         reserve=25,
         damage=140,

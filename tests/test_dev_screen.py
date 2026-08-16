@@ -15,6 +15,7 @@ from shooter import config, game
 from shooter.ui import menu, widgets
 from shooter.ui import dev as dev_screen
 from shooter.ui.dev import DevScreen
+from shooter.ui.hud import Cash
 from shooter.ui.layout import LayoutOverflowError
 from shooter.scenes import SceneStack
 
@@ -98,6 +99,34 @@ def test_an_unrelated_button_does_nothing(dev, stack):
     stray = widgets.button(pygame.Rect(0, 0, 100, 30), "STRAY", stack.manager)
     event = pygame.event.Event(pygame_gui.UI_BUTTON_PRESSED, ui_element=stray)
     assert dev.handle(event) is None
+
+
+def test_coin_slider_shows_and_overrides_the_live_balance(stack):
+    cash = Cash()
+    cash.increase_cash(750)
+    screen = DevScreen(WINDOW, stack.manager, cash=cash)
+    stack.push(screen)
+
+    assert screen.cash_slider.get_current_value() == 750
+    assert screen.cash_readout.text == "750"
+
+    screen.cash_slider.set_current_value(4_200)
+    event = pygame.event.Event(
+        pygame_gui.UI_HORIZONTAL_SLIDER_MOVED,
+        ui_element=screen.cash_slider,
+        value=4_200,
+    )
+    screen.handle(event)
+
+    assert cash.cash_amount == 4_200
+    assert screen.cash_readout.text == "4200"
+
+
+def test_coin_slider_is_bounded_from_zero_to_ten_thousand(stack):
+    screen = DevScreen(WINDOW, stack.manager, cash=Cash())
+    stack.push(screen)
+
+    assert screen.cash_slider.value_range == (0, 10_000)
 
 
 def test_closing_leaves_no_widgets_behind(stack, dev):

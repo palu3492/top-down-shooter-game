@@ -39,6 +39,10 @@ TITLE_HEIGHT = 52
 HINT_HEIGHT = 26
 RULER_HEIGHT = 14
 BUTTON_HEIGHT = 54
+CASH_MIN = 0
+CASH_MAX = 10_000
+CASH_ROW_HEIGHT = 34
+FORM_GUTTER = 4
 HALF_SPAN = 6
 HINT = "twelve columns; every rectangle below is measured in them"
 # Cheats are keys pressed during a game, so they cannot live on this form --
@@ -48,6 +52,10 @@ CHEATS = "in a game:  [0] every weapon, loaded, on [1]-[5]"
 
 class DevScreen(FormScreen):
     title = "DEV"
+
+    def __init__(self, window, manager, settings=None, cash=None):
+        super().__init__(window, manager, settings)
+        self.cash = cash
 
     def open(self):
         grid = Grid(pygame.Rect((0, 0), self.window), padding=PADDING)
@@ -60,8 +68,20 @@ class DevScreen(FormScreen):
         self._build_ruler(grid)
 
         body = grid.row(grid.free_height - BUTTON_HEIGHT - grid.gutter)
-        self.build_form(Grid(body.cell(HALF_SPAN)), LIVE_TUNABLES, title="LIVE")
-        self.build_form(Grid(body.rest()), SPAWN_TUNABLES, title="NEW SPAWNS")
+        body_grid = Grid(body.rest())
+        self._build_cash(body_grid)
+        forms = body_grid.rest().area
+        columns = Grid(forms).row(forms.height, gutter=0)
+        self.build_form(
+            Grid(columns.cell(HALF_SPAN), gutter=FORM_GUTTER),
+            LIVE_TUNABLES,
+            title="LIVE",
+        )
+        self.build_form(
+            Grid(columns.rest(), gutter=FORM_GUTTER),
+            SPAWN_TUNABLES,
+            title="NEW SPAWNS",
+        )
 
         buttons = grid.row(BUTTON_HEIGHT)
         buttons.skip(2)
@@ -69,6 +89,25 @@ class DevScreen(FormScreen):
             widgets.button(buttons.cell(4), "SAVE", self.manager)
         )
         self.back = self.add(widgets.button(buttons.cell(4), "BACK", self.manager))
+
+    def _build_cash(self, grid):
+        row = grid.row(CASH_ROW_HEIGHT)
+        current = self.cash.cash_amount if self.cash is not None else 0
+        self.cash_caption = self.add(
+            widgets.caption(row.cell(3), f"coins  current: {current}", self.manager)
+        )
+        self.cash_slider = self.add(
+            widgets.slider(
+                row.cell(7),
+                self.manager,
+                min(CASH_MAX, max(CASH_MIN, current)),
+                (CASH_MIN, CASH_MAX),
+                increment=100,
+            )
+        )
+        self.cash_readout = self.add(
+            widgets.caption(row.rest(), str(current), self.manager)
+        )
 
     def _build_ruler(self, grid):
         row = grid.row(RULER_HEIGHT)
@@ -82,6 +121,16 @@ class DevScreen(FormScreen):
             return BACK
         if self.form.handle(event):
             self.announce(HINT)
+            return None
+        if (
+            event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED
+            and event.ui_element is self.cash_slider
+        ):
+            amount = int(self.cash_slider.get_current_value())
+            if self.cash is not None:
+                self.cash.cash_amount = amount
+            self.cash_caption.set_text(f"coins  current: {amount}")
+            self.cash_readout.set_text(str(amount))
             return None
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element is self.back:

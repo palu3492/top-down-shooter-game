@@ -196,8 +196,6 @@ def _hud_box(screen, rect, radius=16):
     )
     inner = rect.inflate(-10, -10)
     pygame.draw.rect(screen, (35, 48, 20), inner, border_radius=max(3, radius - 6))
-    shine = pygame.Rect(inner.left + 5, inner.top + 4, inner.width - 10, 3)
-    pygame.draw.rect(screen, (121, 135, 70), shine, border_radius=2)
 
 
 def _throwable_box(screen, rect):
@@ -267,24 +265,21 @@ class WeaponPanel:
         picture_at = picture.get_rect(center=active.center)
         screen.blit(picture, picture_at)
 
-        if held.loaded is not None:
-            _hud_box(screen, ammo, 16)
-            bullet = _outlined_text("\u2022", 58, (224, 181, 70))
-            screen.blit(
-                bullet, bullet.get_rect(center=(ammo.left + 25, ammo.centery - 2))
-            )
-            screen.blit(
-                pygame.font.Font(None, 55).render(str(held.loaded), True, config.WHITE),
-                inside(BOTTOM_RIGHT.rect(self.window), CLIP_READOUT),
-            )
-            slash = _outlined_text("/", 43)
-            screen.blit(slash, (ammo.left + 91, ammo.top + 22))
-            screen.blit(
-                pygame.font.Font(None, 44).render(
-                    str(held.reserve), True, config.WHITE
-                ),
-                inside(BOTTOM_RIGHT.rect(self.window), RESERVE_READOUT),
-            )
+        loaded = 0 if held.loaded is None else held.loaded
+        reserve = 0 if held.reserve is None else held.reserve
+        _hud_box(screen, ammo, 16)
+        bullet = _outlined_text("\u2022", 58, (224, 181, 70))
+        screen.blit(bullet, bullet.get_rect(center=(ammo.left + 25, ammo.centery - 2)))
+        screen.blit(
+            pygame.font.Font(None, 55).render(str(loaded), True, config.WHITE),
+            inside(BOTTOM_RIGHT.rect(self.window), CLIP_READOUT),
+        )
+        slash = _outlined_text("/", 43)
+        screen.blit(slash, (ammo.left + 91, ammo.top + 22))
+        screen.blit(
+            pygame.font.Font(None, 44).render(str(reserve), True, config.WHITE),
+            inside(BOTTOM_RIGHT.rect(self.window), RESERVE_READOUT),
+        )
 
     def _throwable(self, screen, rect, sprite, count):
         _throwable_box(screen, rect)

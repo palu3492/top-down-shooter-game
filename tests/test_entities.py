@@ -113,6 +113,14 @@ def test_idle_animation_advances(human):
     assert human.image is not first
 
 
+@pytest.mark.parametrize("weapon_id", ("knife", "m16", "smg", "shotgun", "sniper"))
+def test_player_uses_the_equipped_weapons_animation(human, weapon_id):
+    human.update_anim("IDLE", weapon_id=weapon_id)
+
+    assert human.weapon_id == weapon_id
+    assert human.frames is human.animation_sets[weapon_id]
+
+
 def test_zombie_animation_advances(zombie):
     seen = {id(zombie.image)}
     for _ in range(5):
