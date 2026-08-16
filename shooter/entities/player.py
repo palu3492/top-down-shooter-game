@@ -5,9 +5,9 @@ from shooter.assets import load_animation
 from shooter import config
 
 ANIMATIONS = {
-    "IDLE": ("Player Animations/Idle", "survivor-idle_rifle_", 20),
-    "MOVE": ("Player Animations/Move", "survivor-move_rifle_", 20),
-    "SHOOT": ("Player Animations/Shoot", "survivor-shoot_rifle_", 3),
+    "IDLE": ("Player Animations/Idle Knife", "survivor-idle_knife_", 20),
+    "MOVE": ("Player Animations/Move Knife", "survivor-move_knife_", 20),
+    "SHOOT": ("Player Animations/Attack Knife", "survivor-attack_knife_", 3),
 }
 
 
