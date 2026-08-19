@@ -172,6 +172,8 @@ THROWABLE_SIZE = (86, 78)
 THROWABLE_GAP = 7
 ACTIVE_DIAMETER = 148
 AMMO_SIZE = (177, 76)
+AMMO_ICON_SPRITE = "HUD/icons/bullet.png"
+AMMO_ICON_SIZE = (34, 40)
 
 
 def _outlined_text(message, size, colour=config.WHITE):
@@ -268,8 +270,12 @@ class WeaponPanel:
         loaded = 0 if held.loaded is None else held.loaded
         reserve = 0 if held.reserve is None else held.reserve
         _hud_box(screen, ammo, 16)
-        bullet = _outlined_text("\u2022", 58, (224, 181, 70))
-        screen.blit(bullet, bullet.get_rect(center=(ammo.left + 25, ammo.centery - 2)))
+        _icon(
+            screen,
+            AMMO_ICON_SPRITE,
+            AMMO_ICON_SIZE,
+            (ammo.left + 25, ammo.centery - 2),
+        )
         screen.blit(
             pygame.font.Font(None, 55).render(str(loaded), True, config.WHITE),
             inside(BOTTOM_RIGHT.rect(self.window), CLIP_READOUT),

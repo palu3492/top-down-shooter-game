@@ -13,6 +13,7 @@ import pytest
 
 from shooter import config
 from shooter.entities.zombie import (
+    MAX_SHOVE_SPEED,
     PERSONAL_SPACE,
     SHOVE,
     Zombie,
@@ -118,6 +119,43 @@ def test_zombies_far_apart_are_left_alone(display, cash):
     keep_apart(group, (0, 0), config.SIM_DT)
 
     assert {z.get_position() for z in group} == set(positions)
+
+
+def test_a_crowd_cannot_shove_a_zombie_faster_than_it_walks(display, cash):
+    """Neighbour forces add together in a pack. Left uncapped, the zombie in
+    the middle gets fired out of the group and appears to bounce off it."""
+    group = pygame.sprite.Group()
+    middle = Zombie(WINDOW, cash)
+    middle.set_position(1000, 1000)
+    group.add(middle)
+    for at in ((999, 1000), (1000, 999), (1001, 999), (1001, 1001)):
+        zombie = Zombie(WINDOW, cash)
+        zombie.set_position(*at)
+        group.add(zombie)
+
+    before = middle.get_position()
+    keep_apart(group, (0, 0), config.SIM_DT)
+
+    shove_speed = math.dist(before, middle.get_position()) / config.SIM_DT
+    assert shove_speed <= middle.zombie_speed * MAX_SHOVE_SPEED + 1e-6
+
+
+def test_crowding_does_not_knock_a_walking_zombie_backwards(display, cash):
+    group = pygame.sprite.Group()
+    walker = Zombie(WINDOW, cash)
+    walker.set_position(200, WINDOW[1] / 2 - walker.rect.height / 2)
+    walker.move_position(0, 0)
+    group.add(walker)
+    for x in (201, 202, 203):
+        neighbour = Zombie(WINDOW, cash)
+        neighbour.set_position(x, walker.zombie_y)
+        group.add(neighbour)
+
+    before = walker.zombie_x
+    walker.move_toward_center(0, 0, config.SIM_DT)
+    keep_apart(group, (0, 0), config.SIM_DT)
+
+    assert walker.zombie_x > before
 
 
 def test_pushing_apart_does_not_depend_on_iteration_order(display, cash):

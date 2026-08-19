@@ -99,6 +99,26 @@ def test_walking_moves_the_camera(session):
     assert session.camera_x < 0
 
 
+def test_walking_away_breaks_a_zombie_attack(session):
+    zombie = next(iter(session.zombies))
+    zombie.set_position(*session.human.rect.topleft)
+    zombie.move_position(*session.camera)
+    session.human.health = 50
+
+    session.step(pressed_nothing(), config.SIM_DT)
+    assert zombie.type == "ATTACK"
+
+    pressed = pressed_nothing()
+    pressed[pygame.K_d] = True
+    for _ in range(30):
+        session.step(pressed, config.SIM_DT)
+
+    health_after_escape = session.human.health
+    assert zombie.type == "MOVE"
+    session.step(pressed, config.SIM_DT)
+    assert session.human.health >= health_after_escape
+
+
 def test_walking_into_the_world_edge_does_nothing(session):
     pressed = pressed_nothing()
     pressed[pygame.K_a] = True

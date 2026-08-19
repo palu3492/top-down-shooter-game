@@ -2,7 +2,7 @@ import pytest
 
 from shooter import config
 
-from shooter.entities.player import Human
+from shooter.entities.player import IDLE_ANIMATION_FPS, KNIFE_ATTACK_FPS, Human
 from shooter.entities.zombie import Zombie
 
 
@@ -106,11 +106,45 @@ def test_player_animation_advances_through_its_frames(human):
 
 
 def test_idle_animation_advances(human):
-    human.update_anim("IDLE")
+    human.update_anim("IDLE", dt=1 / IDLE_ANIMATION_FPS)
     first = human.image
-    human.update_anim("IDLE")
+    human.update_anim("IDLE", dt=1 / IDLE_ANIMATION_FPS)
 
     assert human.image is not first
+
+
+def test_idle_animation_waits_for_its_frame_interval(human):
+    first = human.image
+
+    human.update_anim("IDLE", dt=(1 / IDLE_ANIMATION_FPS) - 0.001)
+
+    assert human.image is first
+
+
+def test_knife_attack_lunges_out_and_returns_before_idle(human):
+    attack = human.frames["SHOOT"]
+    frame_time = 1 / KNIFE_ATTACK_FPS
+
+    seen = []
+    human.update_anim("SHOOT", dt=0)
+    seen.append(human.image)
+    for _ in range(len(attack) - 1):
+        human.update_anim("IDLE", dt=frame_time)
+        seen.append(human.image)
+
+    assert seen == list(attack)
+    human.update_anim("IDLE")
+    assert human.type == "IDLE"
+
+
+def test_knife_attack_does_not_disappear_on_the_next_simulation_tick(human):
+    human.update_anim("SHOOT", dt=config.SIM_DT)
+    first = human.image
+
+    human.update_anim("IDLE", dt=config.SIM_DT)
+
+    assert human.type == "SHOOT"
+    assert human.image is first
 
 
 @pytest.mark.parametrize("weapon_id", ("knife", "m16", "smg", "shotgun", "sniper"))
@@ -137,6 +171,18 @@ def test_zombie_hitbox_stays_stable_between_different_sized_poses(zombie):
 
     zombie.update_anim("ATTACK")
     assert zombie.rect.size == moving
+
+
+def test_zombie_body_does_not_swell_when_attacking(zombie):
+    """Attack art comes from a larger rig and needs its own source correction."""
+    tallest_walk_pose = max(
+        frame.get_bounding_rect().height for frame in zombie.frames["MOVE"]
+    )
+    tallest_attack_pose = max(
+        frame.get_bounding_rect().height for frame in zombie.frames["ATTACK"]
+    )
+
+    assert tallest_attack_pose <= tallest_walk_pose
 
 
 def test_changing_pose_does_not_teleport_the_zombie(zombie):

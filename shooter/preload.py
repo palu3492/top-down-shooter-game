@@ -26,6 +26,7 @@ SPRITES = (
     ("HUD/knife.png", False),
     ("HUD/icons/coin.png", True),
     ("HUD/icons/heart.png", True),
+    ("HUD/icons/bullet.png", True),
     ("HUD/throwables/grenade-hud.png", True),
     ("HUD/throwables/stun-grenade-hud.png", True),
     ("Props/gun_stand.png", True),
@@ -38,6 +39,7 @@ SPRITES = (
     ("Props/rock_ruined.png", True),
     ("Pickups/log.png", True),
     ("Pickups/rock.png", True),
+    ("Pickups/cloth.png", True),
     ("Power Ups/instakill.png", False),
     ("Power Ups/Nuke.png", False),
     ("Power Ups/MaxAmmo.png", False),
@@ -69,11 +71,17 @@ def preload():
     load_image(MENU_ART)
     load_image(BACKGROUND_TILE)
 
-    for animations in player.ANIMATIONS.values():
+    for animations in player.WEAPON_ANIMATIONS.values():
         for directory, prefix, count in animations.values():
             load_animation(directory, prefix, count, config.PLAYER_SCALE, True)
 
-    for directory, prefix, count in zombie.ANIMATIONS.values():
-        load_animation(directory, prefix, count, config.ZOMBIE_SCALE, True)
+    for name, (directory, prefix, count) in zombie.ANIMATIONS.items():
+        load_animation(
+            directory,
+            prefix,
+            count,
+            config.ZOMBIE_SCALE * zombie.ANIMATION_SCALE[name],
+            True,
+        )
 
     load_sized(ZOMBIE_STILL, *config.ZOMBIE_SIZE, True)

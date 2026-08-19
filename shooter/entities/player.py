@@ -4,11 +4,14 @@ from shooter.assets import load_animation
 
 from shooter import config
 
-ANIMATIONS = {
+KNIFE_ATTACK_FPS = 12
+IDLE_ANIMATION_FPS = 30
+
+WEAPON_ANIMATIONS = {
     "knife": {
         "IDLE": ("Player Animations/Idle Knife", "survivor-idle_knife_", 20),
         "MOVE": ("Player Animations/Move Knife", "survivor-move_knife_", 20),
-        "SHOOT": ("Player Animations/Attack Knife", "survivor-attack_knife_", 3),
+        "SHOOT": ("Player Animations/Attack Knife", "survivor-attack_knife_", 5),
     },
     **{
         weapon: {
@@ -32,6 +35,10 @@ ANIMATIONS = {
     },
 }
 
+# Keep the original, flat animation manifest available to asset validation and
+# callers that only need the player's default (knife) animation set.
+ANIMATIONS = WEAPON_ANIMATIONS["knife"]
+
 
 class Human(pygame.sprite.Sprite):
     def __init__(self, window_size):
@@ -40,15 +47,18 @@ class Human(pygame.sprite.Sprite):
         self.current_idle = 0
         self.current_move = 0
         self.current_shoot = 0
+        self.attack_frames_remaining = 0
         self.health = config.PLAYER_HEALTH
         self.animation_clock = 0.0
         self.frame = 0
         self.animation_sets = {
             weapon: {
-                name: load_animation(directory, prefix, count, config.PLAYER_SCALE, True)
+                name: load_animation(
+                    directory, prefix, count, config.PLAYER_SCALE, True
+                )
                 for name, (directory, prefix, count) in animations.items()
             }
-            for weapon, animations in ANIMATIONS.items()
+            for weapon, animations in WEAPON_ANIMATIONS.items()
         }
         self.weapon_id = "knife"
         self.frames = self.animation_sets[self.weapon_id]
@@ -72,8 +82,21 @@ class Human(pygame.sprite.Sprite):
         if weapon_id is not None and weapon_id != self.weapon_id:
             self.weapon_id = weapon_id
             self.frames = self.animation_sets[weapon_id]
-        self.type = type
-        self.animation_clock += dt * config.ANIMATION_FPS
+            self.attack_frames_remaining = 0
+        if type == "SHOOT" and self.attack_frames_remaining == 0:
+            self.current_shoot = 0
+            self.frame = 0
+            self.animation_clock = 0.0
+            self.attack_frames_remaining = len(self.frames["SHOOT"]) - 1
+        self.type = "SHOOT" if self.attack_frames_remaining else type
+        animation_fps = (
+            KNIFE_ATTACK_FPS
+            if self.type == "SHOOT" and self.weapon_id == "knife"
+            else IDLE_ANIMATION_FPS
+            if self.type == "IDLE"
+            else config.ANIMATION_FPS
+        )
+        self.animation_clock += dt * animation_fps
         steps, self.animation_clock = divmod(self.animation_clock, 1)
         for _ in range(int(steps)):
             self._advance()
@@ -96,10 +119,10 @@ class Human(pygame.sprite.Sprite):
                 self.current_move = 0
             frame = self.current_move
         elif type == "SHOOT":
-            if self.current_shoot < 2:
-                self.current_shoot += 1
-            else:
-                self.current_shoot = 0
+            self.current_shoot = min(
+                self.current_shoot + 1, len(self.frames["SHOOT"]) - 1
+            )
+            self.attack_frames_remaining = max(0, self.attack_frames_remaining - 1)
             frame = self.current_shoot
 
         self.frame = frame

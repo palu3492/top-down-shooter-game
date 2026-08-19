@@ -12,7 +12,6 @@ from dataclasses import dataclass
 
 from shooter import items
 from shooter.assets import load_image, load_scaled
-from shooter.entities import shapes
 from shooter.entities.pickups import Pickup
 from shooter.entities.props import Harvestable, Prop, Yield
 
@@ -31,6 +30,7 @@ ROCK_DAMAGE_SPRITES = (
 )
 WOOD_PICKUP_SPRITE = "Pickups/log.png"
 ROCK_PICKUP_SPRITE = "Pickups/rock.png"
+CLOTH_PICKUP_SPRITE = "Pickups/cloth.png"
 
 WOOD = items.register(items.Item("wood", "Wood", items.RESOURCE, stack=25))
 METAL = items.register(items.Item("metal", "Metal", items.RESOURCE, stack=25))
@@ -42,7 +42,7 @@ CLOTH = items.register(items.Item("cloth", "Cloth", items.RESOURCE, stack=25))
 LOOKS = {
     WOOD.id: lambda: load_image(WOOD_PICKUP_SPRITE, True),
     METAL.id: lambda: load_image(ROCK_PICKUP_SPRITE, True),
-    CLOTH.id: shapes.cloth,
+    CLOTH.id: lambda: load_image(CLOTH_PICKUP_SPRITE, True),
 }
 
 # Health is how much is left in a thing; these are what a whole one is worth.
