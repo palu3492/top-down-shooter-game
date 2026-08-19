@@ -15,6 +15,7 @@ additive rather than a rewrite.
 import math
 
 import pygame
+from pytmx import TiledMap
 
 from shooter import config, items
 from shooter.background import TiledBackground
@@ -37,6 +38,8 @@ INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 INSTAKILL_TOP = 40
 RELOADING_TOP = 100
 BACKGROUND = "Backgrounds/grass_tile.png"
+TMX_MAP = "Assets/Maps/world.tmx"
+COLLISION_DEBUG = (255, 0, 255)
 
 # Firing is the left button only. Any `MOUSEBUTTONDOWN` used to do it, so a
 # right-click, a middle-click or either side button emptied the clip -- and `E`
@@ -141,6 +144,23 @@ class Session:
         self.shooting = False
 
         self.background = TiledBackground(BACKGROUND)
+        tmx = TiledMap(TMX_MAP)
+        self.collision_rects = [
+            pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+            for obj in tmx.get_layer_by_name("Collision")
+        ]
+        for obj in tmx.get_layer_by_name("Objects"):
+            if obj.properties.get("solid") is True:
+                self.collision_rects.append(
+                    pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                )
+            print(f"Object: {obj.name}")
+            print(f"x={obj.x}")
+            print(f"y={obj.y}")
+            print(f"width={obj.width}")
+            print(f"height={obj.height}")
+            for name, value in obj.properties.items():
+                print(f"{name}={value}")
         self.human = Human(window)
         self.human_group = pygame.sprite.Group(self.human)
         self.zombies = pygame.sprite.Group()
@@ -450,7 +470,7 @@ class Session:
 
     def _blocked(self, camera_x, camera_y):
         here = self._standing_at(camera_x, camera_y)
-        return any(
+        return any(rect.colliderect(here) for rect in self.collision_rects) or any(
             prop.footprint is not None and prop.footprint.colliderect(here)
             for prop in self.props
         )
@@ -519,6 +539,8 @@ class Session:
         draw_x, draw_y = self._interpolated_camera(alpha)
 
         self.background.draw(screen, -draw_x, -draw_y)
+        for rect in self.collision_rects:
+            pygame.draw.rect(screen, COLLISION_DEBUG, rect.move(draw_x, draw_y), 2)
 
         blit_group(screen, self.dropped, draw_x, draw_y, alpha)
         blit_group(screen, self.props, draw_x, draw_y, alpha)

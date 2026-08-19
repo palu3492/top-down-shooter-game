@@ -256,6 +256,25 @@ def test_a_corner_slides_rather_than_sticking(clearing):
     assert clearing.camera[0] != before[0], "stopped dead instead of sliding"
 
 
+def test_solid_tiled_object_is_solid_and_allows_sliding(clearing):
+    wall = clearing.collision_rects[0]
+    assert wall == pygame.Rect(2354, 330, 121, 132)
+    clearing.props.empty()
+    clearing.camera_x = clearing.window[0] / 2 - wall.centerx
+    clearing.camera_y = clearing.window[1] / 2 - (wall.bottom + 160)
+    clearing.previous_camera = clearing.camera
+    before = clearing.camera
+
+    pressed = dict(IDLE)
+    pressed[pygame.K_w] = True
+    pressed[pygame.K_a] = True
+    for _ in range(60):
+        clearing.step(pressed, config.SIM_DT)
+
+    assert clearing.camera_y - before[1] < config.PLAYER_SPEED
+    assert clearing.camera_x != before[0], "stopped dead instead of sliding"
+
+
 def test_something_already_inside_one_can_walk_out(clearing):
     """A player who ends up in a footprint must not be held there."""
     tree = next(iter(clearing.props))

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="50" tileheight="50" infinite="0" nextlayerid="5" nextobjectid="4">
+ <imagelayer id="2" name="Background">
+  <image source="../Backgrounds/background_0.jpg" width="5000" height="5000"/>
+ </imagelayer>
+ <objectgroup id="3" name="Collision">
+ </objectgroup>
+ <objectgroup id="4" name="Objects">
+  <object id="3" name="rock_001" x="2354.78" y="330.435" width="121.739" height="132.174">
+   <properties>
+    <property name="hp" type="int" value="100"/>
+    <property name="kind" value="destructible"/>
+    <property name="solid" type="bool" value="true"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>
