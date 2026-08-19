@@ -7,7 +7,7 @@ from shooter import config
 KNIFE_ATTACK_FPS = 12
 IDLE_ANIMATION_FPS = 30
 
-ANIMATIONS = {
+WEAPON_ANIMATIONS = {
     "knife": {
         "IDLE": ("Player Animations/Idle Knife", "survivor-idle_knife_", 20),
         "MOVE": ("Player Animations/Move Knife", "survivor-move_knife_", 20),
@@ -35,6 +35,10 @@ ANIMATIONS = {
     },
 }
 
+# Keep the original, flat animation manifest available to asset validation and
+# callers that only need the player's default (knife) animation set.
+ANIMATIONS = WEAPON_ANIMATIONS["knife"]
+
 
 class Human(pygame.sprite.Sprite):
     def __init__(self, window_size):
@@ -54,7 +58,7 @@ class Human(pygame.sprite.Sprite):
                 )
                 for name, (directory, prefix, count) in animations.items()
             }
-            for weapon, animations in ANIMATIONS.items()
+            for weapon, animations in WEAPON_ANIMATIONS.items()
         }
         self.weapon_id = "knife"
         self.frames = self.animation_sets[self.weapon_id]
