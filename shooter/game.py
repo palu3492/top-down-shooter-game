@@ -12,14 +12,14 @@ import pygame
 
 from shooter import config
 from shooter.assets import load_image
-from shooter.gameplay import PAUSE, GameplayScene
+from shooter.gameplay import BACKPACK, PAUSE, GameplayScene
 from shooter.preload import preload
 from shooter.progress import Progress
 from shooter.scenes import SceneStack
 from shooter import session
 from shooter.settings import Settings
 from shooter.systems import levels
-from shooter.ui import dev, menu, settings_screen, title
+from shooter.ui import dev, menu, packfront, settings_screen, title
 from shooter.ui.layout import LayoutOverflowError
 from shooter.viewport import Viewport
 
@@ -123,6 +123,13 @@ def route(action, scenes, window, settings, progress=None):
         return True
     if action == PAUSE:
         open_scene(scenes, menu.PauseScreen(window, scenes.manager))
+    elif action == BACKPACK:
+        # The scene that raised it is the game it belongs to, and it is still
+        # on top at this point -- nothing else can have asked for a backpack.
+        open_scene(
+            scenes,
+            packfront.BackpackScreen(window, scenes.manager, scenes.top.session),
+        )
     elif action == title.MENU:
         # The splash is replaced rather than covered: there is nothing to come
         # back to once the game has been introduced.
