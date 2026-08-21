@@ -382,9 +382,11 @@ Creating an actor must not itself select a random world position.
 The map adapter converts Tiled data into simulation-level map data:
 
 - collision geometry;
+- world boundaries and traversal limits;
 - named regions and navigation data;
 - tagged spawn points;
 - interaction points;
+- authored object placements and destructible-object definitions;
 - map metadata;
 - presentation layers and asset references.
 
@@ -405,9 +407,13 @@ be documented and validated, and may include:
 
 - map identity, display name, version, bounds, and supported modes;
 - visual tile/object layers and collision geometry;
+- explicit world boundaries, playable areas, and out-of-bounds behavior;
 - navigation regions, blockers, costs, or connectivity metadata;
 - tagged spawn points and spawn regions with faction/mode/role constraints;
-- tagged interaction anchors for stations, doors, loot, objectives, or hazards;
+- tagged interaction anchors for gun-buy boxes, stations, doors, loot, objectives,
+  or hazards;
+- destructible object placements with stable definition IDs, initial state, and
+  optional mode-specific tags;
 - named tactical regions and semantic tags such as indoor, outdoor, high ground,
   chokepoint, or restricted;
 - optional camera, audio, lighting, and presentation metadata.
@@ -416,6 +422,13 @@ Not every map must contain every optional element. A map declares its capabiliti
 and a selected mode validates its required elements before the match starts. For
 example, Zombie Survival may require valid survivor and enemy spawn regions while a
 future Team Deathmatch map may require compatible team spawn sets.
+
+The current TMX map is intentionally incomplete and must not be treated as the
+canonical or final schema. Schema adoption is progressive: missing future layers
+such as boundaries, complete collision, destructibles, spawn sets, or gun-buy
+locations are valid during migration unless the selected mode explicitly requires
+them. New semantic object types should extend the neutral map model and adapter,
+not introduce map-specific parsing or gameplay branches.
 
 TMX architecture may change as needed: layer names can be standardized, custom
 properties introduced, legacy objects migrated, tilesets reorganized, and the map
@@ -724,6 +737,8 @@ Work:
 
 - Parse tagged spawn points and regions from map data.
 - Define and validate the common TMX metadata used by spawning and interaction.
+- Add capability-based validation so incomplete maps report missing mode
+  requirements without forcing unrelated optional layers to exist.
 - Introduce spawn queries and constraints for visibility, distance, occupancy,
   collision, faction, and tags.
 - Move random position choice out of `Zombie.__init__`.

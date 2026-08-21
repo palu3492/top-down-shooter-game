@@ -13,6 +13,7 @@ import pygame
 from shooter import config
 from shooter.assets import load_image
 from shooter.gameplay import PAUSE, GameplayScene
+from shooter.input_adapter import PygameInputAdapter
 from shooter.preload import preload
 from shooter.progress import Progress
 from shooter.scenes import SceneStack
@@ -218,12 +219,13 @@ def game_loop():
     accumulator = 0.0
     frame_seconds = 0.0
     running = True
+    input_adapter = PygameInputAdapter()
 
     while running:
         screen = match_resolution(window, scenes) or screen
         pointer = pygame.mouse.get_pos()
-        inputs = Inputs(
-            pygame.key.get_pressed(), pointer, pygame.mouse.get_pressed()[0]
+        inputs = input_adapter.sample(
+            pygame.key.get_pressed(), pointer, window, pygame.mouse.get_pressed()[0]
         )
 
         for event in pygame.event.get():

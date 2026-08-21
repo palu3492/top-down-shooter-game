@@ -24,10 +24,10 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 1 — Characterize the current vertical slice |
+| Migration phase | Phase 2 — Neutral commands, events, and entity IDs |
 | Phase status | In progress |
-| Active work package | M1.6 — Define multi-map fixture contract and close Phase 1 |
-| Application expected to run | Yes; no migration implementation has begun |
+| Active work package | M2.2 — Introduce stable entity IDs and world registration seam |
+| Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 4 — Shared damage pipeline |
 | Last updated | 2026-08-21 |
 
@@ -44,6 +44,9 @@ package.
 - Keep Tiled/TMX map authoring while allowing its schema and runtime adapter to be
   redesigned.
 - Support multiple reusable maps without hardcoded map assumptions.
+- Treat the current TMX map as incomplete; evolve a capability-based schema for
+  boundaries, collision, destructibles, spawn data, gun-buy boxes, and other
+  semantic objects as those mechanics are implemented.
 - Allow mode and compatible-map selection between matches without restarting the
   application.
 
@@ -52,8 +55,8 @@ package.
 | Phase | Description | Status | Evidence / note |
 |---:|---|---|---|
 | 0 | Baseline and decision record | Complete | Baseline, smoke path, behavior classification, and test audit recorded |
-| 1 | Characterize the current vertical slice | In progress | M1.1-M1.5 complete; M1.6 active |
-| 2 | Neutral commands, events, and entity IDs | Not started | — |
+| 1 | Characterize the current vertical slice | Complete | All ten characterization gaps dispositioned and verified |
+| 2 | Neutral commands, events, and entity IDs | In progress | M2.1 complete; M2.2 active |
 | 3 | Authoritative actor state and world position | Not started | — |
 | 4 | Unified health, damage, death, and attribution | Not started | Integration checkpoint 1 |
 | 5 | Weapon operation and inventory integration | Not started | — |
@@ -65,34 +68,36 @@ package.
 
 ## Active Work Package
 
-### M1.6 — Define multi-map fixture contract and close Phase 1
+### M2.2 — Introduce stable entity IDs and world registration seam
 
 **Status:** In progress
 
-**Objective:** Define the smallest reusable Tiled/TMX vocabulary with two synthetic
-maps, then review Phase 1 evidence before command/event/entity work begins.
+**Objective:** Give simulation entities stable match-scoped identities and introduce
+controlled registration/removal without treating pygame sprite identity as the
+durable reference.
 
 **Scope:**
 
-- Add two deliberately different synthetic TMX fixtures using one documented
-  vocabulary for identity, bounds, supported modes, collision, and spawn metadata.
-- Prove both fixtures normalize to the same test-side contract without branching on
-  map identity.
-- Record the contract as input to the later production map adapter.
-- Review all Phase 1 gap dispositions and verification evidence.
+- Define a small immutable entity ID value and deterministic match-scoped allocator.
+- Add a neutral registry with explicit register, lookup, query, and removal paths.
+- Establish a temporary bridge from legacy actors without replacing sprite groups
+  as presentation containers yet.
+- Verify IDs are stable, never silently reused, and isolated between matches.
 
 **Non-goals:**
 
-- Implementing the production map catalog or adapter before its migration phase.
-- Migrating the current world map.
-- Building map-selection UI.
+- Replacing every pygame group or extracting actor components, which belongs to
+  Phase 3.
+- The domain-event queue, which follows in M2.3.
+- Networking, prediction, reconciliation, or a generic event bus.
+- Migrating every legacy control in one change.
 
 **Acceptance criteria:**
 
-- [ ] Two synthetic TMX fixtures use the same semantic vocabulary.
-- [ ] Both normalize to the same neutral test contract without map-specific code.
-- [ ] Map requirements and optional elements are explicit.
-- [ ] Phase 1 evidence is reviewed and Phase 2 can begin.
+- [ ] IDs are pygame-independent primitive values scoped to one match.
+- [ ] Registration and removal are explicit and testable without rendering.
+- [ ] Removed IDs are not silently reused during a match.
+- [ ] Two registries do not share allocation or entity state.
 
 **Verification evidence:**
 
@@ -117,7 +122,26 @@ Pending.
 | M1.3 | Characterize pause through authoritative state | Complete | CHAR-003 |
 | M1.4 | Characterize Survival wave/preparation transition | Complete | CHAR-004 |
 | M1.5 | Characterize command and match-lifecycle edge cases | Complete | CHAR-006 through CHAR-009 |
-| M1.6 | Define multi-map fixture contract and close Phase 1 | In progress | CHAR-010 |
+| M1.6 | Define multi-map fixture contract and close Phase 1 | Complete | CHAR-010 |
+
+## Phase 2 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M2.1 | Define neutral command values and input adapter | Complete | Phase 1 |
+| M2.2 | Introduce stable entity IDs and world registration seam | In progress | M2.1 |
+| M2.3 | Define lifecycle/combat events and a small event queue | Not started | M2.2 |
+| M2.4 | Route essential controls and mode requests through commands | Not started | M2.1, M2.3 |
+| M2.5 | Verify Phase 2 boundaries and retire temporary polling paths | Not started | M2.4 |
+
+## Phase 1 Exit Review
+
+- [x] Combat consequences and removal causes have behavioral coverage.
+- [x] Pause and Survival transitions are driven through authoritative state.
+- [x] Random-dependent mechanics expose reproducible injected sources.
+- [x] Match lifecycle and weapon-operation boundaries have regression coverage.
+- [x] Two different TMX fixtures normalize without map-identity branches.
+- [x] The full suite adds no failures beyond the 34 recorded legacy failures.
 
 ## Phase 0 Exit Review
 
@@ -145,6 +169,8 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M1.1 | 875 passed, 35 failed in 64.07s | Six new harness tests pass; failure set matches recorded baseline |
 | 2026-08-21 | `uv run pytest` after M1.3 | 881 passed, 34 failed in 35.10s | Nine combat/pause tests pass; obsolete BASE-004 test removed; remaining failures match recorded categories |
 | 2026-08-21 | `uv run pytest` after M1.4 | 886 passed, 34 failed in 33.16s | Five Survival transition tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M1.6 | 894 passed, 34 failed in 39.45s | Four map-contract cases and M1.5 coverage pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M2.1 | 898 passed, 34 failed in 42.61s | Four command/input-adapter tests pass; failure categories remain unchanged |
 
 ### Static checks
 
@@ -201,6 +227,8 @@ behavior, not merely a legacy class or file.
   collision implementation or exact current TMX object types.
 - Tiled/TMX map authoring, with map collision and semantic metadata adapted into a
   neutral runtime model.
+- Progressive map authoring: incomplete maps remain loadable, while each mode
+  validates only the capabilities it requires before match creation.
 - Match-scoped state isolation: a new match does not inherit actors, health,
   inventory, cash, timers, projectiles, or outcomes from a prior match.
 - Mode-owned outcomes and match summaries exposed to the application shell.
@@ -233,6 +261,9 @@ behavior, not merely a legacy class or file.
 - Replace hardcoded `world_1.tmx`, coordinates, world size, shops, and spawn
   assumptions with a map catalog, validated shared TMX schema, and explicit match
   configuration.
+- Extend TMX semantics through neutral definitions for boundaries, collision,
+  destructibles, spawn points/regions, gun-buy boxes, and later authored objects;
+  never infer the final schema from today's incomplete map.
 - Replace the current one-route start flow with runtime mode and compatible-map
   selection between fresh matches.
 - Move cash, grenade counts, health, ammunition, and other model state out of UI
@@ -385,8 +416,10 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M1.3 authoritative pause characterization | Three pause tests pass; accumulator seam extracted; obsolete animation-count test removed |
 | 2026-08-21 | Completed M1.4 Survival transition characterization | Five field-clear/timer/skip/next-wave tests pass; hidden pygame key polling removed |
 | 2026-08-21 | Completed M1.5 command/lifecycle characterization | Four target, weapon-state, session-isolation, and outcome tests pass; focused Ruff passes |
+| 2026-08-21 | Completed M1.6 and Phase 1 | Two synthetic TMX maps pass four neutral contract cases; full suite has only 34 recorded legacy failures |
+| 2026-08-21 | Completed M2.1 neutral command boundary | Immutable primitive-only controls/actions, pygame adapter, gameplay movement, and reload path verified |
 
 ## Next Action
 
-Begin M1.6 by defining two synthetic TMX fixtures and one neutral test-side map
-contract, then close Phase 1 if its evidence is complete.
+Begin M2.2 with a deterministic match-scoped entity ID allocator and neutral world
+registry, then bridge the first legacy actors without making sprites authoritative.

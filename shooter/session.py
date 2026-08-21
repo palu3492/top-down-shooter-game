@@ -16,7 +16,7 @@ import math
 
 import pygame
 
-from shooter import config, items
+from shooter import commands, config, items
 from shooter.background import TiledBackground
 from shooter.collision import load_obstacles
 from shooter.entities import powerups as powerup_kinds
@@ -249,6 +249,37 @@ class Session:
         elif event.type == pygame.KEYDOWN:
             self._key(event.key)
 
+    def apply_action(self, command):
+        """Apply discrete player intent without exposing pygame to the caller."""
+        if self.shopping:
+            if command.action == commands.INTERACT:
+                self.shopping = False
+            elif command.action == commands.SELECT_SLOT and command.value is not None:
+                line = command.value
+                if line < len(shop.STOCK):
+                    self.shop_says = shop.buy(
+                        shop.STOCK[line], self.cash, self.carried
+                    )
+            return
+        if command.action == commands.FIRE:
+            self._shoot()
+        elif command.action == commands.INTERACT:
+            self._interact()
+        elif command.action == commands.SKIP_PHASE:
+            request_skip = getattr(self.rules, "request_skip", None)
+            if request_skip is not None:
+                request_skip()
+        elif command.action == commands.USE_GRENADE:
+            self._key(pygame.K_g)
+        elif command.action == commands.USE_STUN_GRENADE:
+            self._key(pygame.K_f)
+        elif command.action == commands.RELOAD:
+            self.equipped.manual_reload()
+        elif command.action == commands.SELECT_SLOT and command.value is not None:
+            self._equip(command.value)
+        elif command.action == commands.GRANT_ALL and config.DEV_TOOLS:
+            self._grant_everything()
+
     @property
     def ammo_count(self):
         """Why the weapon in hand cannot be fired, or `None`.
@@ -403,7 +434,17 @@ class Session:
     def step(self, pressed, dt=config.SIM_DT, trigger=False):
         if self.human.alive():
             self._walk(pressed, dt)
+        self._step_after_movement(dt, trigger)
 
+    def step_controls(self, controls, dt=config.SIM_DT):
+        """Advance from neutral continuous intent during the migration seam."""
+        self.aim = controls.aim
+        if self.human.alive():
+            self.change_x = -controls.move[0] * config.PLAYER_SPEED * dt
+            self.change_y = -controls.move[1] * config.PLAYER_SPEED * dt
+        self._step_after_movement(dt, controls.trigger_held)
+
+    def _step_after_movement(self, dt, trigger):
         self.previous_camera = self.camera
         self._advance_camera()
 

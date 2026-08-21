@@ -17,6 +17,7 @@ veil, which is the ghost AT21 removed.
 import pygame
 
 from shooter import config
+from shooter.input_adapter import PygameInputAdapter
 from shooter.scenes import Scene
 from shooter.session import Session
 
@@ -32,6 +33,7 @@ class GameplayScene(Scene):
         super().__init__(window, manager)
         self.session = Session(window) if rules is None else Session(window, rules)
         self.reported = False
+        self.input_adapter = PygameInputAdapter()
 
     def open(self):
         """Nothing to build: the session is the scene, and it outlives being
@@ -43,10 +45,15 @@ class GameplayScene(Scene):
     def handle(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             return PAUSE
-        self.session.handle(event)
+        command = self.input_adapter.action_for(event)
+        if command is not None:
+            self.session.apply_action(command)
         return None
 
     def update(self, inputs, dt=config.SIM_DT):
+        if hasattr(inputs, "move"):
+            self.session.step_controls(inputs, dt)
+            return
         self.session.aim_at(inputs.pointer)
         self.session.step(inputs.pressed, dt, inputs.trigger)
 
