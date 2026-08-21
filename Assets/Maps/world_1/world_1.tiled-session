@@ -8,12 +8,15 @@
             "scaleInDock": 1
         },
         "world_1.tmx": {
-            "scale": 0.6129,
-            "selectedLayer": 1,
+            "scale": 0.1434,
+            "selectedLayer": 4,
             "viewCenter": {
-                "x": 3175.0693424702235,
-                "y": 916.9521944852343
+                "x": 4567.642956764295,
+                "y": 4023.7099023709898
             }
+        },
+        "world_1.tmx#vehicles": {
+            "scaleInDock": 1
         }
     },
     "map.height": 10,
