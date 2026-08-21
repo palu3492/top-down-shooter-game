@@ -312,8 +312,11 @@ class Gun(Held):
     written eleven times without anyone noticing it was the same number.
     """
 
-    def __init__(self, which=M16):
+    def __init__(self, which=M16, rng=None):
         super().__init__(which if isinstance(which, Weapon) else weapon(_id_of(which)))
+        # Match-owned randomness will replace this legacy default. Injection now
+        # lets characterization tests reproduce spread without seeding globals.
+        self.rng = random if rng is None else rng
         self.loaded = self.weapon.clip
         self.reserve = self.weapon.reserve
         self.locked_for = 0.0
@@ -355,7 +358,7 @@ class Gun(Held):
         if not self.weapon.spread:
             return aim
         half = math.radians(self.weapon.spread) / 2
-        angle = math.atan2(aim[1], aim[0]) + random.uniform(-half, half)
+        angle = math.atan2(aim[1], aim[0]) + self.rng.uniform(-half, half)
         reach = math.hypot(*aim)
         return (math.cos(angle) * reach, math.sin(angle) * reach)
 

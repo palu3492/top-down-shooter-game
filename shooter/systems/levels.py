@@ -12,8 +12,6 @@ can be a step up rather than four per cent harder than the second.
 from dataclasses import dataclass
 from functools import partial
 
-import pygame
-
 from shooter import config
 from shooter.entities.zombie import Zombie
 from shooter.session import WON
@@ -99,6 +97,8 @@ class LevelRules(WaveSystem):
         if self.outcome is not None:
             return
 
+        if self._consume_skip():
+            self.wave_seconds = config.WAVE_INTERVAL_SECONDS
         if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.cleared += 1
             self.wave_count = self.cleared
@@ -113,9 +113,6 @@ class LevelRules(WaveSystem):
                 )
         else:
             self.wave_seconds += dt
-
-        if pygame.key.get_pressed()[pygame.K_SPACE]:
-            self.wave_seconds = config.WAVE_INTERVAL_SECONDS
 
     def _spawn(self, window, zombie_group, player_cash, visible, count):
         if not config.ZOMBIE_SPAWNING_ENABLED:

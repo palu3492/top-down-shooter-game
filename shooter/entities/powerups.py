@@ -44,7 +44,7 @@ class PowerUps(Interpolated, pygame.sprite.Sprite):
         self.spawning_location()
 
     def select_powerup(self):
-        self.powerup_selected = random.randint(INSTAKILL, MAX_HEALTH)
+        self.powerup_selected = self.rng.randint(INSTAKILL, MAX_HEALTH)
         if self.powerup_selected == 1:
             self.instakill()
         elif self.powerup_selected == 2:
@@ -80,7 +80,8 @@ class PowerUps(Interpolated, pygame.sprite.Sprite):
             return self.powerup_selected
         return self.tick(dt)
 
-    def __init__(self):
+    def __init__(self, rng=None):
+        self.rng = random if rng is None else rng
         pygame.sprite.Sprite.__init__(self)
         self.powerup_selected = 0
         self.alive_seconds = 0.0

@@ -282,7 +282,11 @@ class Session:
         if key == INTERACT:
             self._interact()
             return
-        if key == pygame.K_g and self.grenade_data.grenade_amount > 0:
+        if key == pygame.K_SPACE:
+            request_skip = getattr(self.rules, "request_skip", None)
+            if request_skip is not None:
+                request_skip()
+        elif key == pygame.K_g and self.grenade_data.grenade_amount > 0:
             self.grenades.add(Grenade(*self._muzzle(), *self.aim))
             self.grenade_data.grenade_amount -= 1
         elif key == pygame.K_f and self.grenade_data.stun_grenade_amount > 0:

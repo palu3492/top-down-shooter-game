@@ -112,13 +112,17 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
     # What it drops is looked up by this. One kind today; a table, not a branch.
     kind = "walker"
 
-    def __init__(self, window_size, cash, visible=None):
+    def __init__(self, window_size, cash, visible=None, rng=None):
         self.player_cash = cash
+        # Test-owned and, later, match-owned randomness can be supplied without
+        # changing legacy callers. The module remains the default until Match owns
+        # a seeded source in the new architecture.
+        self.rng = random if rng is None else rng
         pygame.sprite.Sprite.__init__(self)
         self.zombie_x = self.zombie_y = 0
         self.type = "MOVE"
         self.current_idle = self.current_move = self.current_attack = 0
-        self.pace = random.uniform(1 - PACE_SPREAD, 1 + PACE_SPREAD)
+        self.pace = self.rng.uniform(1 - PACE_SPREAD, 1 + PACE_SPREAD)
         self.zombie_speed = self.walking_speed
         self.stun_seconds = 0.0
         self.animation_clock = 0.0
@@ -156,18 +160,22 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         """
         area = self.spawn_area(visible)
         margin = spawn_margin(self.walking_speed)
-        side = random.randint(1, 4)
+        side = self.rng.randint(1, 4)
         if side == 1:
-            self.set_position(random.randint(area.left, area.right), area.top - margin)
+            self.set_position(
+                self.rng.randint(area.left, area.right), area.top - margin
+            )
         elif side == 2:
             self.set_position(
-                random.randint(area.left, area.right), area.bottom + margin
+                self.rng.randint(area.left, area.right), area.bottom + margin
             )
         elif side == 3:
-            self.set_position(area.left - margin, random.randint(area.top, area.bottom))
+            self.set_position(
+                area.left - margin, self.rng.randint(area.top, area.bottom)
+            )
         else:
             self.set_position(
-                area.right + margin, random.randint(area.top, area.bottom)
+                area.right + margin, self.rng.randint(area.top, area.bottom)
             )
 
     def spawn_area(self, visible):

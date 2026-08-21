@@ -26,6 +26,7 @@ class WaveSystem:
     def __init__(self, window, zombie_group, player_cash, visible=None):
         self.wave_count = 0
         self.wave_seconds = 0.0
+        self._skip_requested = False
         if config.ZOMBIE_SPAWNING_ENABLED:
             for _ in range(config.WAVE_BASE):
                 zombie_group.add(Zombie(window, player_cash, visible))
@@ -34,6 +35,8 @@ class WaveSystem:
         self, window, zombie_group, player_cash, dt=config.SIM_DT, visible=None
     ):
         """Move the between-wave timer forward and spawn when it elapses."""
+        if self._consume_skip():
+            self.wave_seconds = config.WAVE_INTERVAL_SECONDS
         if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.wave_count += 1
             if config.ZOMBIE_SPAWNING_ENABLED:
@@ -43,8 +46,17 @@ class WaveSystem:
         else:
             self.wave_seconds += dt
 
-        if pygame.key.get_pressed()[pygame.K_SPACE]:
-            self.wave_seconds = config.WAVE_INTERVAL_SECONDS
+    def request_skip(self):
+        """Request that the next rules step finish preparation.
+
+        Input adapters call this explicitly; rules do not poll pygame state.
+        """
+        self._skip_requested = True
+
+    def _consume_skip(self):
+        requested = getattr(self, "_skip_requested", False)
+        self._skip_requested = False
+        return requested
 
     def draw(self, screen, window=config.WINDOW):
         """The banner is centred on the window rather than pinned at x=300,

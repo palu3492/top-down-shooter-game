@@ -113,6 +113,21 @@ def show_loading(screen):
     pygame.display.update()
 
 
+def advance_simulation(scenes, inputs, accumulator, dt=config.SIM_DT):
+    """Spend accumulated wall time on authoritative fixed simulation steps.
+
+    A non-simulating scene means pause. Discard its accumulated wall time rather
+    than banking it for resume. Kept as one small seam so pause can be
+    characterized without counting animation calls or rendered frames.
+    """
+    if not scenes.simulates:
+        return 0.0
+    while accumulator >= dt:
+        accumulator -= dt
+        scenes.update(inputs, dt)
+    return accumulator
+
+
 def route(action, scenes, window, settings, progress=None):
     """Turn a scene's action into a move on the stack. False means quit.
 
@@ -233,14 +248,7 @@ def game_loop():
             and running
         )
 
-        if scenes.simulates:
-            while accumulator >= config.SIM_DT:
-                accumulator -= config.SIM_DT
-                scenes.update(inputs, config.SIM_DT)
-        else:
-            # Time must not bank while a menu is up, or resuming would apply
-            # the whole pause in a single step.
-            accumulator = 0.0
+        accumulator = advance_simulation(scenes, inputs, accumulator)
 
         scenes.draw(screen, accumulator / config.SIM_DT)
 

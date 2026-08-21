@@ -1,4 +1,6 @@
 import os
+import random
+from types import SimpleNamespace
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -17,6 +19,16 @@ class RecordingCash:
 
     def increase_cash(self, amount):
         self.received.append(amount)
+
+
+class PressedKeys:
+    """The pygame key-state behavior simulation code actually consumes."""
+
+    def __init__(self, pressed=()):
+        self.pressed = frozenset(pressed)
+
+    def __getitem__(self, key):
+        return key in self.pressed
 
 
 @pytest.fixture(scope="session")
@@ -103,3 +115,34 @@ def cash_factory(make_cash):
 @pytest.fixture
 def cash(make_cash):
     return make_cash()
+
+
+@pytest.fixture
+def input_frame():
+    """Build a renderer-independent sample of the current gameplay inputs."""
+
+    def make(*pressed, pointer=(0, 0), trigger=False):
+        return SimpleNamespace(
+            pressed=PressedKeys(pressed), pointer=pointer, trigger=trigger
+        )
+
+    return make
+
+
+@pytest.fixture
+def advance_steps():
+    """Advance a callable by an exact number of fixed simulation steps."""
+
+    def advance(step, count, dt=config.SIM_DT):
+        for _ in range(count):
+            step(dt)
+        return count * dt
+
+    return advance
+
+
+@pytest.fixture
+def seeded_rng():
+    """Build isolated random sources without changing module-global state."""
+
+    return random.Random

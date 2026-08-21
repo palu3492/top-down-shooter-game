@@ -27,12 +27,9 @@ def fingerprint(*values):
 
 def simulate(steps, cash):
     """Run a fixed number of simulation steps and fingerprint the result."""
-    # Each zombie walks at its own pace, drawn when it is built, so two runs
-    # only compare if they are built from the same point in the sequence. The
-    # property under test is that the *step count* decides the outcome, not
-    # that a zombie is identical to every other zombie.
-    random.seed(20190101)
-    zombie = Zombie(config.WINDOW, cash)
+    # Each run owns the same seeded source. Reproducibility must not depend on
+    # resetting module-global random state that unrelated systems also consume.
+    zombie = Zombie(config.WINDOW, cash, rng=random.Random(20190101))
     zombie.set_position(2500, 2500)
     zombie.move_position(0, 0)
     human = Human(config.WINDOW)

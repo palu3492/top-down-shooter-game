@@ -8,7 +8,6 @@ import pygame_gui
 import pytest
 
 from shooter import config, game
-from shooter import session
 from shooter.ui import menu
 from shooter.ui.settings_screen import SettingsScreen
 from shooter.ui.dev import DevScreen
@@ -223,20 +222,3 @@ def test_escape_then_quit_leaves_the_game(straight_to_game, monkeypatch):
     game.game_loop()
 
     assert pygame.display.get_init() is False
-
-
-def test_the_world_stops_while_a_screen_is_open(straight_to_game, monkeypatch):
-    ticks = []
-    real = session.Human.update_anim
-
-    def counting(self, kind, dt=config.SIM_DT, weapon_id=None):
-        ticks.append(kind)
-        return real(self, kind, dt, weapon_id)
-
-    monkeypatch.setattr(session.Human, "update_anim", counting)
-    frames = drive(press(pygame.K_ESCAPE, pygame.K_ESCAPE), monkeypatch)
-
-    with pytest.raises(LoopRanAwayError):
-        game.game_loop()
-
-    assert len(ticks) < frames["n"]
