@@ -24,6 +24,7 @@ IDLE = dict.fromkeys(range(512), False)
 def game(display):
     made = Session(Viewport(WINDOW))
     made.zombies.empty()
+    made.props.add(*world.build(world.STARTER))
     return made
 
 
@@ -60,6 +61,7 @@ class OneTree:
 def clearing(display):
     made = Session(Viewport(WINDOW), rules=OneTree)
     made.zombies.empty()
+    made.props.add(*world.build(ALONE))
     return made
 
 
@@ -256,9 +258,9 @@ def test_a_corner_slides_rather_than_sticking(clearing):
     assert clearing.camera[0] != before[0], "stopped dead instead of sliding"
 
 
-def test_solid_tiled_object_is_solid_and_allows_sliding(clearing):
-    wall = clearing.collision_rects[0]
-    assert wall == pygame.Rect(2354, 330, 121, 132)
+def test_tiled_collision_rect_is_solid_and_allows_sliding(clearing):
+    wall = pygame.Rect(2354, 330, 121, 132)
+    clearing.collision_rects.append(wall)
     clearing.props.empty()
     clearing.camera_x = clearing.window[0] / 2 - wall.centerx
     clearing.camera_y = clearing.window[1] / 2 - (wall.bottom + 160)
@@ -313,12 +315,8 @@ def test_the_footprint_does_not_follow_the_aim(game):
 # ----------------------------------------------------------------------
 
 
-def test_what_stands_in_a_game_comes_from_its_rules(game):
-    placed = [(one.kind, one.at) for one in world.STARTER]
-    standing = [(prop.prop_x, prop.prop_y) for prop in game.props]
-
-    assert len(standing) == len(placed)
-    assert set(standing) == {one.at for one in world.STARTER}
+def test_a_session_does_not_spawn_the_rules_layout(display):
+    assert len(Session(Viewport(WINDOW)).props) == 0
 
 
 def test_a_mode_that_declares_nothing_has_an_empty_world(display):
@@ -328,14 +326,13 @@ def test_a_mode_that_declares_nothing_has_an_empty_world(display):
     assert len(Session(Viewport(WINDOW), rules=Bare).props) == 0
 
 
-def test_a_level_says_what_stands_in_it(display):
+def test_a_level_layout_is_not_spawned_by_the_session(display):
     mine = (world.Standing(world.ROCK, (400, 400)),)
     level = LEVELS[0].__class__(number=9, waves=1, opening=1, growth=1, props=mine)
 
     made = Session(Viewport(WINDOW), rules=rules_for(level))
 
-    assert len(made.props) == 1
-    assert next(iter(made.props)).label == "MINE"
+    assert len(made.props) == 0
 
 
 def test_every_authored_level_has_a_world(display):

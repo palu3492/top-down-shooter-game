@@ -1,10 +1,9 @@
 """Reading every asset before play, so nothing reads one during it.
 
 Loading is lazy and cached, which is the right default and the wrong thing to
-discover mid-frame. Two costs were measured before this existed: the world
-background is 5000x5000 and took 180ms *per session* because it bypassed the
-cache entirely, and eight sprites -- the HUD panels, projectiles and effects --
-were first read while the player was already moving.
+discover mid-frame. The large world background is especially important to pay
+for before play, and sprites first read while the player is already moving
+would otherwise cause visible hitches.
 
 The manifest is deliberately explicit rather than a walk of the assets
 directory: 14MB of the 19MB on disk is backgrounds this mode never shows, and
@@ -14,6 +13,7 @@ what keeps the list honest -- it fails if anything reaches disk during play.
 
 from shooter import config
 from shooter.assets import load_animation, load_image, load_scaled, load_sized
+from shooter.background import load_tiled_map
 from shooter.entities import player, zombie
 
 SPRITES = (
@@ -51,7 +51,7 @@ SPRITES = (
     ("Effects/stunexplosion.png", True),
 )
 
-BACKGROUND_TILE = "Backgrounds/grass_tile.png"
+TMX_MAP = "Maps/world_1/world_1.tmx"
 MENU_ART = "Backgrounds/menu_pixel.png"
 
 ZOMBIE_STILL = "Zombie Animations/zombie_idle/skeleton-idle_0.png"
@@ -69,11 +69,9 @@ def preload():
     load_scaled("Props/rock_ruined.png", 1.30, True)
 
     load_image(MENU_ART)
-    load_image(BACKGROUND_TILE)
+    load_tiled_map(TMX_MAP)
 
-    for animations in player.WEAPON_ANIMATIONS.values():
-        for directory, prefix, count in animations.values():
-            load_animation(directory, prefix, count, config.PLAYER_SCALE, True)
+    load_scaled(player.PLAYER_IMAGE, config.PLAYER_SCALE, True)
 
     for name, (directory, prefix, count) in zombie.ANIMATIONS.items():
         load_animation(

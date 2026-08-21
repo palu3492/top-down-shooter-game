@@ -1,0 +1,32 @@
+{
+    "activeFile": "world_1.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1
+        },
+        "world_1.tmx": {
+            "scale": 0.6129,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 3175.0693424702235,
+                "y": 916.9521944852343
+            }
+        }
+    },
+    "map.height": 10,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 1000,
+    "map.tileWidth": 1000,
+    "map.width": 10,
+    "openFiles": [
+        "world_1.tmx"
+    ],
+    "project": "world_1.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "world_1.tmx"
+    ]
+}

@@ -35,7 +35,9 @@ def carried():
 
 @pytest.fixture
 def game(display):
-    return Session(Viewport(WINDOW))
+    made = Session(Viewport(WINDOW))
+    made.props.add(world.make(world.Standing(world.STAND, (1350, 620))))
+    return made
 
 
 def the_stand(session):

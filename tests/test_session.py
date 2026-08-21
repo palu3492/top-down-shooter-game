@@ -120,12 +120,20 @@ def test_walking_away_breaks_a_zombie_attack(session):
 
 
 def test_walking_into_the_world_edge_does_nothing(session):
+    session.camera_x = 0
     pressed = pressed_nothing()
     pressed[pygame.K_a] = True
 
     session.step(pressed, config.SIM_DT)
 
     assert session.camera_x == 0
+
+
+def test_player_starts_at_the_exact_centre_of_the_tiled_world(session):
+    assert session._muzzle() == (
+        session.world_size[0] / 2,
+        session.world_size[1] / 2,
+    )
 
 
 def test_the_camera_is_clamped_to_the_world(session):

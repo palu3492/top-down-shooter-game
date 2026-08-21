@@ -1,0 +1,8 @@
+Use case: style-transfer
+Asset type: native-resolution overlapping regional artwork for a 10,000 x 10,000 top-down game world
+Input image: macro-layout reference only, not a texture to upscale
+Primary request: completely repaint and re-render each region from scratch as production-quality high-resolution game art. Preserve only large-scale topology needed to join the world: roads, paths, shorelines, cliffs, walls, fences, bridges, major building footprints and landmarks. Invent genuinely new fine-scale information everywhere.
+Required detail: resolved natural ground materials, asphalt aggregate and cracks, potholes, concrete seams, chipped paint, roof construction, bolts, masonry, drains, leaves, gravel, weeds, varied grass and shrubs, realistic rocks and bark, water ripples, debris, litter, tire wear, contact shadows and ambient occlusion. Every square meter must contain plausible native detail.
+Style: premium realistic top-down survival-game environment art, crisp material separation, dense high-frequency detail, physically believable wear, orthographic camera
+Lighting: neutral overcast daylight with consistent color temperature and soft shadows
+Avoid: blurry enlarged pixels, painted-over upscaling, soft smears, low-frequency texture, labels, UI, grid, borders, watermark, characters, perspective tilt. Do not merely sharpen or upscale.

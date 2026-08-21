@@ -121,15 +121,13 @@ def test_a_wave_arrives_at_the_same_time(window, cash, display, cash_factory, ra
 
 
 @pytest.mark.parametrize("rate", RATES)
-def test_the_animation_advances_at_the_same_rate(window, rate):
+def test_the_player_image_stays_fixed_at_every_frame_rate(window, rate):
     human = Human(window)
-    human.update_anim("MOVE", 0)
-    start = human.frame
+    still = human.image
 
     run_for(0.1, rate, lambda dt: human.update_anim("MOVE", dt))
 
-    expected = int(0.1 * config.ANIMATION_FPS)
-    assert (human.frame - start) % 20 == pytest.approx(expected % 20, abs=1)
+    assert human.image is still
 
 
 def test_a_stalled_frame_cannot_teleport_anything():

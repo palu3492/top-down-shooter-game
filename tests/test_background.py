@@ -1,61 +1,96 @@
+from types import SimpleNamespace
+
 import pygame
 
 from shooter.background import TiledBackground
 
 
+class ImageLayer:
+    def __init__(self, image, offsetx=0, offsety=0):
+        self.image = image
+        self.offsetx = offsetx
+        self.offsety = offsety
+
+
+class ImageObject:
+    def __init__(self, image, x, y, height):
+        self.image = image
+        self.x = x
+        self.y = y
+        self.height = height
+
+
+class ObjectLayer(list):
+    def __init__(self, objects, offsetx=0, offsety=0):
+        super().__init__(objects)
+        self.offsetx = offsetx
+        self.offsety = offsety
+
+
 class RecordingScreen:
-    def __init__(self, size):
-        self.size = size
+    def __init__(self):
         self.blits = []
-
-    def get_width(self):
-        return self.size[0]
-
-    def get_height(self):
-        return self.size[1]
 
     def blit(self, image, at):
         self.blits.append((image, at))
 
 
-def background(monkeypatch, size=(64, 48)):
-    tile = pygame.Surface(size)
-    monkeypatch.setattr("shooter.background.load_image", lambda _: tile)
-    return TiledBackground("tile.png"), tile
+def background(monkeypatch):
+    image = pygame.Surface((100, 80))
+    tiled_map = SimpleNamespace(
+        visible_layers=[ImageLayer(image, 12, 18)],
+        width=10,
+        height=8,
+        tilewidth=10,
+        tileheight=10,
+    )
+    monkeypatch.setattr("shooter.background.TiledImageLayer", ImageLayer)
+    monkeypatch.setattr("shooter.background.load_tiled_map", lambda _: tiled_map)
+    return TiledBackground("Maps/test/gas_station.tmx"), image
 
 
-def test_tiles_cover_a_window_larger_than_the_texture(monkeypatch):
-    ground, tile = background(monkeypatch)
-    screen = RecordingScreen((150, 110))
+def test_draws_the_background_authored_in_tiled(monkeypatch):
+    ground, _image = background(monkeypatch)
+    screen = RecordingScreen()
 
     ground.draw(screen, 0, 0)
 
-    assert [at for image, at in screen.blits if image is tile] == [
-        (0, 0),
-        (64, 0),
-        (128, 0),
-        (0, 48),
-        (64, 48),
-        (128, 48),
-        (0, 96),
-        (64, 96),
-        (128, 96),
-    ]
+    assert screen.blits[0][0].get_size() == (100, 80)
+    assert screen.blits[0][1] == (12, 18)
 
 
-def test_tile_origin_wraps_with_positive_world_coordinates(monkeypatch):
+def test_tiled_background_uses_the_camera_offset(monkeypatch):
     ground, _ = background(monkeypatch)
-    screen = RecordingScreen((100, 80))
+    screen = RecordingScreen()
 
-    ground.draw(screen, 70, 53)
+    ground.draw(screen, -400, -250)
 
-    assert screen.blits[0][1] == (-6, -5)
+    assert screen.blits[0][1] == (-388, -232)
 
 
-def test_tile_origin_wraps_with_negative_world_coordinates(monkeypatch):
+def test_world_size_comes_from_the_tiled_map(monkeypatch):
     ground, _ = background(monkeypatch)
-    screen = RecordingScreen((100, 80))
 
-    ground.draw(screen, -5, -7)
+    assert ground.size == (100, 80)
 
-    assert screen.blits[0][1] == (-59, -41)
+
+def test_draws_visible_tiled_image_objects_at_authored_position(monkeypatch):
+    backdrop = pygame.Surface((100, 80))
+    vehicle = pygame.Surface((24, 15))
+    object_layer = ObjectLayer([ImageObject(vehicle, 30, 25, 15)], 4, 6)
+    tiled_map = SimpleNamespace(
+        visible_layers=[ImageLayer(backdrop), object_layer],
+        width=10,
+        height=8,
+        tilewidth=10,
+        tileheight=10,
+    )
+    monkeypatch.setattr("shooter.background.TiledImageLayer", ImageLayer)
+    monkeypatch.setattr("shooter.background.TiledObjectGroup", ObjectLayer)
+    monkeypatch.setattr("shooter.background.load_tiled_map", lambda _: tiled_map)
+    ground = TiledBackground("Maps/world_1/world_1.tmx")
+    screen = RecordingScreen()
+
+    ground.draw(screen, -10, -20)
+
+    assert screen.blits[1] == (vehicle, (24, 26))

@@ -1,23 +1,54 @@
-from shooter.assets import load_image
+from functools import cache
+
+from pytmx import TiledImageLayer, TiledObjectGroup
+from pytmx.util_pygame import load_pygame
+
+from shooter.assets import asset_path
+
+@cache
+def load_tiled_map(relative):
+    return load_pygame(asset_path(relative))
 
 
 class TiledBackground:
-    """Repeat one seamless texture beneath an arbitrarily large world.
-
-    Tile placement is derived from world coordinates, not remembered between
-    frames. The texture therefore stays fixed to the ground as the camera moves,
-    including when the camera crosses zero or jumps by more than one tile.
-    """
+    """Draw the visible image layers authored in Tiled."""
 
     def __init__(self, relative):
-        self.tile = load_image(relative)
+        self.map = load_tiled_map(relative)
+        self.size = (
+            self.map.width * self.map.tilewidth,
+            self.map.height * self.map.tileheight,
+        )
+        self.images = {
+            id(layer): layer.image
+            for layer in self.map.visible_layers
+            if isinstance(layer, TiledImageLayer)
+        }
 
-    def draw(self, screen, world_left, world_top):
-        """Cover `screen`, starting at this world-space top-left coordinate."""
-        tile_width, tile_height = self.tile.get_size()
-        start_x = -(int(world_left) % tile_width)
-        start_y = -(int(world_top) % tile_height)
-
-        for top in range(start_y, screen.get_height(), tile_height):
-            for left in range(start_x, screen.get_width(), tile_width):
-                screen.blit(self.tile, (left, top))
+    def draw(self, screen, camera_x, camera_y):
+        for layer in self.map.visible_layers:
+            if isinstance(layer, TiledImageLayer):
+                screen.blit(
+                    self.images[id(layer)],
+                    (
+                        camera_x + getattr(layer, "offsetx", 0),
+                        camera_y + getattr(layer, "offsety", 0),
+                    ),
+                )
+            elif isinstance(layer, TiledObjectGroup):
+                offset_x = getattr(layer, "offsetx", 0)
+                offset_y = getattr(layer, "offsety", 0)
+                for obj in layer:
+                    if obj.image is None:
+                        continue
+                    # PyTMX normalizes tile objects to a bottom-left origin by
+                    # subtracting their height. This map's image-collection
+                    # tileset is explicitly top-left aligned, so restore the
+                    # authored Tiled position when drawing its image objects.
+                    screen.blit(
+                        obj.image,
+                        (
+                            camera_x + offset_x + obj.x,
+                            camera_y + offset_y + obj.y + obj.height,
+                        ),
+                    )

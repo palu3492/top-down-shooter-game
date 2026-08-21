@@ -15,10 +15,10 @@ additive rather than a rewrite.
 import math
 
 import pygame
-from pytmx import TiledMap
 
 from shooter import config, items
 from shooter.background import TiledBackground
+from shooter.collision import load_obstacles
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
 from shooter.entities.zombie import keep_apart
@@ -37,8 +37,7 @@ from shooter.viewport import visible_world
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 INSTAKILL_TOP = 40
 RELOADING_TOP = 100
-BACKGROUND = "Backgrounds/grass_tile.png"
-TMX_MAP = "Assets/Maps/world.tmx"
+TMX_MAP = "Maps/world_1/world_1.tmx"
 COLLISION_DEBUG = (255, 0, 255)
 
 # Firing is the left button only. Any `MOUSEBUTTONDOWN` used to do it, so a
@@ -143,24 +142,35 @@ class Session:
         self.change_x = self.change_y = 0
         self.shooting = False
 
-        self.background = TiledBackground(BACKGROUND)
-        tmx = TiledMap(TMX_MAP)
+        self.background = TiledBackground(TMX_MAP)
+        self.world_size = self.background.size
+        self.camera_x = self.window[0] / 2 - self.world_size[0] / 2
+        self.camera_y = self.window[1] / 2 - self.world_size[1] / 2
+        self.previous_camera = self.camera
+        tmx = self.background.map
+        layers = {layer.name: layer for layer in tmx.layers}
+        self.obstacles = load_obstacles(TMX_MAP)
+        collision_layer = layers.get("Collision", ())
         self.collision_rects = [
-            pygame.Rect(obj.x, obj.y, obj.width, obj.height)
-            for obj in tmx.get_layer_by_name("Collision")
+            pygame.Rect(
+                obj.x + getattr(collision_layer, "offsetx", 0),
+                obj.y + getattr(collision_layer, "offsety", 0),
+                obj.width,
+                obj.height,
+            )
+            for obj in collision_layer
         ]
-        for obj in tmx.get_layer_by_name("Objects"):
+        objects_layer = layers.get("Objects", ())
+        for obj in objects_layer:
             if obj.properties.get("solid") is True:
                 self.collision_rects.append(
-                    pygame.Rect(obj.x, obj.y, obj.width, obj.height)
+                    pygame.Rect(
+                        obj.x + getattr(objects_layer, "offsetx", 0),
+                        obj.y + getattr(objects_layer, "offsety", 0),
+                        obj.width,
+                        obj.height,
+                    )
                 )
-            print(f"Object: {obj.name}")
-            print(f"x={obj.x}")
-            print(f"y={obj.y}")
-            print(f"width={obj.width}")
-            print(f"height={obj.height}")
-            for name, value in obj.properties.items():
-                print(f"{name}={value}")
         self.human = Human(window)
         self.human_group = pygame.sprite.Group(self.human)
         self.zombies = pygame.sprite.Group()
@@ -188,8 +198,7 @@ class Session:
         self.radar = RadarScreen()
 
         self.rules = rules(window, self.zombies, self.cash, self.visible)
-        # After the rules, because what stands in a level is the level's to say.
-        self.props = pygame.sprite.Group(*world.build(self.rules.layout))
+        self.props = pygame.sprite.Group()
 
     @property
     def outcome(self):
@@ -458,7 +467,7 @@ class Session:
             self.camera_y = wanted
 
     def _on_the_map(self, camera, axis):
-        return min(0, max(-(config.WORLD[axis] - self.window[axis]), camera))
+        return min(0, max(-(self.world_size[axis] - self.window[axis]), camera))
 
     def _standing_at(self, camera_x, camera_y):
         box = pygame.Rect(0, 0, *PLAYER_SOLID)
@@ -470,9 +479,13 @@ class Session:
 
     def _blocked(self, camera_x, camera_y):
         here = self._standing_at(camera_x, camera_y)
-        return any(rect.colliderect(here) for rect in self.collision_rects) or any(
-            prop.footprint is not None and prop.footprint.colliderect(here)
-            for prop in self.props
+        return (
+            any(obstacle.colliderect(here) for obstacle in self.obstacles)
+            or any(rect.colliderect(here) for rect in self.collision_rects)
+            or any(
+                prop.footprint is not None and prop.footprint.colliderect(here)
+                for prop in self.props
+            )
         )
 
     def _walk(self, pressed, dt):
@@ -538,20 +551,21 @@ class Session:
     def draw(self, screen, alpha):
         draw_x, draw_y = self._interpolated_camera(alpha)
 
-        self.background.draw(screen, -draw_x, -draw_y)
+        self.background.draw(screen, draw_x, draw_y)
+        for obstacle in self.obstacles:
+            obstacle.draw(screen, COLLISION_DEBUG, (draw_x, draw_y))
         for rect in self.collision_rects:
             pygame.draw.rect(screen, COLLISION_DEBUG, rect.move(draw_x, draw_y), 2)
 
         blit_group(screen, self.dropped, draw_x, draw_y, alpha)
-        blit_group(screen, self.props, draw_x, draw_y, alpha)
-        for prop in self.props:
-            if isinstance(prop, Harvestable) and prop.left < 1:
-                prop.health_bar(screen, prop.draw_position(draw_x, draw_y, alpha))
         blit_group(screen, self.powerups, draw_x, draw_y, alpha)
         for zombie in self.zombies:
             zombie.health_bar(screen, zombie.draw_position(draw_x, draw_y, alpha))
         blit_group(screen, self.zombies, draw_x, draw_y, alpha)
         self.human_group.draw(screen)
+        player_solid = pygame.Rect(0, 0, *PLAYER_SOLID)
+        player_solid.center = (self.window[0] / 2, self.window[1] / 2)
+        pygame.draw.rect(screen, COLLISION_DEBUG, player_solid, 2)
         blit_group(screen, self.bullets, draw_x, draw_y, alpha)
 
         if not self.zombies:

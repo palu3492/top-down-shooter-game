@@ -64,9 +64,8 @@ def _sheet(relative):
 def load_sheet(relative):
     """A large image sampled from rather than blitted whole.
 
-    Cached like everything else: the world background is 5000x5000 and costs
-    180ms to read and convert, which should be paid once for the process rather
-    than once per game.
+    Cached like everything else: a world background is expensive to read and
+    convert, which should be paid once for the process rather than once per game.
     """
     return _sheet(relative)
 

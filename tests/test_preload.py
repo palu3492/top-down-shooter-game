@@ -14,7 +14,7 @@ from shooter.assets import (
     load_image,
     load_sized,
 )
-from shooter.background import TiledBackground
+from shooter.background import TiledBackground, load_tiled_map
 from shooter.entities import powerups
 from shooter.entities.powerups import PowerUps
 from shooter.session import Session
@@ -99,13 +99,13 @@ def test_a_second_session_reads_nothing(warmed, reads):
     second = Session(Viewport(WINDOW))
 
     assert reads == []
-    assert second.background.tile is first.background.tile
+    assert second.background.map is first.background.map
 
 
-def test_the_background_tile_is_shared_rather_than_reloaded(warmed):
+def test_the_tiled_map_is_shared_rather_than_reloaded(warmed):
     assert (
-        TiledBackground(preload.BACKGROUND_TILE).tile
-        is TiledBackground(preload.BACKGROUND_TILE).tile
+        TiledBackground(preload.TMX_MAP).map
+        is TiledBackground(preload.TMX_MAP).map
     )
 
 
@@ -119,14 +119,14 @@ def test_every_listed_asset_exists(display):
 
     for relative, _ in preload.SPRITES:
         assert (ASSETS_DIR / relative).is_file(), relative
-    assert (ASSETS_DIR / preload.BACKGROUND_TILE).is_file()
+    assert (ASSETS_DIR / preload.TMX_MAP).is_file()
     assert (ASSETS_DIR / preload.ZOMBIE_STILL).is_file()
 
 
 def test_the_manifest_matches_what_a_cold_start_actually_needs(display):
     """Clears every cache, preloads, then plays -- so the list is checked
     against a genuinely cold process rather than one warmed by other tests."""
-    for cache in (load_image, load_sized, load_animation):
+    for cache in (load_image, load_sized, load_animation, load_tiled_map):
         cache.cache_clear()
 
     preload.preload()

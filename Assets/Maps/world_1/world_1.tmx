@@ -1,0 +1,303 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="11" nextobjectid="72">
+ <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="547" tilecount="25" columns="0" objectalignment="topleft">
+  <grid orientation="orthogonal" width="1" height="1" />
+  <tile id="0" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_47.png" width="248" height="211" />
+  </tile>
+  <tile id="1" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_48.png" width="364" height="281" />
+  </tile>
+  <tile id="2" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_49.png" width="594" height="547" />
+  </tile>
+  <tile id="3" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_50.png" width="500" height="396" />
+  </tile>
+  <tile id="4" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_51.png" width="289" height="189" />
+  </tile>
+  <tile id="5" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_52.png" width="133" height="112" />
+  </tile>
+  <tile id="6" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_53.png" width="158" height="249" />
+  </tile>
+  <tile id="7" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_54.png" width="135" height="217" />
+  </tile>
+  <tile id="8" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_55.png" width="226" height="216" />
+  </tile>
+  <tile id="9" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_56.png" width="262" height="219" />
+  </tile>
+  <tile id="10" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_57.png" width="239" height="203" />
+  </tile>
+  <tile id="11" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_58.png" width="200" height="173" />
+  </tile>
+  <tile id="12" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_59.png" width="371" height="208" />
+  </tile>
+  <tile id="13" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_60.png" width="138" height="342" />
+  </tile>
+  <tile id="14" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_61.png" width="202" height="200" />
+  </tile>
+  <tile id="15" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_62.png" width="205" height="135" />
+  </tile>
+  <tile id="16" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_63.png" width="156" height="252" />
+  </tile>
+  <tile id="17" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_64.png" width="222" height="152" />
+  </tile>
+  <tile id="18" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_65.png" width="155" height="173" />
+  </tile>
+  <tile id="19" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_66.png" width="138" height="226" />
+  </tile>
+  <tile id="20" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_67.png" width="134" height="353" />
+  </tile>
+  <tile id="21" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_68.png" width="112" height="188" />
+  </tile>
+  <tile id="22" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_69.png" width="132" height="175" />
+  </tile>
+  <tile id="23" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_70.png" width="149" height="109" />
+  </tile>
+  <tile id="24" type="vehicle">
+   <image source="../../Props/vehicles/vehicle_71.png" width="175" height="128" />
+  </tile>
+ </tileset>
+ <imagelayer id="3" name="Background">
+  <image source="../../map_10000_high_detail/map_master_10000_high_detail_merged.png" width="10000" height="10000" />
+ </imagelayer>
+ <objectgroup id="5" name="Obstacles" visible="0">
+  <properties>
+   <property name="solid" type="bool" value="true" />
+  </properties>
+  <object id="2" x="5134.15" y="4868.87" width="174.501" height="164.414">
+   <ellipse />
+  </object>
+  <object id="3" x="5145.75" y="4123.97" width="171.475" height="145.249">
+   <ellipse />
+  </object>
+  <object id="4" x="4265.68" y="4856.77" width="132.137" height="130.119">
+   <ellipse />
+  </object>
+  <object id="6" x="4146.16" y="4440.69" width="111.964" height="137.18">
+   <ellipse />
+  </object>
+  <object id="7" x="4275.27" y="4126.49" width="138.19" height="122.05">
+   <ellipse />
+  </object>
+ </objectgroup>
+ <objectgroup id="7" name="Trees" visible="0">
+  <object id="37" x="7854.75" y="432.218" width="168.134" height="268.486" />
+  <object id="38" x="4538.46" y="565.761" width="120.482" height="195.611" />
+  <object id="39" x="5215.48" y="3636.6" width="166.3" height="197.36" />
+  <object id="40" x="4430.91" y="4666.07" width="58.9806" height="54.1502" />
+  <object id="41" x="3684.39" y="4208.68" width="200.057" height="253.521" />
+  <object id="42" x="8949.61" y="3995.48" width="138.279" height="192.794" />
+  <object id="43" x="3921.02" y="7159.95" width="195.453" height="187.475" />
+ </objectgroup>
+ <objectgroup id="8" name="Swamp" visible="0">
+  <object id="45" x="645.995" y="6779.72">
+   <polygon points="0,0 313.307,129.199 645.995,484.496 1065.89,658.915 1721.58,865.633 2625.97,975.452 2781.01,1537.47 3239.66,2041.34 3708.01,2487.08 3711.24,2638.89 3436.69,2835.92 2367.57,2852.07 1379.2,2622.74 665.375,2177 203.488,1795.87 -158.269,1398.58 -300.388,833.333 -106.589,100.129" />
+  </object>
+ </objectgroup>
+ <objectgroup id="10" name="vehicles">
+  <object id="47" name="vehicle_47" type="vehicle" x="2305" y="1674" width="248" height="211" gid="1">
+   <properties>
+    <property name="source_object_x" type="float" value="2305.14" />
+    <property name="source_object_y" type="float" value="1779.64" />
+    <property name="source_polygon" value="0,0 159.139,-104.964 247.85,-11.5122 65.687,104.964" />
+   </properties>
+  </object>
+  <object id="48" name="vehicle_48" type="vehicle" x="7579" y="1078" width="364" height="281" gid="2">
+   <properties>
+    <property name="source_object_x" type="float" value="7579.6" />
+    <property name="source_object_y" type="float" value="1236.16" />
+    <property name="source_polygon" value="0,0 112.239,122.165 362.678,-46.5756 229.824,-157.288" />
+   </properties>
+  </object>
+  <object id="49" name="vehicle_49" type="vehicle" x="7059" y="1375" width="594" height="547" gid="3">
+   <properties>
+    <property name="source_object_x" type="float" value="7082.54" />
+    <property name="source_object_y" type="float" value="1562.19" />
+    <property name="source_polygon" value="0,0 364.969,358.861 570.36,232.878 114.53,-186.302 -22.906,-66.4274" />
+   </properties>
+  </object>
+  <object id="50" name="vehicle_50" type="vehicle" x="6725" y="1071" width="500" height="396" gid="4">
+   <properties>
+    <property name="source_object_x" type="float" value="6735.13" />
+    <property name="source_object_y" type="float" value="1329.31" />
+    <property name="source_polygon" value="0,0 115.294,137.436 287.089,69.4816 489.425,-115.294 277.163,-257.311 -9.92594,-29.0143" />
+   </properties>
+  </object>
+  <object id="51" name="vehicle_51" type="vehicle" x="8105" y="2378" width="289" height="189" gid="5">
+   <properties>
+    <property name="source_object_x" type="float" value="8105.98" />
+    <property name="source_object_y" type="float" value="2470.29" />
+    <property name="source_polygon" value="0,0 52.1769,96.2375 287.553,5.79744 216.824,-91.5995" />
+   </properties>
+  </object>
+  <object id="52" name="vehicle_52" type="vehicle" x="7718" y="2597" width="133" height="112" gid="6">
+   <properties>
+    <property name="source_object_x" type="float" value="7748.46" />
+    <property name="source_object_y" type="float" value="2597.44" />
+    <property name="source_polygon" value="0,0 -30.2423,61.9967 63.1308,111.519 102.068,40.0711" />
+   </properties>
+  </object>
+  <object id="53" name="vehicle_53" type="vehicle" x="6171" y="2619" width="158" height="249" gid="7">
+   <properties>
+    <property name="source_object_x" type="float" value="6171.83" />
+    <property name="source_object_y" type="float" value="2659.26" />
+    <property name="source_polygon" value="0,0 4.87045,208.455 154.88,203.585 156.828,-33.119 4.87045,-39.9377" />
+   </properties>
+  </object>
+  <object id="54" name="vehicle_54" type="vehicle" x="5993" y="2350" width="135" height="217" gid="8">
+   <properties>
+    <property name="source_object_x" type="float" value="5993.57" />
+    <property name="source_object_y" type="float" value="2550.17" />
+    <property name="source_polygon" value="0,0 132.476,16.5595 133.45,-197.74 18.5077,-199.688" />
+   </properties>
+  </object>
+  <object id="55" name="vehicle_55" type="vehicle" x="5736" y="3160" width="226" height="216" gid="9">
+   <properties>
+    <property name="source_object_x" type="float" value="5736.41" />
+    <property name="source_object_y" type="float" value="3213.52" />
+    <property name="source_polygon" value="0,0 89.6162,161.699 225.015,137.347 110.072,-52.6008" />
+   </properties>
+  </object>
+  <object id="56" name="vehicle_56" type="vehicle" x="5077" y="2780" width="262" height="219" gid="10">
+   <properties>
+    <property name="source_object_x" type="float" value="5125.66" />
+    <property name="source_object_y" type="float" value="2780.05" />
+    <property name="source_polygon" value="0,0 -47.7304,125.658 164.621,218.196 212.351,107.15" />
+   </properties>
+  </object>
+  <object id="57" name="vehicle_57" type="vehicle" x="1367" y="5787" width="239" height="203" gid="11">
+   <properties>
+    <property name="source_object_x" type="float" value="1367.28" />
+    <property name="source_object_y" type="float" value="5905.82" />
+    <property name="source_polygon" value="0,0 80.845,83.2055 237.814,-54.2901 141.626,-118.612" />
+   </properties>
+  </object>
+  <object id="58" name="vehicle_58" type="vehicle" x="1625" y="5589" width="200" height="173" gid="12">
+   <properties>
+    <property name="source_object_x" type="float" value="1625.16" />
+    <property name="source_object_y" type="float" value="5693.38" />
+    <property name="source_polygon" value="0,0 77.3044,67.8626 198.867,-43.078 113.891,-103.859" />
+   </properties>
+  </object>
+  <object id="59" name="vehicle_59" type="vehicle" x="6081" y="6646" width="371" height="208" gid="13">
+   <properties>
+    <property name="source_object_x" type="float" value="6097.86" />
+    <property name="source_object_y" type="float" value="6676.91" />
+    <property name="source_polygon" value="0,0 13.5235,169.658 354.069,177.035 346.693,-30.7352 -15.9823,-27.047" />
+   </properties>
+  </object>
+  <object id="60" name="vehicle_60" type="vehicle" x="7233" y="5981" width="138" height="342" gid="14">
+   <properties>
+    <property name="source_object_x" type="float" value="7233.66" />
+    <property name="source_object_y" type="float" value="6007.69" />
+    <property name="source_polygon" value="0,0 8.29375,314.409 136.47,300.837 112.343,-26.3892" />
+   </properties>
+  </object>
+  <object id="61" name="vehicle_61" type="vehicle" x="4122" y="2343" width="202" height="200" gid="15">
+   <properties>
+    <property name="source_object_x" type="float" value="4122.71" />
+    <property name="source_object_y" type="float" value="2419.32" />
+    <property name="source_polygon" value="0,0 80.1932,123.671 200.966,37.6812 96.6184,-75.3623" />
+   </properties>
+  </object>
+  <object id="62" name="vehicle_62" type="vehicle" x="8393" y="3882" width="205" height="135" gid="16">
+   <properties>
+    <property name="source_object_x" type="float" value="8398.37" />
+    <property name="source_object_y" type="float" value="3904.28" />
+    <property name="source_polygon" value="0,0 -4.96475,112.203 199.583,110.217 197.597,-21.8449" />
+   </properties>
+  </object>
+  <object id="63" name="vehicle_63" type="vehicle" x="7631" y="3669" width="156" height="252" gid="17">
+   <properties>
+    <property name="source_object_x" type="float" value="7631.81" />
+    <property name="source_object_y" type="float" value="3702.71" />
+    <property name="source_polygon" value="0,0 11.9154,217.456 154.9,199.583 112.203,-32.7674" />
+   </properties>
+  </object>
+  <object id="64" name="vehicle_64" type="vehicle" x="7712" y="3215" width="222" height="152" gid="18">
+   <properties>
+    <property name="source_object_x" type="float" value="7712.24" />
+    <property name="source_object_y" type="float" value="3268.79" />
+    <property name="source_polygon" value="0,0 35.7462,97.3091 221.428,26.8097 158.872,-53.6193" />
+   </properties>
+  </object>
+  <object id="65" name="vehicle_65" type="vehicle" x="7265" y="3935" width="155" height="173" gid="19">
+   <properties>
+    <property name="source_object_x" type="float" value="7279.32" />
+    <property name="source_object_y" type="float" value="3950.95" />
+    <property name="source_polygon" value="0,0 -13.9013,156.886 140.006,156.886 116.175,-15.8872" />
+   </properties>
+  </object>
+  <object id="66" name="vehicle_66" type="vehicle" x="7283" y="4527" width="138" height="226" gid="20">
+   <properties>
+    <property name="source_object_x" type="float" value="7310.1" />
+    <property name="source_object_y" type="float" value="4527.85" />
+    <property name="source_polygon" value="0,0 -26.8097,217.456 61.5629,224.407 110.217,9.9295" />
+   </properties>
+  </object>
+  <object id="67" name="vehicle_67" type="vehicle" x="7664" y="4376" width="134" height="353" gid="21">
+   <properties>
+    <property name="source_object_x" type="float" value="7664.58" />
+    <property name="source_object_y" type="float" value="4408.7" />
+    <property name="source_polygon" value="0,0 2.97885,315.758 133.055,319.73 91.3514,-31.7744" />
+   </properties>
+  </object>
+  <object id="68" name="vehicle_68" type="vehicle" x="7102" y="4659" width="112" height="188" gid="22">
+   <properties>
+    <property name="source_object_x" type="float" value="7111.51" />
+    <property name="source_object_y" type="float" value="4672.82" />
+    <property name="source_polygon" value="0,0 -8.93655,173.766 88.3726,171.78 102.274,-12.9084" />
+   </properties>
+  </object>
+  <object id="69" name="vehicle_69" type="vehicle" x="7272" y="4925" width="132" height="175" gid="23">
+   <properties>
+    <property name="source_object_x" type="float" value="7306.8" />
+    <property name="source_object_y" type="float" value="4925.5" />
+    <property name="source_polygon" value="0,0 -34.2434,152.707 52.7534,173.994 96.2517,19.4354" />
+   </properties>
+  </object>
+  <object id="70" name="vehicle_70" type="vehicle" x="8356" y="5469" width="149" height="109" gid="24">
+   <properties>
+    <property name="source_object_x" type="float" value="8356.1" />
+    <property name="source_object_y" type="float" value="5491.41" />
+    <property name="source_polygon" value="0,0 0.881446,83.7373 148.083,86.3817 133.98,-22.0361" />
+   </properties>
+  </object>
+  <object id="71" name="vehicle_71" type="vehicle" x="6282" y="5621" width="175" height="128" gid="25">
+   <properties>
+    <property name="source_object_x" type="float" value="6282.45" />
+    <property name="source_object_y" type="float" value="5657.06" />
+    <property name="source_polygon" value="0,0 0.89214,91.8904 173.967,86.5376 157.017,-35.6856" />
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="6" name="Spawn" visible="0">
+  <object id="17" x="4729.42" y="5325.15">
+   <properties>
+    <property name="spawn" type="bool" value="true" />
+   </properties>
+   <point />
+  </object>
+ </objectgroup>
+</map>

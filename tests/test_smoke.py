@@ -36,12 +36,13 @@ def test_every_animation_frame_resolves_case_sensitively():
 
     missing = [
         os.path.join(ASSETS_DIR, directory, f"{prefix}{i}.png")
-        for directory, prefix, count in itertools.chain(
-            player.ANIMATIONS.values(), zombie.ANIMATIONS.values()
-        )
+        for directory, prefix, count in zombie.ANIMATIONS.values()
         for i in range(count)
         if os.path.join(ASSETS_DIR, directory, f"{prefix}{i}.png") not in on_disk
     ]
+
+    if os.path.join(ASSETS_DIR, player.PLAYER_IMAGE) not in on_disk:
+        missing.append(os.path.join(ASSETS_DIR, player.PLAYER_IMAGE))
 
     assert missing == []
 

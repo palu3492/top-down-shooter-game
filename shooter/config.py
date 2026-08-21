@@ -15,7 +15,10 @@ DEV_TOOLS = True
 
 WINDOW = (1080, 720)  # the logical render size; SCALED stretches it to the window
 VSYNC = True  # set_mode takes a bool here, so the setting is a switch
-WORLD = (5000, 5000)
+# The shipped world is 10,000px square. Session movement reads the authoritative
+# size from the loaded TMX; this shared value remains for systems such as radar
+# that do not own the map.
+WORLD = (10000, 10000)
 
 PLAYER_SPEED = 600
 PLAYER_HEALTH = 100.0
@@ -28,6 +31,9 @@ ZOMBIE_DAMAGE = 6.0
 ZOMBIE_SIZE = (120, 111)
 ZOMBIE_SCALE = 0.5
 KILL_REWARD = 50
+
+# Temporary gameplay switch. Set this back to True to restore wave spawning.
+ZOMBIE_SPAWNING_ENABLED = False
 
 # A wave starts this many seconds of travel outside the view, so the player
 # sees it coming instead of meeting it at the edge of the screen.

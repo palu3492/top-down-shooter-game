@@ -118,6 +118,8 @@ class LevelRules(WaveSystem):
             self.wave_seconds = config.WAVE_INTERVAL_SECONDS
 
     def _spawn(self, window, zombie_group, player_cash, visible, count):
+        if not config.ZOMBIE_SPAWNING_ENABLED:
+            return
         for _ in range(count):
             zombie_group.add(Zombie(window, player_cash, visible))
 
