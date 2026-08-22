@@ -25,7 +25,7 @@ def test_dead_and_despawned_targets_cannot_pay_again(cash):
     shot = Shot(0, 0, 1, 0, damage=10_000)
     shot.update(0, 0, pygame.sprite.Group())
 
-    assert cash.received == [config.KILL_REWARD]
+    assert cash.received == []
     assert despawned.killed is False
 
 

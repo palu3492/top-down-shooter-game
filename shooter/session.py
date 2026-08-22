@@ -19,6 +19,13 @@ import pygame
 from shooter import commands, config, items
 from shooter.background import TiledBackground
 from shooter.camera import FollowCamera
+from shooter.combat_state import CombatStateStore
+from shooter.damage import (
+    DamageRequest,
+    DamageService,
+    FactionStore,
+    RelationshipPolicy,
+)
 from shooter.collision import load_obstacles
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
@@ -28,7 +35,8 @@ from shooter.entities.props import Harvestable
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
 from shooter.render import blit_group
 from shooter.spatial import Bounds, Box, SpatialStore, Transform
-from shooter.systems import loot, shop, world
+from shooter.systems import shop, world
+from shooter.systems.survival_consequences import SurvivalConsequences
 from shooter.systems.waves import WaveSystem
 from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, prompt
 from shooter.ui.radar import RadarScreen
@@ -177,6 +185,22 @@ class Session:
         self.events = EventQueue()
         self.entities = WorldRegistry(self.events)
         self.player_id = self.entities.register(self.human, ("actor", "player"))
+        self.combat = CombatStateStore()
+        self.combat.attach(
+            self.player_id,
+            config.PLAYER_HEALTH,
+            health=self.human.health,
+        )
+        self.factions = FactionStore()
+        self.factions.assign(self.player_id, "survivors")
+        self.damage = DamageService(
+            self.combat,
+            self.factions,
+            RelationshipPolicy((("survivors", "horde"),)),
+            self.events,
+        )
+        self.survival_consequences = SurvivalConsequences()
+        self.simulation_tick = 0
         self.spatial = SpatialStore()
         self.spatial.attach(
             self.player_id,
@@ -195,6 +219,7 @@ class Session:
         self._camera_x, self._camera_y = self.presentation_camera.offset
         self._enemy_ids = {}
         self._sync_enemy_registry()
+        self._sync_combat_state()
 
     @property
     def outcome(self):
@@ -325,7 +350,11 @@ class Session:
         if self.shopping or not self.equipped.ready:
             return
         self.shooting = True
-        self.bullets.add(self.equipped.attack(self._muzzle(), self.aim, self._damage()))
+        attacks = self.equipped.attack(self._muzzle(), self.aim, self._damage())
+        for attack in attacks:
+            attack.instigator_id = self.player_id
+            attack.weapon_id = self.equipped.weapon.id
+        self.bullets.add(attacks)
         self.equipped.fire()
 
     def _damage(self):
@@ -390,18 +419,6 @@ class Session:
                 return
         self.dropped.add(world.spilled(item, count, at))
 
-    def _drop_loot(self, standing):
-        """Leave behind what the fallen were carrying.
-
-        Only what was actually killed. A nuke empties the group without
-        anything being cut down, and the field should not be carpeted for it.
-        """
-        for zombie in standing - set(self.zombies):
-            if not zombie.killed:
-                continue
-            for item, count in loot.spoils(zombie.kind):
-                self._spill(item, count, zombie.get_position())
-
     def _gather(self):
         """Take what is underfoot, as far as there is room for it.
 
@@ -450,7 +467,9 @@ class Session:
         self._step_after_movement(dt, controls.trigger_held)
 
     def _step_after_movement(self, dt, trigger):
+        self.simulation_tick += 1
         self._sync_enemy_registry()
+        self._sync_combat_state()
         self.previous_camera = self.camera
         self._advance_player()
 
@@ -474,15 +493,18 @@ class Session:
             self._shoot()
 
         self._animate_player(dt)
-        # Who was standing before anything could cut them down. Loot is worked
-        # out from who is missing afterwards rather than at the moment of
-        # death, which happens inside a bullet, a swing and an explosion --
-        # three places with no business knowing what a pickup is.
-        standing = set(self.zombies)
+        # Attacks emit neutral facts; mode-specific rewards and loot consume
+        # those facts after every attack path has advanced.
         self._advance_zombies(dt)
         self._collect_powerups(dt)
 
-        self.bullets.update(self.camera_x, self.camera_y, self.zombies, dt)
+        self.bullets.update(
+            self.camera_x,
+            self.camera_y,
+            self.zombies,
+            dt,
+            self._apply_attack_damage,
+        )
         self.grenades.update(self.camera_x, self.camera_y, self.explosions, dt)
         self.explosions.update(self.camera_x, self.camera_y, dt)
         self.stun_grenades.update(
@@ -490,11 +512,12 @@ class Session:
         )
         self.stun_explosions.update(self.camera_x, self.camera_y, dt)
 
-        self._drop_loot(standing)
+        self._consume_survival_events()
 
         if not self.zombies:
             self.rules.advance(self.window, self.zombies, self.cash, dt, self.visible)
         self._sync_enemy_registry()
+        self._sync_combat_state()
 
         self.instakill_seconds = max(0.0, self.instakill_seconds - dt)
         self.change_x = self.change_y = 0
@@ -504,9 +527,7 @@ class Session:
         """Temporary bridge while legacy rules still mutate a sprite group."""
         present = set(self.zombies)
         for zombie in present - self._enemy_ids.keys():
-            entity_id = self.entities.register(
-                zombie, ("actor", "enemy")
-            )
+            entity_id = self.entities.register(zombie, ("actor", "enemy"))
             self._enemy_ids[zombie] = entity_id
             self.spatial.attach(
                 entity_id,
@@ -516,6 +537,12 @@ class Session:
                 ),
                 Box(*config.ZOMBIE_SIZE),
             )
+            self.combat.attach(
+                entity_id,
+                config.ZOMBIE_HEALTH,
+                health=zombie.zombie_health,
+            )
+            self.factions.assign(entity_id, "horde")
         for zombie in present:
             entity_id = self._enemy_ids[zombie]
             self.spatial.move_to(
@@ -523,10 +550,73 @@ class Session:
                 zombie.world_x + config.ZOMBIE_SIZE[0] / 2,
                 zombie.world_y + config.ZOMBIE_SIZE[1] / 2,
             )
+            self.combat.synchronize(entity_id, zombie.zombie_health)
         for zombie in self._enemy_ids.keys() - present:
             entity_id = self._enemy_ids.pop(zombie)
+            self.factions.remove(entity_id)
+            self.combat.remove(entity_id)
             self.spatial.remove(entity_id)
-            self.entities.remove(entity_id, reason="legacy_group_removal")
+            reason = "killed" if zombie.killed else "despawned"
+            self.entities.remove(entity_id, reason=reason)
+
+    def _sync_combat_state(self):
+        """Mirror legacy actor health until the damage service becomes authoritative."""
+        self.combat.synchronize(self.player_id, self.human.health)
+
+    def _apply_attack_damage(self, attack, target, amount, damage_type):
+        target_id = self._enemy_ids.get(target)
+        if target_id is None:
+            return None
+        result = self.damage.apply(
+            DamageRequest(
+                instigator_id=getattr(attack, "instigator_id", self.player_id),
+                source_id=None,
+                target_id=target_id,
+                amount=amount,
+                damage_type=damage_type,
+                tick=self.simulation_tick,
+                weapon_id=getattr(attack, "weapon_id", None),
+            )
+        )
+        self._reflect_damage(target_id, target, result)
+        return result
+
+    def _apply_contact_damage(self, zombie, amount):
+        result = self.damage.apply(
+            DamageRequest(
+                instigator_id=self._enemy_ids[zombie],
+                source_id=None,
+                target_id=self.player_id,
+                amount=amount,
+                damage_type="contact",
+                tick=self.simulation_tick,
+            )
+        )
+        self._reflect_damage(self.player_id, self.human, result)
+        return result
+
+    def _reflect_damage(self, target_id, actor, result):
+        if not result.applied:
+            return
+        health = self.combat.get(target_id).health
+        if actor is self.human:
+            actor.health = health
+            if result.lethal:
+                actor.kill()
+        else:
+            actor.zombie_health = health
+            if result.lethal:
+                actor.killed = True
+                actor.kill()
+
+    def _consume_survival_events(self):
+        self.survival_consequences.consume(
+            self.events.drain(),
+            self.player_id,
+            self.entities,
+            self.cash,
+            self._spill,
+        )
 
     def _advance_player(self):
         """Move authoritative world state, unless something is in the way.
@@ -609,13 +699,22 @@ class Session:
             # attacking zombie does not call move_toward_center(), so without
             # this sync its old box can remain on the player indefinitely.
             zombie.move_position(self.camera_x, self.camera_y)
-            attacking = is_zombie_attacking(self.human, zombie, dt)
+            attacking = pygame.sprite.collide_rect(self.human, zombie)
+            zombie.update_anim("ATTACK" if attacking else "MOVE", dt)
+            if attacking:
+                self._apply_contact_damage(zombie, config.ZOMBIE_DAMAGE * dt)
             if attacking:
                 zombie.face_player()
             else:
                 zombie.move_toward_center(self.camera_x, self.camera_y, dt)
             for explosion in self.explosions:
-                explosion_touching_zombie(zombie, explosion)
+                if pygame.sprite.collide_rect(zombie, explosion):
+                    self._apply_attack_damage(
+                        explosion,
+                        zombie,
+                        config.EXPLOSION_DAMAGE,
+                        "explosive",
+                    )
             for stun_explosion in self.stun_explosions:
                 stun_explosion_touching_zombie(zombie, stun_explosion)
             zombie.zombie_speed_timer(dt)

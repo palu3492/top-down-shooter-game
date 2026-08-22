@@ -26,8 +26,21 @@ def test_event_values_are_immutable_primitive_facts():
         "source_id": 1,
         "target_id": 2,
         "amount": 12.5,
+        "instigator_id": None,
+        "weapon_id": None,
+        "damage_type": "",
+        "tick": 0,
+        "absorbed": 0.0,
+        "health_damage": 0.0,
     }
-    assert asdict(killed) == {"entity_id": 2, "killer_id": 1}
+    assert asdict(killed) == {
+        "entity_id": 2,
+        "killer_id": 1,
+        "source_id": None,
+        "weapon_id": None,
+        "damage_type": "",
+        "tick": 0,
+    }
 
 
 def test_queue_preserves_order_and_drains_each_fact_once():
@@ -75,5 +88,5 @@ def test_session_bridge_emits_enemy_lifecycle_once(display, cash):
     session._sync_enemy_registry()
 
     assert session.events.drain() == (
-        EntityRemoved(enemy_id, "legacy_group_removal"),
+        EntityRemoved(enemy_id, "despawned"),
     )

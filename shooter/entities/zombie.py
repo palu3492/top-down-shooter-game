@@ -112,8 +112,7 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
     # What it drops is looked up by this. One kind today; a table, not a branch.
     kind = "walker"
 
-    def __init__(self, window_size, cash, visible=None, rng=None):
-        self.player_cash = cash
+    def __init__(self, window_size, cash=None, visible=None, rng=None):
         # Test-owned and, later, match-owned randomness can be supplied without
         # changing legacy callers. The module remains the default until Match owns
         # a seeded source in the new architecture.
@@ -311,7 +310,6 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
             return False
         self.zombie_health -= damage
         if self.zombie_health <= 0:
-            self.player_cash.increase_cash(config.KILL_REWARD)
             self.killed = True
             return True
         return False

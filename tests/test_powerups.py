@@ -188,4 +188,4 @@ def test_an_instakill_bullet_kills_in_one_hit(window, cash):
 
     assert bullet.bullet_touching_zombie(zombie) is True
     assert zombie.zombie_health <= 0
-    assert cash.received == [50]
+    assert cash.received == []

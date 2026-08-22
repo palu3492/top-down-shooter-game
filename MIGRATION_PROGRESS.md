@@ -24,11 +24,11 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 4 — Unified health, damage, death, and attribution |
+| Migration phase | Phase 5 — Weapon operation and inventory integration |
 | Phase status | In progress |
-| Active work package | M4.1 — Introduce neutral health and armor state |
+| Active work package | M5.1 — Separate weapon definitions from runtime state |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
-| Next integration checkpoint | End of Phase 4 — Shared damage pipeline |
+| Next integration checkpoint | End of Phase 7 — Reusable Match and mode boundary |
 | Last updated | 2026-08-21 |
 
 ## Confirmed Project Constraints
@@ -58,8 +58,8 @@ package.
 | 1 | Characterize the current vertical slice | Complete | All ten characterization gaps dispositioned and verified |
 | 2 | Neutral commands, events, and entity IDs | Complete | Boundary audit and exit criteria verified |
 | 3 | Authoritative actor state and world position | Complete | Explicit map/spatial/camera/collision boundaries verified |
-| 4 | Unified health, damage, death, and attribution | In progress | M4.1 active; integration checkpoint 1 |
-| 5 | Weapon operation and inventory integration | Not started | — |
+| 4 | Unified health, damage, death, and attribution | Complete | Shared attributed damage pipeline verified at integration checkpoint 1 |
+| 5 | Weapon operation and inventory integration | In progress | M5.1 active |
 | 6 | Reusable spawning | Not started | — |
 | 7 | Neutral Match and game-mode boundary | Not started | Integration checkpoint 2 |
 | 8 | Complete presentation separation | Not started | — |
@@ -68,33 +68,32 @@ package.
 
 ## Active Work Package
 
-### M4.1 — Introduce neutral health and armor state
+### M5.1 — Separate weapon definitions from runtime state
 
 **Status:** In progress
 
-**Objective:** Establish reusable pygame-independent health and optional armor state
-addressed by stable entity ID before attacks are routed through a damage service.
+**Objective:** Represent immutable weapon configuration separately from the mutable
+state of each equipped weapon instance.
 
 **Scope:**
 
-- Define health/armor values and explicit alive/depleted invariants.
-- Store combat state by stable entity ID rather than actor class.
-- Bridge player and enemy health without changing attack paths yet.
-- Verify independent actors can share the same combat-state mechanism.
+- Inventory current gun, blade, and throwable configuration versus mutable state.
+- Introduce pygame-free immutable weapon definitions with stable definition IDs.
+- Introduce owner-independent runtime state for ammo, cooldown, and reload progress.
+- Adapt existing equipment construction without changing fire behavior yet.
 
 **Non-goals:**
 
-- Damage requests, relationship policy, and attribution, which follow in M4.2.
-- Balance values or regeneration/armor mechanics not yet required by Survival.
-- Networking, prediction, reconciliation, or a generic event bus.
-- Migrating every legacy control in one change.
+- Moving projectile creation behind the weapon service; that follows in M5.2/M5.3.
+- Consolidating the backpack and carried equipment; that follows after operation.
+- Replacing current weapon graphics or audio reactions.
 
 **Acceptance criteria:**
 
-- [ ] Health state contains no pygame or actor-type dependency.
-- [ ] Player and enemy state is addressed by stable ID.
-- [ ] Damage/depletion arithmetic is deterministic and bounded.
-- [ ] Optional armor behavior is testable without adding it to every actor.
+- [ ] Definitions contain configuration only and are immutable.
+- [ ] Runtime state can exist independently for two instances of one definition.
+- [ ] Neutral definition/state tests require no HUD, actor, zombie, or pygame surface.
+- [ ] Existing equipment construction adapts through the new values.
 
 **Verification evidence:**
 
@@ -145,11 +144,32 @@ Pending.
 
 | ID | Work package | Status | Depends on |
 |---|---|---|---|
-| M4.1 | Introduce neutral health and armor state | In progress | Phase 3 |
-| M4.2 | Define damage requests/results and relationship policy | Not started | M4.1 |
-| M4.3 | Route ranged, melee, explosion, contact, and power damage | Not started | M4.2 |
-| M4.4 | Emit attributed death/removal facts and move rewards/loot | Not started | M4.3 |
-| M4.5 | Verify shared damage pipeline and integration checkpoint 1 | Not started | M4.4 |
+| M4.1 | Introduce neutral health and armor state | Complete | Phase 3 |
+| M4.2 | Define damage requests/results and relationship policy | Complete | M4.1 |
+| M4.3 | Route ranged, melee, explosion, contact, and power damage | Complete | M4.2 |
+| M4.4 | Emit attributed death/removal facts and move rewards/loot | Complete | M4.3 |
+| M4.5 | Verify shared damage pipeline and integration checkpoint 1 | Complete | M4.4 |
+
+## Phase 5 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M5.1 | Separate weapon definitions from runtime state | In progress | Phase 4 |
+| M5.2 | Route fire, reload, cooldown, and ammo through a neutral weapon service | Not started | M5.1 |
+| M5.3 | Create attributed attacks through adapters and injected spread RNG | Not started | M5.2 |
+| M5.4 | Reconcile carried equipment and backpack into an explicit loadout | Not started | M5.3 |
+| M5.5 | Verify reusable weapon operation and close Phase 5 | Not started | M5.4 |
+
+## Phase 4 Exit Review
+
+- [x] Ranged, melee, explosive, and contact attacks route through shared damage policy.
+- [x] Nuke behavior is explicitly a removal rather than attributed damage.
+- [x] Applied damage and the first lethal transition emit exactly once with attribution.
+- [x] Zombies neither receive nor mutate player cash.
+- [x] Survival rewards and loot consume attributed kill facts.
+- [x] Friendly-fire behavior is independently testable through relationship policy.
+- [x] Integrated kill-to-removal/reward/loot behavior passes without spawning.
+- [x] The full suite adds no failure category beyond the recorded baseline.
 
 ## Phase 3 Exit Review
 
@@ -217,6 +237,11 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M3.3 | 919 passed, 34 failed in 29.92s | Three camera-follow/presentation-isolation tests pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M3.4 | 923 passed, 34 failed in 30.59s | Four headless collision-shape tests pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M3.5 | 925 passed, 34 failed in 41.12s | Two production map-definition tests pass; Phase 3 exit criteria satisfied |
+| 2026-08-21 | `uv run pytest` after M4.1 | 930 passed, 34 failed in 35.32s | Five neutral health/armor/store bridge tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M4.2 | 935 passed, 34 failed in 67.94s | Five attributed damage/relationship-policy tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M4.3 | 940 passed, 34 failed in 83.63s | Five routed attack/faction tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M4.4 | 944 passed, 33 failed in 53.65s | Attributed damage/death and event-driven Survival consequences pass; one obsolete snapshot-loot test removed; remaining failures match recorded categories |
+| 2026-08-21 | `uv run pytest` after M4.5 | 945 passed, 33 failed in 61.82s | Integrated kill-to-removal/reward/loot proof passes; Phase 4 closes with only recorded failure categories |
 
 ### Static checks
 
@@ -431,12 +456,14 @@ When one is introduced, record:
 | Legacy camera compatibility setters | Old callers can assign `camera_x`/`camera_y`, which repositions the authoritative player and resynchronizes the follow camera | M3.2 | Legacy tests stop positioning the player through camera offsets | Active |
 | Legacy obstacle normalization | Session converts current pygame/TMX obstacle and prop rectangles into neutral collision values at query time | M3.4 | Production map adapter and world object lifecycle supply/update neutral collision directly | Active |
 | Default Session map | Direct legacy `Session(...)` calls adapt the current TMX when no map definition is supplied; production `GameplayScene` passes one explicitly | M3.5 | Legacy callers pass match configuration/map definition | Active |
+| Legacy combat-state mirror | Player/enemy actor-owned health is mirrored into the stable-ID combat store while old attacks still mutate actors directly | M4.1 | M4.3 routes attacks through the damage service and makes combat state authoritative | Removed from attack paths in M4.3 |
+| Legacy actor health reflection | Authoritative damage results are copied to `Human.health`/`Zombie.zombie_health` for current rendering, outcomes, and regeneration | M4.3 | Presentation reads combat state and vitality effects route through shared services | Active |
 
 ## Known Failures and Risks
 
 | ID | Type | Description | First observed | Blocks | Status |
 |---|---|---|---|---|---|
-| BASE-001 | Test configuration | 32 tests expect spawned zombies, but `config.ZOMBIE_SPAWNING_ENABLED` is intentionally `False`; wave, level, loot, movement, resolution, shop, scene, and session failures cascade from the empty groups | M0.1 | Clean test baseline | Recorded; do not fix in M0.1 |
+| BASE-001 | Test configuration | 31 tests expect spawned zombies, but `config.ZOMBIE_SPAWNING_ENABLED` is intentionally `False`; wave, level, loot, movement, resolution, shop, scene, and session failures cascade from the empty groups | M0.1 | Clean test baseline | Recorded; one obsolete snapshot-loot expectation removed in M4.4 |
 | BASE-002 | Map/test drift | `test_world_obstacles_keep_their_tiled_geometry` expects a polygon obstacle, but the current `world_1.tmx` loader result contains none | M0.1 | Clean test baseline | Redesign: preserve authored collision semantics, not exact object-type composition |
 | BASE-003 | Legacy test drift | Instance-state test expects `Human` animation counters/type that the current `Human` no longer initializes | M0.1 | Clean test baseline | Delete obsolete animation-field expectation |
 | BASE-004 | Timing/test behavior | Pause-loop test records animation updates instead of authoritative state | M0.1 | Clean test baseline | Resolved in M1.3: obsolete test removed and replaced by three authoritative pause tests |
@@ -478,8 +505,13 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M3.3 presentation camera extraction | Stable-ID follow camera clamps offsets, viewport resize is presentation-only, and world interactions use authoritative position |
 | 2026-08-21 | Completed M3.4 neutral player collision | Headless AABB/ellipse/polygon overlap and world-coordinate obstruction replace camera/sprite-dependent player checks |
 | 2026-08-21 | Completed M3.5 and Phase 3 | Neutral TMX adapter, explicit production map selection, two-map world creation, and enemy spatial synchronization verified |
+| 2026-08-21 | Completed M4.1 neutral combat state | Stable-ID health, bounded depletion/restoration, optional armor, actor isolation, and legacy health mirroring verified |
+| 2026-08-21 | Completed M4.2 damage policy | Primitive attribution, deterministic results, armor accounting, first-lethal transition, and configurable relationships verified |
+| 2026-08-21 | Completed M4.3 shared attack routing | Ballistic, melee, explosive, and contact attacks use stable-ID damage service; policy precedes mutation; nuke stays a removal |
+| 2026-08-21 | Completed M4.4 attributed consequences | Damage and first-lethal facts carry attribution; Survival owns cash/loot policy; enemies no longer hold cash; despawns and nukes award nothing |
+| 2026-08-21 | Completed M4.5 and Phase 4 | Production attack audit and integrated consequence proof pass; full suite is 945 passed/33 recorded failures |
 
 ## Next Action
 
-Begin M4.1 with stable-ID-addressed health and optional armor state, bridging the
-current player and enemy values before attack routing changes.
+Begin M5.1 by inventorying immutable weapon configuration and per-instance mutable
+state, then introduce pygame-free definition and runtime values.

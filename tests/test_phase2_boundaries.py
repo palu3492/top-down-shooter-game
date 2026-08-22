@@ -53,5 +53,5 @@ def test_commands_ids_and_lifecycle_facts_cross_one_match_seam(display, cash):
     session._sync_enemy_registry()
 
     assert session.events.drain() == (
-        EntityRemoved(enemy_id, "legacy_group_removal"),
+        EntityRemoved(enemy_id, "despawned"),
     )

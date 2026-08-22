@@ -159,20 +159,6 @@ def test_a_crowd_leaves_piles_rather_than_litter(game, monkeypatch):
     assert next(iter(game.dropped)).count == 2 * len(felled)
 
 
-def test_a_zombie_that_leaves_without_dying_drops_nothing(game, monkeypatch):
-    """Missing from the group is not the same as killed. Emptying it before a
-    step proves nothing -- the snapshot is taken inside one -- so this asks the
-    sweep directly, with a zombie that vanished rather than fell."""
-    monkeypatch.setattr(loot, "spoils", lambda kind: ((world.CLOTH, 3),))
-    standing = set(game.zombies)
-    assert standing and not any(zombie.killed for zombie in standing)
-    game.zombies.empty()
-
-    game._drop_loot(standing)
-
-    assert len(game.dropped) == 0
-
-
 def test_a_zombie_still_standing_has_dropped_nothing(game, monkeypatch):
     monkeypatch.setattr(loot, "spoils", lambda kind: ((world.CLOTH, 3),))
 

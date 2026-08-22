@@ -50,7 +50,14 @@ class Shot(Interpolated, pygame.sprite.Sprite):
         self.bullet_y = start_y - (self.rect[1] / 2)
         self.remember_position()
 
-    def update(self, camera_x, camera_y, zombie_group, dt=config.SIM_DT):
+    def update(
+        self,
+        camera_x,
+        camera_y,
+        zombie_group,
+        dt=config.SIM_DT,
+        apply_damage=None,
+    ):
         self.remember_position()
         if not self.kill_me:
             # Sub-step by distance so a fast shot cannot tunnel past a zombie,
@@ -64,7 +71,7 @@ class Shot(Interpolated, pygame.sprite.Sprite):
                 self.bullet_x += step * self.small_change_x
                 self.bullet_y += step * self.small_change_y
                 for zombie in zombie_group:
-                    if self.bullet_touching_zombie(zombie):
+                    if self.bullet_touching_zombie(zombie, apply_damage):
                         return
         else:
             self.kill()
@@ -85,10 +92,13 @@ class Shot(Interpolated, pygame.sprite.Sprite):
     def world_y(self):
         return self.bullet_y
 
-    def bullet_touching_zombie(self, zombie):
+    def bullet_touching_zombie(self, zombie, apply_damage=None):
         if pygame.sprite.collide_rect(zombie, self):
-            if zombie.remove_health(self.damage):
-                zombie.kill()
+            if apply_damage is None:
+                if zombie.remove_health(self.damage):
+                    zombie.kill()
+            else:
+                apply_damage(self, zombie, self.damage, "ballistic")
             self.kill_me = True
             return True
 
@@ -260,11 +270,23 @@ class Swing(Interpolated, pygame.sprite.Sprite):
     def world_y(self):
         return self.swing_y
 
-    def update(self, camera_x, camera_y, zombie_group, dt=config.SIM_DT):
+    def update(
+        self,
+        camera_x,
+        camera_y,
+        zombie_group,
+        dt=config.SIM_DT,
+        apply_damage=None,
+    ):
         origin = (self.swing_x + camera_x, self.swing_y + camera_y)
         for zombie in list(zombie_group):
-            if self.reaches(origin, zombie) and zombie.remove_health(self.damage):
-                zombie.kill()
+            if not self.reaches(origin, zombie):
+                continue
+            if apply_damage is None:
+                if zombie.remove_health(self.damage):
+                    zombie.kill()
+            else:
+                apply_damage(self, zombie, self.damage, "melee")
         self.kill()
 
     def reaches(self, origin, zombie):

@@ -60,17 +60,17 @@ def test_zombie_survives_a_bullet(zombie):
     assert zombie.remove_health(20) is False
 
 
-def test_killing_a_zombie_pays_out(zombie, cash):
+def test_killing_a_zombie_does_not_own_the_reward_policy(zombie, cash):
     assert zombie.remove_health(100) is True
-    assert cash.received == [50]
+    assert cash.received == []
 
 
-def test_a_zombie_only_pays_out_once(zombie, cash):
+def test_repeated_zombie_damage_has_no_reward_side_effect(zombie, cash):
     zombie.remove_health(100)
     zombie.remove_health(100)
     zombie.remove_health(100)
 
-    assert cash.received == [50]
+    assert cash.received == []
 
 
 def test_zombie_spawns_outside_the_play_area(zombie, window):

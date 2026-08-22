@@ -26,12 +26,22 @@ class DamageApplied:
     source_id: EntityId | None
     target_id: EntityId
     amount: float
+    instigator_id: EntityId | None = None
+    weapon_id: str | None = None
+    damage_type: str = ""
+    tick: int = 0
+    absorbed: float = 0.0
+    health_damage: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
 class EntityKilled:
     entity_id: EntityId
     killer_id: EntityId | None
+    source_id: EntityId | None = None
+    weapon_id: str | None = None
+    damage_type: str = ""
+    tick: int = 0
 
 
 class EventQueue:
