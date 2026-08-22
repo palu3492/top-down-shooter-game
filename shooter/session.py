@@ -13,6 +13,7 @@ additive rather than a rewrite.
 """
 
 import math
+import inspect
 
 import pygame
 
@@ -189,7 +190,12 @@ class Session:
         self.shop_display = ShopFront(window)
         self.radar = RadarScreen()
 
-        self.rules = rules(window, self.zombies, self.cash, self.visible)
+        rule_kwargs = {}
+        if "spawn_sources" in inspect.signature(rules).parameters:
+            rule_kwargs["spawn_sources"] = self.map_definition.spawns
+        self.rules = rules(
+            window, self.zombies, self.cash, self.visible, **rule_kwargs
+        )
         self.props = pygame.sprite.Group()
         self.events = EventQueue()
         self.entities = WorldRegistry(self.events)

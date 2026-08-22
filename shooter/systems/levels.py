@@ -16,6 +16,7 @@ from shooter import config
 from shooter.actor_adapter import LegacyActorFactory
 from shooter.session import WON
 from shooter.systems import world
+from shooter.spawn_service import SpawnService
 from shooter.systems.waves import WaveSystem
 from shooter.ui.anchor import CENTRE, TOP, place
 
@@ -77,12 +78,19 @@ class LevelRules(WaveSystem):
         visible=None,
         level=FIRST,
         actor_factory=None,
+        spawn_service=None,
+        spawn_sources=(),
     ):
         self.level = level
         self.cleared = 0
         self.wave_count = 0
         self.wave_seconds = 0.0
         self.actor_factory = actor_factory or LegacyActorFactory()
+        self.spawn_service = spawn_service or SpawnService(
+            self.actor_factory, self.actor_factory.rng
+        )
+        self.spawn_sources = tuple(spawn_sources)
+        self.last_spawn_result = None
         self._spawn(window, zombie_group, player_cash, visible, self.level.opening)
 
     @property
@@ -126,8 +134,7 @@ class LevelRules(WaveSystem):
     def _spawn(self, window, zombie_group, player_cash, visible, count):
         if not config.ZOMBIE_SPAWNING_ENABLED:
             return
-        for _ in range(count):
-            zombie_group.add(self.actor_factory.spawn_walker(window, visible))
+        self._spawn_actors(window, zombie_group, visible, count)
 
     def draw(self, screen, window=config.WINDOW):
         """Between waves, say where the player is in the level.

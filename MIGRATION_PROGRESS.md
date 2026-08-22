@@ -26,7 +26,7 @@ package.
 |---|---|
 | Migration phase | Phase 6 — Reusable spawning |
 | Phase status | In progress |
-| Active work package | M6.4 — Route Survival waves through the spawn service |
+| Active work package | M6.5 — Verify reusable spawning and close Phase 6 |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 7 — Reusable Match and mode boundary |
 | Last updated | 2026-08-21 |
@@ -60,7 +60,7 @@ package.
 | 3 | Authoritative actor state and world position | Complete | Explicit map/spatial/camera/collision boundaries verified |
 | 4 | Unified health, damage, death, and attribution | Complete | Shared attributed damage pipeline verified at integration checkpoint 1 |
 | 5 | Weapon operation and inventory integration | Complete | Owner-independent weapon pipeline verified |
-| 6 | Reusable spawning | In progress | M6.1-M6.3 complete; M6.4 active |
+| 6 | Reusable spawning | In progress | M6.1-M6.4 complete; M6.5 active |
 | 7 | Neutral Match and game-mode boundary | Not started | Integration checkpoint 2 |
 | 8 | Complete presentation separation | Not started | — |
 | 9 | Prove reuse with a sandbox ruleset | Not started | Integration checkpoint 3 |
@@ -68,20 +68,20 @@ package.
 
 ## Active Work Package
 
-### M6.4 — Route Survival waves through the spawn service
+### M6.5 — Verify reusable spawning and close Phase 6
 
 **Status:** In progress
 
-**Objective:** Make Survival decide wave timing/composition while a shared service
-selects positions and constructs actors from reusable requests.
+**Objective:** Prove spawning is reusable, deterministic, explicit about failure,
+and fully separated from Survival timing/composition before closing Phase 6.
 
 **Scope:**
 
-- Introduce a spawn service that composes query, constraints, selection, and factory.
-- Make wave rules submit actor/count/semantic spawn requests rather than instantiate.
-- Support authored enemy spawns when available and an explicit legacy-ring policy
-  while the current TMX remains incomplete.
-- Return per-request success/failure information to the mode.
+- Exercise map semantics through selection, constraints, actor creation, registration,
+  and Survival batch results as an integrated path.
+- Audit actor constructors and rules for production placement/factory bypasses.
+- Prove another faction/actor request can use the same neutral spawn service.
+- Run Phase 6 focused lint/tests and the complete regression checkpoint.
 
 **Non-goals:**
 
@@ -91,10 +91,11 @@ selects positions and constructs actors from reusable requests.
 
 **Acceptance criteria:**
 
-- [ ] Survival wave rules do not instantiate `Zombie` or choose coordinates.
-- [ ] Shared spawning returns explicit successes/failures for requested actors.
-- [ ] Authored enemy spawns are used when a compatible map provides them.
-- [ ] The incomplete current map uses a named fallback policy, not a silent origin.
+- [ ] Actor construction has no production-owned random placement path.
+- [ ] Survival rules contain neither actor construction nor coordinate selection.
+- [ ] A non-Survival faction request uses the shared service successfully.
+- [ ] Authored and named-fallback integration paths both pass.
+- [ ] The full suite introduces no failure category beyond the recorded baseline.
 
 **Verification evidence:**
 
@@ -168,8 +169,8 @@ Pending.
 | M6.1 | Define spawn data and TMX capability validation | Complete | Phase 5 |
 | M6.2 | Add reusable spawn queries and placement constraints | Complete | M6.1 |
 | M6.3 | Construct actors from explicit definitions and positions | Complete | M6.2 |
-| M6.4 | Route Survival waves through the shared spawn service | In progress | M6.3 |
-| M6.5 | Verify reusable spawning and close Phase 6 | Not started | M6.4 |
+| M6.4 | Route Survival waves through the shared spawn service | Complete | M6.3 |
+| M6.5 | Verify reusable spawning and close Phase 6 | In progress | M6.4 |
 
 ## Phase 5 Exit Review
 
@@ -273,6 +274,7 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M6.1 | 973 passed, 33 failed in 32.16s | Neutral point/region parsing, metadata, offsets, supported modes, and capability reports pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M6.2 | 978 passed, 33 failed in 33.32s | Deterministic semantic queries and composable placement constraints pass; explicit failure replaces origin fallback |
 | 2026-08-21 | `uv run pytest` after M6.3 | 985 passed, 33 failed in 37.65s | Neutral actor creation, explicit-position adapter, production construction audit, and wave wiring pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M6.4 | 989 passed, 33 failed in 31.95s | Shared batch spawning, authored enemy regions, explicit failures, and named legacy fallback pass; failure categories remain unchanged |
 
 ### Static checks
 
@@ -553,8 +555,9 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M6.1 spawn map contract | TMX points/regions and semantic metadata normalize neutrally; modes can validate required capabilities while incomplete maps remain loadable |
 | 2026-08-21 | Completed M6.2 spawn selection | Role/tag/faction/kind queries and seeded box/ellipse/polygon sampling compose bounds, visibility, distance, occupancy, and collision constraints |
 | 2026-08-21 | Completed M6.3 explicit actor creation | Neutral definitions/requests create the same actor at explicit positions; production `Zombie` construction is isolated to one pygame adapter |
+| 2026-08-21 | Completed M6.4 Survival spawn routing | Survival owns counts/timing only; shared service selects and constructs batches from authored sources or the explicit legacy-ring fallback |
 
 ## Next Action
 
-Begin M6.4 by composing selection and actor creation behind a shared spawn service,
-then make Survival waves request actors through it.
+Begin M6.5 by adding a non-Survival spawn proof and executable production-boundary
+audits, then close Phase 6 at the full-suite checkpoint.

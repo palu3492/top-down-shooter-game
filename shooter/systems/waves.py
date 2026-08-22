@@ -2,6 +2,9 @@ import pygame
 
 from shooter import config
 from shooter.actor_adapter import LegacyActorFactory
+from shooter.actor_adapter import walker_definition
+from shooter.spawn_selection import PlacementConstraints, SpawnQuery
+from shooter.spawn_service import LEGACY_VISIBLE_RING, SpawnActorRequest, SpawnService
 from shooter.systems import world
 from shooter.ui.anchor import CENTRE, TOP, place
 
@@ -30,14 +33,20 @@ class WaveSystem:
         player_cash,
         visible=None,
         actor_factory=None,
+        spawn_service=None,
+        spawn_sources=(),
     ):
         self.wave_count = 0
         self.wave_seconds = 0.0
         self._skip_requested = False
         self.actor_factory = actor_factory or LegacyActorFactory()
+        self.spawn_service = spawn_service or SpawnService(
+            self.actor_factory, self.actor_factory.rng
+        )
+        self.spawn_sources = tuple(spawn_sources)
+        self.last_spawn_result = None
         if config.ZOMBIE_SPAWNING_ENABLED:
-            for _ in range(config.WAVE_BASE):
-                zombie_group.add(self.actor_factory.spawn_walker(window, visible))
+            self._spawn_actors(window, zombie_group, visible, config.WAVE_BASE)
 
     def advance(
         self, window, zombie_group, player_cash, dt=config.SIM_DT, visible=None
@@ -48,8 +57,12 @@ class WaveSystem:
         if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.wave_count += 1
             if config.ZOMBIE_SPAWNING_ENABLED:
-                for _ in range(config.WAVE_BASE + pow(self.wave_count, 2)):
-                    zombie_group.add(self.actor_factory.spawn_walker(window, visible))
+                self._spawn_actors(
+                    window,
+                    zombie_group,
+                    visible,
+                    config.WAVE_BASE + pow(self.wave_count, 2),
+                )
             self.wave_seconds = 0.0
         else:
             self.wave_seconds += dt
@@ -66,6 +79,28 @@ class WaveSystem:
         self._skip_requested = False
         return requested
 
+    def _spawn_actors(self, window, zombie_group, visible, count):
+        definition = walker_definition()
+        self.last_spawn_result = self.spawn_service.spawn(
+            SpawnActorRequest(
+                definition=definition,
+                query=SpawnQuery(role="enemy"),
+                constraints=PlacementConstraints(
+                    visible_area=_visible_area(visible),
+                    exclude_visible=visible is not None,
+                    footprint=definition.collision_size,
+                    minimum_occupant_distance=max(definition.collision_size),
+                ),
+                count=count,
+                fallback_policy=LEGACY_VISIBLE_RING,
+            ),
+            self.spawn_sources,
+            window,
+            visible,
+        )
+        zombie_group.add(self.last_spawn_result.actors)
+        return self.last_spawn_result
+
     def draw(self, screen, window=config.WINDOW):
         """The banner is centred on the window rather than pinned at x=300,
         which only ever looked right at one resolution."""
@@ -78,3 +113,11 @@ class WaveSystem:
     def _centred(self, screen, message, banner, top):
         text = pygame.font.Font(None, 40).render(message, True, config.WHITE)
         screen.blit(text, (banner.centerx - text.get_width() // 2, banner.top + top))
+
+
+def _visible_area(visible):
+    if visible is None:
+        return None
+    from shooter.world_collision import Aabb
+
+    return Aabb(visible.left, visible.top, visible.width, visible.height)
