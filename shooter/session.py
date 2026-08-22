@@ -33,6 +33,7 @@ from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
 from shooter.entities.props import Harvestable
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
+from shooter.projectile_adapter import adapt_attacks
 from shooter.render import blit_group
 from shooter.spatial import Bounds, Box, SpatialStore, Transform
 from shooter.systems import shop, world
@@ -45,6 +46,7 @@ from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
 from shooter.domain_events import EventQueue
 from shooter.map_definition import current_map_definition
+from shooter.loadout import ActorInventory, Loadout
 from shooter.world_collision import Aabb, actor_box, overlaps
 from shooter.world_registry import WorldRegistry
 
@@ -165,11 +167,18 @@ class Session:
         self.powerups = pygame.sprite.Group(PowerUps())
 
         self.cash = Cash()
-        self.carried = [equip(which) for which in SLOTS]
-        self.equipped = self.carried[0]
+        self.inventory = ActorInventory(
+            loadout=Loadout(
+                (equip(which) for which in SLOTS), capacity=commands.SLOT_COUNT
+            ),
+            backpack=items.Backpack(),
+        )
+        # Compatibility aliases while legacy UI and gathering callers migrate.
+        self.loadout = self.inventory.loadout
+        self.backpack = self.inventory.backpack
+        self._pending_equipped = None
         self.shopping = False
         self.shop_says = None
-        self.backpack = items.Backpack()
         self.dropped = pygame.sprite.Group()
         self.notice = None
         self.notice_seconds = 0.0
@@ -314,7 +323,7 @@ class Session:
                 line = command.value
                 if line < len(shop.STOCK):
                     self.shop_says = shop.buy(
-                        shop.STOCK[line], self.cash, self.carried
+                        shop.STOCK[line], self.cash, self.loadout
                     )
             return
         if command.action == commands.FIRE:
@@ -346,14 +355,40 @@ class Session:
         """
         return self.equipped.status
 
+    @property
+    def carried(self):
+        """Temporary mutable-list view for legacy callers and tests."""
+        return self.loadout.compatibility_entries()
+
+    @carried.setter
+    def carried(self, entries):
+        self.loadout.replace(entries)
+        self._pending_equipped = None
+
+    @property
+    def equipped(self):
+        pending = self._pending_equipped
+        if pending is not None and self.loadout.select_entry(pending):
+            self._pending_equipped = None
+        return pending if self._pending_equipped is not None else self.loadout.selected
+
+    @equipped.setter
+    def equipped(self, held):
+        if self.loadout.select_entry(held):
+            self._pending_equipped = None
+        else:
+            # Compatibility for callers that assign, then append the same item
+            # to the old mutable `carried` view.
+            self._pending_equipped = held
+
     def _shoot(self):
         if self.shopping or not self.equipped.ready:
             return
         self.shooting = True
-        attacks = self.equipped.attack(self._muzzle(), self.aim, self._damage())
-        for attack in attacks:
-            attack.instigator_id = self.player_id
-            attack.weapon_id = self.equipped.weapon.id
+        descriptions = self.equipped.describe_attack(
+            self.player_id, self._muzzle(), self.aim, self._damage()
+        )
+        attacks = adapt_attacks(descriptions)
         self.bullets.add(attacks)
         self.equipped.fire()
 
@@ -381,8 +416,7 @@ class Session:
         slots is left out rather than made unreachable -- five keys is five
         weapons, and which five is a choice AT41 gives the player properly.
         """
-        self.carried = everything()[: commands.SLOT_COUNT]
-        self.equipped = self.carried[0]
+        self.loadout.replace(everything()[: commands.SLOT_COUNT])
 
     def _equip(self, slot):
         """Hold something else.
@@ -391,9 +425,7 @@ class Session:
         still locked when it comes back -- clearing that here let the player
         cancel every reload, and fire an empty gun, with two keystrokes.
         """
-        if slot >= len(self.carried):
-            return
-        self.equipped = self.carried[slot]
+        self.loadout.select(slot)
 
     def _interact(self):
         """Use what is at hand: a stand sells, a tree is chopped."""
@@ -473,7 +505,7 @@ class Session:
         self.previous_camera = self.camera
         self._advance_player()
 
-        for held in self.carried:
+        for held in self.loadout:
             held.tick(dt)
 
         self._gather()
@@ -728,7 +760,7 @@ class Session:
                 continue
             if collected != powerup_kinds.EXPIRED:
                 self.instakill_seconds += collect_powerup(
-                    collected, self.human, self.zombies, self.carried
+                    collected, self.human, self.zombies, tuple(self.loadout)
                 )
             powerup.kill()
 
@@ -812,6 +844,8 @@ class Session:
             )
 
         if self.shopping:
-            self.shop_display.draw(screen, self.cash, self.carried, self.shop_says)
+            self.shop_display.draw(
+                screen, self.cash, tuple(self.loadout), self.shop_says
+            )
         elif self.nearby is not None:
             prompt(screen, self.window, self.nearby.label)

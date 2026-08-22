@@ -8,6 +8,7 @@ RELOAD = "reload"
 BEGIN_ATTACK = "begin_attack"
 FIRE = "fire"
 MANUAL_RELOAD = "manual_reload"
+REFILL = "refill"
 ADVANCE = "advance"
 
 
@@ -116,6 +117,15 @@ class WeaponOperationService:
                 return WeaponOperationResult(False, self.status(definition, runtime))
             loaded = self._reload(definition, runtime)
             return WeaponOperationResult(True, RELOAD, rounds_loaded=loaded)
+
+        if request.action == REFILL:
+            if definition.reserve_capacity is None:
+                return WeaponOperationResult(False, self.status(definition, runtime))
+            added = definition.reserve_capacity - runtime.reserve
+            runtime.reserve = definition.reserve_capacity
+            return WeaponOperationResult(
+                True, self.status(definition, runtime), rounds_loaded=added
+            )
 
         raise ValueError(f"unknown weapon operation: {request.action}")
 

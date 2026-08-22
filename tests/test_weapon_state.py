@@ -12,6 +12,7 @@ from shooter.weapon_state import (
     FIRE,
     MANUAL_RELOAD,
     NO_AMMO,
+    REFILL,
     RELOAD,
     WeaponDefinition,
     WeaponOperationRequest,
@@ -140,3 +141,17 @@ def test_independent_owners_use_the_same_operation_service():
     assert service.ready(definition, first) is False
     assert second.loaded == 30
     assert service.ready(definition, second) is True
+
+
+def test_refill_is_an_explicit_operation():
+    definition = rifle_definition()
+    runtime = WeaponRuntime.fresh(definition)
+    runtime.reserve = 12
+
+    result = WeaponOperationService().apply(
+        definition, runtime, WeaponOperationRequest(REFILL)
+    )
+
+    assert result.accepted is True
+    assert result.rounds_loaded == 78
+    assert runtime.reserve == 90

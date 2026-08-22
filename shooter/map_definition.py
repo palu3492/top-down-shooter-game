@@ -19,6 +19,52 @@ class MapDefinition:
     size: tuple[int, int]
     collision: tuple[Aabb | Ellipse | Polygon, ...] = ()
     capabilities: frozenset[str] = frozenset()
+    spawns: tuple["SpawnPoint | SpawnRegion", ...] = ()
+    supported_modes: frozenset[str] = frozenset()
+
+    def spawn_roles(self):
+        return frozenset(spawn.role for spawn in self.spawns if spawn.role)
+
+    def validate(self, requirements: "MapRequirements"):
+        missing_capabilities = requirements.capabilities - self.capabilities
+        missing_spawn_roles = requirements.spawn_roles - self.spawn_roles()
+        return MapCapabilityReport(missing_capabilities, missing_spawn_roles)
+
+
+@dataclass(frozen=True, slots=True)
+class SpawnPoint:
+    spawn_id: str
+    position: tuple[float, float]
+    role: str = ""
+    tags: frozenset[str] = frozenset()
+    faction: str | None = None
+    actor_kind: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SpawnRegion:
+    spawn_id: str
+    area: Aabb | Ellipse | Polygon
+    role: str = ""
+    tags: frozenset[str] = frozenset()
+    faction: str | None = None
+    actor_kind: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MapRequirements:
+    capabilities: frozenset[str] = frozenset()
+    spawn_roles: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True, slots=True)
+class MapCapabilityReport:
+    missing_capabilities: frozenset[str] = frozenset()
+    missing_spawn_roles: frozenset[str] = frozenset()
+
+    @property
+    def compatible(self):
+        return not self.missing_capabilities and not self.missing_spawn_roles
 
 
 def _properties(element):
@@ -50,6 +96,27 @@ def _shape(obj, offset_x, offset_y):
     return None
 
 
+def _csv(value):
+    return frozenset(part.strip() for part in value.split(",") if part.strip())
+
+
+def _spawn(obj, offset_x, offset_y):
+    properties = _properties(obj)
+    common = {
+        "spawn_id": obj.get("name") or f"spawn-{obj.get('id', 'unknown')}",
+        "role": properties.get("role", ""),
+        "tags": _csv(properties.get("tags", "")),
+        "faction": properties.get("faction") or None,
+        "actor_kind": properties.get("actor_kind") or None,
+    }
+    x = float(obj.get("x", 0)) + offset_x
+    y = float(obj.get("y", 0)) + offset_y
+    if obj.get("point") == "1":
+        return SpawnPoint(position=(x, y), **common)
+    area = _shape(obj, offset_x, offset_y)
+    return None if area is None else SpawnRegion(area=area, **common)
+
+
 @cache
 def load_tmx_definition(source, presentation_source=None):
     """Adapt available TMX semantics without requiring a complete future schema."""
@@ -58,12 +125,18 @@ def load_tmx_definition(source, presentation_source=None):
     root = ElementTree.parse(path).getroot()
     metadata = _properties(root)
     collisions = []
+    spawns = []
     for layer in root.findall("objectgroup"):
         layer_name = layer.get("name", "")
         include = layer_name in {"Collision", "Obstacles"}
         offset_x = float(layer.get("offsetx", 0))
         offset_y = float(layer.get("offsety", 0))
         for obj in layer.findall("object"):
+            if layer_name == "Spawns":
+                spawn = _spawn(obj, offset_x, offset_y)
+                if spawn is not None:
+                    spawns.append(spawn)
+                continue
             solid = _properties(obj).get("solid", "false").lower() == "true"
             if not include and not solid:
                 continue
@@ -75,6 +148,8 @@ def load_tmx_definition(source, presentation_source=None):
     capabilities = {"bounds"}
     if collisions:
         capabilities.add("collision")
+    if spawns:
+        capabilities.add("spawns")
     return MapDefinition(
         map_id=map_id,
         display_name=metadata.get("display_name", map_id.replace("_", " ").title()),
@@ -85,6 +160,8 @@ def load_tmx_definition(source, presentation_source=None):
         ),
         collision=tuple(collisions),
         capabilities=frozenset(capabilities),
+        spawns=tuple(spawns),
+        supported_modes=_csv(metadata.get("supported_modes", "")),
     )
 
 

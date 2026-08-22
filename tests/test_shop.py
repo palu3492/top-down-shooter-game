@@ -13,6 +13,7 @@ import pytest
 
 from shooter import config, weapons
 from shooter.entities.props import Prop
+from shooter.loadout import Loadout
 from shooter.session import SLOT_KEYS, Session
 from shooter.systems import shop, world
 from shooter.ui.hud import Cash
@@ -81,6 +82,15 @@ def test_a_bought_gun_arrives_loaded(wallet, carried):
     bought = carried[-1]
     assert bought.loaded == bought.weapon.clip
     assert bought.reserve == bought.weapon.reserve
+
+
+def test_shop_adds_a_purchase_through_the_loadout(wallet):
+    loadout = Loadout((weapons.equip(weapons.KNIFE),), weapons.MAX_SLOTS)
+    wallet.increase_cash(M16.price)
+
+    assert shop.buy(M16, wallet, loadout) == shop.BOUGHT
+    assert [held.weapon.id for held in loadout] == [weapons.KNIFE.id, M16.weapon]
+    assert loadout.selected.weapon.id == weapons.KNIFE.id
 
 
 def test_a_gun_you_cannot_afford_is_not_sold(wallet, carried):

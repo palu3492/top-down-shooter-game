@@ -24,9 +24,9 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 5 — Weapon operation and inventory integration |
+| Migration phase | Phase 6 — Reusable spawning |
 | Phase status | In progress |
-| Active work package | M5.3 — Create attributed attacks through adapters |
+| Active work package | M6.2 — Add reusable spawn queries and constraints |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 7 — Reusable Match and mode boundary |
 | Last updated | 2026-08-21 |
@@ -59,8 +59,8 @@ package.
 | 2 | Neutral commands, events, and entity IDs | Complete | Boundary audit and exit criteria verified |
 | 3 | Authoritative actor state and world position | Complete | Explicit map/spatial/camera/collision boundaries verified |
 | 4 | Unified health, damage, death, and attribution | Complete | Shared attributed damage pipeline verified at integration checkpoint 1 |
-| 5 | Weapon operation and inventory integration | In progress | M5.1-M5.2 complete; M5.3 active |
-| 6 | Reusable spawning | Not started | — |
+| 5 | Weapon operation and inventory integration | Complete | Owner-independent weapon pipeline verified |
+| 6 | Reusable spawning | In progress | M6.1 complete; M6.2 active |
 | 7 | Neutral Match and game-mode boundary | Not started | Integration checkpoint 2 |
 | 8 | Complete presentation separation | Not started | — |
 | 9 | Prove reuse with a sandbox ruleset | Not started | Integration checkpoint 3 |
@@ -68,32 +68,32 @@ package.
 
 ## Active Work Package
 
-### M5.3 — Create attributed attacks through adapters
+### M6.2 — Add reusable spawn queries and constraints
 
 **Status:** In progress
 
-**Objective:** Have weapon operation produce attributed, renderer-independent attack
-descriptions and adapt those descriptions into current pygame projectiles.
+**Objective:** Select valid positions from neutral spawn data using reusable filters
+and constraints rather than actor constructors or mode-specific random placement.
 
 **Scope:**
 
-- Define neutral attack descriptions for ballistic pellets and melee sweeps.
-- Include instigator, weapon definition, damage, origin, direction, and attack kind.
-- Generate spread through an injected random source at the simulation boundary.
-- Convert neutral descriptions to legacy `Shot`/`Swing` objects in one adapter.
+- Query spawn sources by role, tags, faction, and actor kind.
+- Sample points and supported region geometry through an injected random source.
+- Apply bounds, visibility, distance, occupancy, and collision constraints.
+- Return explicit selection failure rather than silently falling back to the origin.
 
 **Non-goals:**
 
-- Rewriting projectile motion or collision resolution.
-- Consolidating the backpack and carried equipment; that follows after operation.
-- Replacing current weapon graphics or audio reactions.
+- Choosing final spawn locations or requiring edits to the current TMX.
+- Actor construction and Survival wave migration; those follow in M6.3/M6.4.
+- Mode-specific wave composition or timing.
 
 **Acceptance criteria:**
 
-- [ ] A controller can request an attack without importing pygame.
-- [ ] Attack descriptions carry stable attribution and primitive geometry.
-- [ ] Seeded spread is deterministic before projectile adaptation.
-- [ ] One production adapter owns creation of legacy attack sprites.
+- [ ] Spawn queries filter semantic sources without knowing map identity.
+- [ ] Selection is reproducible with an injected random source.
+- [ ] Visibility, distance, occupancy, bounds, and collision constraints compose.
+- [ ] No valid candidate returns an explicit failure without constructing an actor.
 
 **Verification evidence:**
 
@@ -156,9 +156,31 @@ Pending.
 |---|---|---|---|
 | M5.1 | Separate weapon definitions from runtime state | Complete | Phase 4 |
 | M5.2 | Route fire, reload, cooldown, and ammo through a neutral weapon service | Complete | M5.1 |
-| M5.3 | Create attributed attacks through adapters and injected spread RNG | In progress | M5.2 |
-| M5.4 | Reconcile carried equipment and backpack into an explicit loadout | Not started | M5.3 |
-| M5.5 | Verify reusable weapon operation and close Phase 5 | Not started | M5.4 |
+| M5.3 | Create attributed attacks through adapters and injected spread RNG | Complete | M5.2 |
+| M5.4 | Reconcile carried equipment and backpack into an explicit loadout | Complete | M5.3 |
+| M5.5 | Verify reusable weapon operation and close Phase 5 | Complete | M5.4 |
+
+## Phase 6 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M6.1 | Define spawn data and TMX capability validation | Complete | Phase 5 |
+| M6.2 | Add reusable spawn queries and placement constraints | In progress | M6.1 |
+| M6.3 | Construct actors from explicit definitions and positions | Not started | M6.2 |
+| M6.4 | Route Survival waves through the shared spawn service | Not started | M6.3 |
+| M6.5 | Verify reusable spawning and close Phase 6 | Not started | M6.4 |
+
+## Phase 5 Exit Review
+
+- [x] Immutable weapon definitions are separate from per-instance runtime state.
+- [x] Fire, reload, ammunition, cooldown, and refill use neutral operation results.
+- [x] Controllers produce attributed attack descriptions before pygame adaptation.
+- [x] Injected random sources make spread deterministic.
+- [x] A non-player entity ID uses the same operation and attack contracts.
+- [x] One production adapter owns current `Shot`/`Swing` construction.
+- [x] Owner-independent loadouts preserve individual weapon runtime state.
+- [x] Session and shop do not directly mutate weapon operation fields.
+- [x] The full suite adds no failure category beyond the recorded baseline.
 
 ## Phase 4 Exit Review
 
@@ -244,6 +266,10 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M4.5 | 945 passed, 33 failed in 61.82s | Integrated kill-to-removal/reward/loot proof passes; Phase 4 closes with only recorded failure categories |
 | 2026-08-21 | `uv run pytest` after M5.1 | 950 passed, 33 failed in 44.56s | Five definition/runtime and adapter tests pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M5.2 | 955 passed, 33 failed in 32.28s | Neutral operation requests/results preserve ammo, reload, cooldown, and timing behavior; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M5.3 | 959 passed, 33 failed in 29.96s | Attributed neutral attack descriptions and the sole sprite adapter pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M5.4 | 965 passed, 33 failed in 29.71s | Explicit loadout/inventory, shop integration, selection, and runtime preservation pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M5.5 | 969 passed, 33 failed in 30.82s | Non-player operation, refill routing, construction-site audit, and mutation-boundary audit pass; Phase 5 closes |
+| 2026-08-21 | `uv run pytest` after M6.1 | 973 passed, 33 failed in 32.16s | Neutral point/region parsing, metadata, offsets, supported modes, and capability reports pass; failure categories remain unchanged |
 
 ### Static checks
 
@@ -461,6 +487,8 @@ When one is introduced, record:
 | Legacy combat-state mirror | Player/enemy actor-owned health is mirrored into the stable-ID combat store while old attacks still mutate actors directly | M4.1 | M4.3 routes attacks through the damage service and makes combat state authoritative | Removed from attack paths in M4.3 |
 | Legacy actor health reflection | Authoritative damage results are copied to `Human.health`/`Zombie.zombie_health` for current rendering, outcomes, and regeneration | M4.3 | Presentation reads combat state and vitality effects route through shared services | Active |
 | Legacy held-weapon properties | `Gun`/`Blade` expose `loaded`, `reserve`, cooldown, reload, and method results while neutral runtime/service own weapon operation | M5.1 | Callers consume explicit weapon-operation state/results | Active |
+| Legacy projectile adapter | Neutral attributed attack descriptions become current `Shot`/`Swing` sprites and gunshot audio in one pygame-facing adapter | M5.3 | Projectile simulation and presentation consume neutral attacks directly | Active |
+| Legacy carried/equipped view | `Session.carried` and `Session.equipped` adapt old list assignment/slicing onto the authoritative loadout | M5.4 | Legacy tests and UI consume `ActorInventory`/`Loadout` directly | Active |
 
 ## Known Failures and Risks
 
@@ -515,8 +543,12 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M4.5 and Phase 4 | Production attack audit and integrated consequence proof pass; full suite is 945 passed/33 recorded failures |
 | 2026-08-21 | Completed M5.1 weapon state separation | Immutable pygame-free definitions and isolated runtime ammo/timers now back legacy equipment through compatibility properties |
 | 2026-08-21 | Completed M5.2 neutral weapon operation | Explicit requests/results now govern readiness, fire, ammo, reload, cooldown, and timer advancement without actors or pygame |
+| 2026-08-21 | Completed M5.3 neutral attack creation | Controllers can produce immutable attributed ballistic/melee descriptions; injected spread precedes the sole pygame projectile adapter |
+| 2026-08-21 | Completed M5.4 explicit loadout | Owner-independent slots preserve weapon runtimes; Session/shop use loadout operations; stackable cargo remains an explicit backpack boundary |
+| 2026-08-21 | Completed M5.5 and Phase 5 | Non-player weapon use and executable bypass audits pass; full suite is 969 passed/33 recorded failures |
+| 2026-08-21 | Completed M6.1 spawn map contract | TMX points/regions and semantic metadata normalize neutrally; modes can validate required capabilities while incomplete maps remain loadable |
 
 ## Next Action
 
-Begin M5.3 by defining attributed neutral attack descriptions and a single adapter
-that creates current projectile sprites from them.
+Begin M6.2 by implementing deterministic spawn queries and composable placement
+constraints over the neutral map data.

@@ -12,6 +12,7 @@ was for.
 from dataclasses import dataclass
 
 from shooter import weapons
+from shooter.loadout import Loadout
 
 BOUGHT = "bought"
 REFILLED = "refilled"
@@ -54,8 +55,12 @@ def carrying(carried, offer):
     )
 
 
+def _entries(carried):
+    return carried if not isinstance(carried, Loadout) else tuple(carried)
+
+
 def price_of(offer, carried):
-    return offer.ammo if carrying(carried, offer) else offer.price
+    return offer.ammo if carrying(_entries(carried), offer) else offer.price
 
 
 def buy(offer, cash, carried):
@@ -64,17 +69,22 @@ def buy(offer, cash, carried):
     Everything that could refuse the sale is checked before the coins move, so
     a refusal never costs the player anything.
     """
-    held = carrying(carried, offer)
+    entries = _entries(carried)
+    held = carrying(entries, offer)
 
-    if held is None and len(carried) >= weapons.MAX_SLOTS:
+    if held is None and len(entries) >= weapons.MAX_SLOTS:
         return NO_ROOM
     if held is not None and held.reserve >= held.weapon.reserve:
         return STOCKED
-    if not cash.cash_add_remove(-price_of(offer, carried)):
+    if not cash.cash_add_remove(-price_of(offer, entries)):
         return TOO_POOR
 
     if held is None:
-        carried.append(weapons.equip(offer.weapon))
+        made = weapons.equip(offer.weapon)
+        if isinstance(carried, Loadout):
+            carried.add(made)
+        else:
+            carried.append(made)
         return BOUGHT
     held.refill()
     return REFILLED

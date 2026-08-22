@@ -14,18 +14,19 @@ identity -- what the backpack carries, what the shop sells, what a slot shows.
 The `Weapon` is what it *does*, and one is built for each `Gun` that exists.
 """
 
-import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from shooter import config, items
-from shooter.entities.projectiles import GUN_SHOT, Shot, Swing, play
+from shooter.projectile_adapter import adapt_attacks
+from shooter.weapon_attacks import AttackDescriptionService
 from shooter.weapon_state import (
     ADVANCE,
     BEGIN_ATTACK,
     FIRE,
     MANUAL_RELOAD,
     NO_AMMO as NO_AMMO,
+    REFILL,
     RELOAD as RELOAD,
     WeaponDefinition,
     WeaponOperationRequest,
@@ -256,6 +257,7 @@ class Held:
         self.definition = _definition_of(weapon)
         self.runtime = WeaponRuntime.fresh(self.definition)
         self.operations = WeaponOperationService(SPENT)
+        self.attacks = AttackDescriptionService()
 
     @property
     def cooling_for(self):
@@ -314,17 +316,18 @@ class Blade(Held):
         """Never anything but usable."""
         return None
 
-    def attack(self, muzzle, aim, damage):
+    def describe_attack(self, instigator_id, muzzle, aim, damage=None):
         self._spend()
-        return [
-            Swing(
-                *muzzle,
-                *aim,
-                damage=damage,
-                reach=self.weapon.reach,
-                arc=self.weapon.arc,
-            )
-        ]
+        return self.attacks.create(
+            _with_damage(self.definition, damage),
+            instigator_id,
+            muzzle,
+            aim,
+            random,
+        )
+
+    def attack(self, muzzle, aim, damage):
+        return list(adapt_attacks(self.describe_attack(None, muzzle, aim, damage)))
 
     def fire(self):
         return self.operations.apply(
@@ -339,7 +342,9 @@ class Blade(Held):
         ).status
 
     def refill(self):
-        """Nothing to refill. A knife is never out."""
+        return self.operations.apply(
+            self.definition, self.runtime, WeaponOperationRequest(REFILL)
+        ).status
 
 
 class Gun(Held):
@@ -395,27 +400,23 @@ class Gun(Held):
         """
         return self.operations.status(self.definition, self.runtime)
 
-    def attack(self, muzzle, aim, damage):
+    def describe_attack(self, instigator_id, muzzle, aim, damage=None):
         """One shot, or a shotgun's worth of them.
 
-        The sound is played once here rather than by each `Shot`, which would
-        have fired eight overlapping copies of it for one pull of the trigger.
+        Spread is resolved before pygame sprites exist, using this instance's
+        injected random source.
         """
         self._spend()
-        play(GUN_SHOT)
-        return [
-            Shot(*muzzle, *self._scatter(aim), damage=damage)
-            for _ in range(self.weapon.pellets)
-        ]
+        return self.attacks.create(
+            _with_damage(self.definition, damage),
+            instigator_id,
+            muzzle,
+            aim,
+            self.rng,
+        )
 
-    def _scatter(self, aim):
-        """Nudge the aim within the weapon's cone. A sniper has none of it."""
-        if not self.weapon.spread:
-            return aim
-        half = math.radians(self.weapon.spread) / 2
-        angle = math.atan2(aim[1], aim[0]) + self.rng.uniform(-half, half)
-        reach = math.hypot(*aim)
-        return (math.cos(angle) * reach, math.sin(angle) * reach)
+    def attack(self, muzzle, aim, damage):
+        return list(adapt_attacks(self.describe_attack(None, muzzle, aim, damage)))
 
     def fire(self):
         """Spend a round. Emptying the clip starts a reload if there is one.
@@ -451,7 +452,9 @@ class Gun(Held):
         ).status
 
     def refill(self):
-        self.reserve = self.weapon.reserve
+        return self.operations.apply(
+            self.definition, self.runtime, WeaponOperationRequest(REFILL)
+        ).status
 
     def tick(self, dt=config.SIM_DT):
         """Work off the reload and the rate, in hand or not.
@@ -490,3 +493,9 @@ def _definition_of(made):
         spread=made.spread,
         automatic=made.automatic,
     )
+
+
+def _with_damage(definition, damage):
+    if damage is None or damage == definition.damage:
+        return definition
+    return replace(definition, damage=damage)
