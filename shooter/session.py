@@ -20,13 +20,7 @@ import pygame
 from shooter import commands, config, items
 from shooter.background import TiledBackground
 from shooter.camera import FollowCamera
-from shooter.combat_state import CombatStateStore
-from shooter.damage import (
-    DamageRequest,
-    DamageService,
-    FactionStore,
-    RelationshipPolicy,
-)
+from shooter.damage import DamageRequest
 from shooter.collision import load_obstacles
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
@@ -36,20 +30,20 @@ from shooter.entities.props import Harvestable
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
 from shooter.projectile_adapter import adapt_attacks
 from shooter.render import blit_group
-from shooter.spatial import Bounds, Box, SpatialStore, Transform
-from shooter.systems import shop, world
-from shooter.systems.survival_consequences import SurvivalConsequences
-from shooter.systems.waves import WaveSystem
+from shooter.spatial import Bounds, Box, Transform
+from shooter.systems import world
+from shooter.modes.zombie_survival import shop
+from shooter.modes.zombie_survival import SurvivalConsequences, WaveSystem
+from shooter.modes.zombie_survival.state import SurvivalState
 from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, prompt
 from shooter.ui.radar import RadarScreen
 from shooter.ui.shopfront import ShopFront
 from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
-from shooter.domain_events import EventQueue
 from shooter.map_definition import current_map_definition
 from shooter.loadout import ActorInventory, Loadout
+from shooter.match import legacy_survival_match
 from shooter.world_collision import Aabb, actor_box, overlaps
-from shooter.world_registry import WorldRegistry
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 INSTAKILL_TOP = 40
@@ -133,8 +127,12 @@ def centred_text(screen, window, message, top, size, colour=config.WHITE):
 class Session:
     """A game in progress."""
 
-    def __init__(self, window, rules=WaveSystem, map_definition=None):
-        self.map_definition = map_definition or current_map_definition()
+    def __init__(
+        self, window, rules=WaveSystem, map_definition=None, match_owner=None
+    ):
+        selected_map = map_definition or current_map_definition()
+        self.match = match_owner or legacy_survival_match(selected_map)
+        self.map_definition = self.match.map_definition
         self.window = window
         self._camera_x, self._camera_y = 0, 0
         self.previous_camera = (0, 0)
@@ -167,7 +165,8 @@ class Session:
         self.stun_explosions = pygame.sprite.Group()
         self.powerups = pygame.sprite.Group(PowerUps())
 
-        self.cash = Cash()
+        self.survival_state = SurvivalState()
+        self.cash = Cash(self.survival_state.cash)
         self.inventory = ActorInventory(
             loadout=Loadout(
                 (equip(which) for which in SLOTS), capacity=commands.SLOT_COUNT
@@ -197,26 +196,20 @@ class Session:
             window, self.zombies, self.cash, self.visible, **rule_kwargs
         )
         self.props = pygame.sprite.Group()
-        self.events = EventQueue()
-        self.entities = WorldRegistry(self.events)
+        self.events = self.match.events
+        self.entities = self.match.entities
         self.player_id = self.entities.register(self.human, ("actor", "player"))
-        self.combat = CombatStateStore()
+        self.combat = self.match.combat
         self.combat.attach(
             self.player_id,
             config.PLAYER_HEALTH,
             health=self.human.health,
         )
-        self.factions = FactionStore()
+        self.factions = self.match.factions
         self.factions.assign(self.player_id, "survivors")
-        self.damage = DamageService(
-            self.combat,
-            self.factions,
-            RelationshipPolicy((("survivors", "horde"),)),
-            self.events,
-        )
+        self.damage = self.match.damage
         self.survival_consequences = SurvivalConsequences()
-        self.simulation_tick = 0
-        self.spatial = SpatialStore()
+        self.spatial = self.match.spatial
         self.spatial.attach(
             self.player_id,
             Transform(*self._muzzle()),
@@ -235,6 +228,11 @@ class Session:
         self._enemy_ids = {}
         self._sync_enemy_registry()
         self._sync_combat_state()
+        self.match.start()
+
+    @property
+    def simulation_tick(self):
+        return self.match.tick
 
     @property
     def outcome(self):
@@ -245,9 +243,7 @@ class Session:
         as finished is exactly what a mode decides -- endless freeplay never
         declares one.
         """
-        if not self.human.alive():
-            return LOST
-        return self.rules.outcome
+        return self.survival_state.outcome(self.human.alive(), self.rules.outcome)
 
     @property
     def visible(self):
@@ -505,7 +501,7 @@ class Session:
         self._step_after_movement(dt, controls.trigger_held)
 
     def _step_after_movement(self, dt, trigger):
-        self.simulation_tick += 1
+        self.match.advance(dt)
         self._sync_enemy_registry()
         self._sync_combat_state()
         self.previous_camera = self.camera

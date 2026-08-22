@@ -17,7 +17,7 @@ from shooter.actor_adapter import LegacyActorFactory
 from shooter.session import WON
 from shooter.systems import world
 from shooter.spawn_service import SpawnService
-from shooter.systems.waves import WaveSystem
+from shooter.modes.zombie_survival.waves import WaveSystem
 from shooter.ui.anchor import CENTRE, TOP, place
 
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="18" nextobjectid="297">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="19" nextobjectid="304">
  <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="547" tilecount="25" columns="0" objectalignment="topleft">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="vehicle">
@@ -390,6 +390,29 @@
  <objectgroup id="11" name="Playable Area" visible="0">
   <object id="72" x="1297.07" y="697.35">
    <polygon points="-479.626,-275.891 -864.388,274.4 -941.097,1502.32 -481.172,2001.39 -418.41,3165.97 -383.543,4274.76 -655.509,5516.04 -983.264,6847.98 -892.608,7482.57 -474.198,7956.76 488.145,8640.17 1478.38,8960.95 2503.49,9002.79 4351.46,9079.5 6624.83,8995.82 7649.93,8647.14 8013.76,8101.1 7712.09,6894.97 8110.18,4651.32 7998.61,3047.42 7635.98,1582.98 7747.56,599.721 7308.23,313.808 7601.12,-292.887 6471.41,-474.198 4937.24,-432.357 2949.79,-376.569 1603.91,-432.357 320.781,-446.304 -72.7659,-405.067"/>
+  </object>
+ </objectgroup>
+ <objectgroup id="18" name="vegetation">
+  <object id="297" x="3194.87" y="2027.64">
+   <polygon points="0,0 69.096,-75.6766 831.62,593.074 746.895,667.928"/>
+  </object>
+  <object id="298" x="3107.67" y="2205.31">
+   <polygon points="0,0 70.7411,-85.5474 797.072,542.075 713.169,611.993"/>
+  </object>
+  <object id="299" x="2988.4" y="2313.07">
+   <polygon points="0,0 84.7248,-66.6283 786.378,575.8 705.766,633.38"/>
+  </object>
+  <object id="300" x="3809.33" y="2045.73">
+   <polygon points="0,0 60.8703,46.8866 505.059,-367.689 426.915,-420.334"/>
+  </object>
+  <object id="301" x="3913.79" y="2132.93">
+   <polygon points="0,0 59.2251,51.822 502.591,-378.383 440.898,-426.915"/>
+  </object>
+  <object id="302" x="4021.55" y="2214.36">
+   <polygon points="0,0 49.3543,44.4189 489.43,-381.673 428.56,-432.673"/>
+  </object>
+  <object id="303" x="4118.61" y="2296.62">
+   <polygon points="-6.58057,-4.93543 55.1123,40.306 496.833,-382.496 423.624,-437.608"/>
   </object>
  </objectgroup>
  <objectgroup id="12" name="Tree Replacement Areas" visible="0">

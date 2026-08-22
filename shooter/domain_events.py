@@ -61,3 +61,6 @@ class EventQueue:
 
     def __len__(self):
         return len(self._pending)
+
+    def clear(self):
+        self._pending.clear()

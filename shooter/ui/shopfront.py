@@ -12,7 +12,7 @@ at a menu with zombies closing in is a different game.
 import pygame
 
 from shooter import config
-from shooter.systems import shop
+from shooter.modes.zombie_survival import shop
 from shooter.ui.anchor import CENTRE, TOP, inside, place
 
 PANEL_SIZE = (420, 250)

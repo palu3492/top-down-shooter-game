@@ -17,6 +17,8 @@ from shooter.entities import powerups
 from shooter.entities.projectiles import LETHAL, Shot, Swing
 from shooter import session as session_module
 from shooter.session import Session, collect_powerup
+from shooter.map_definition import current_map_definition
+from shooter.match import legacy_survival_match
 from shooter.ui import dev
 from shooter.viewport import Viewport
 
@@ -79,6 +81,22 @@ def test_discarding_a_game_leaves_nothing_behind(display):
     second = Session(Viewport(WINDOW))
     assert second.zombies is not zombies
     assert len(second.zombies) == config.WAVE_BASE
+
+
+def test_session_temporarily_bridges_to_match_owned_simulation(display):
+    match = legacy_survival_match(current_map_definition(), seed=42)
+    session = Session(Viewport(WINDOW), match_owner=match)
+
+    assert session.events is match.events
+    assert session.entities is match.entities
+    assert session.spatial is match.spatial
+    assert session.combat is match.combat
+    assert session.factions is match.factions
+    assert session.damage is match.damage
+
+    before = match.tick
+    session.step(pressed_nothing(), 0.01)
+    assert match.tick == before + 1
 
 
 def test_a_step_advances_the_world(session):

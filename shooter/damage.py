@@ -49,6 +49,12 @@ class FactionStore:
     def remove(self, entity_id: EntityId):
         return self._factions.pop(entity_id, None)
 
+    def __len__(self):
+        return len(self._factions)
+
+    def clear(self):
+        self._factions.clear()
+
 
 class RelationshipPolicy:
     def __init__(

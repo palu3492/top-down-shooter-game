@@ -318,21 +318,37 @@ class GrenadeData:
 
 
 class Cash:
-    def __init__(self):
-        self.cash_amount = 0
+    """Temporary pygame readout adapting a Survival-owned wallet."""
+
+    def __init__(self, wallet=None):
+        if wallet is None:
+            from shooter.modes.zombie_survival.state import SurvivalWallet
+
+            wallet = SurvivalWallet()
+        self.wallet = wallet
+        self.cash_amount = wallet.balance
+
+    @property
+    def cash_amount(self):
+        return self.wallet.balance
+
+    @cash_amount.setter
+    def cash_amount(self, value):
+        self.wallet.balance = value
+        self.__dict__["cash_amount"] = value
 
     # Method used when zombie dies
     def increase_cash(self, amount):
-        self.cash_amount += amount
+        self.wallet.increase_cash(amount)
+        self.__dict__["cash_amount"] = self.wallet.balance
 
     # Method controls players cash
     # if player has the cash to purchase Item method will
     # return True allowing the purchase to be made
     def cash_add_remove(self, cash):
-        if self.cash_amount + cash < 0:
-            return False
-        self.cash_amount += cash
-        return True
+        changed = self.wallet.cash_add_remove(cash)
+        self.__dict__["cash_amount"] = self.wallet.balance
+        return changed
 
     def update(self, screen, window):
         panel, _ = top_panels(window)

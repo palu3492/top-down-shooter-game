@@ -24,9 +24,9 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 6 — Reusable spawning |
+| Migration phase | Phase 7 — Neutral Match and game-mode boundary |
 | Phase status | In progress |
-| Active work package | M6.5 — Verify reusable spawning and close Phase 6 |
+| Active work package | M7.4 — Expose mode status and remove rendering from rules |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 7 — Reusable Match and mode boundary |
 | Last updated | 2026-08-21 |
@@ -60,42 +60,39 @@ package.
 | 3 | Authoritative actor state and world position | Complete | Explicit map/spatial/camera/collision boundaries verified |
 | 4 | Unified health, damage, death, and attribution | Complete | Shared attributed damage pipeline verified at integration checkpoint 1 |
 | 5 | Weapon operation and inventory integration | Complete | Owner-independent weapon pipeline verified |
-| 6 | Reusable spawning | In progress | M6.1-M6.4 complete; M6.5 active |
-| 7 | Neutral Match and game-mode boundary | Not started | Integration checkpoint 2 |
+| 6 | Reusable spawning | Complete | Semantic, constrained, explicit-position spawning verified |
+| 7 | Neutral Match and game-mode boundary | In progress | M7.1–M7.3 complete; M7.4 active; integration checkpoint 2 |
 | 8 | Complete presentation separation | Not started | — |
 | 9 | Prove reuse with a sandbox ruleset | Not started | Integration checkpoint 3 |
 | 10 | Resume Zombie Survival feature development | Not started | Product development resumes |
 
 ## Active Work Package
 
-### M6.5 — Verify reusable spawning and close Phase 6
+### M7.4 — Expose mode status and remove rendering from rules
 
 **Status:** In progress
 
-**Objective:** Prove spawning is reusable, deterministic, explicit about failure,
-and fully separated from Survival timing/composition before closing Phase 6.
+**Objective:** Expose immutable Survival status for presentation and remove the
+remaining pygame countdown/banner work from mode rules.
 
 **Scope:**
 
-- Exercise map semantics through selection, constraints, actor creation, registration,
-  and Survival batch results as an integrated path.
-- Audit actor constructors and rules for production placement/factory bypasses.
-- Prove another faction/actor request can use the same neutral spawn service.
-- Run Phase 6 focused lint/tests and the complete regression checkpoint.
+- Define a read-only status value for wave, phase, timing, cash, enemies, and outcome.
+- Make presentation consume status instead of reading mutable rules internals.
+- Remove pygame imports and banner drawing from Zombie Survival rules.
 
 **Non-goals:**
 
-- Choosing final authored spawn locations or requiring edits to the current TMX.
-- Redesigning Survival wave counts, timing, or difficulty.
-- Generic Match ownership, which begins in Phase 7.
+- Replacing all Session rendering or pygame actor groups; that follows in Phase 8.
+- Building the visible selection flow; that follows in M7.5.
+- Adding a second proof mode; that is Phase 9.
 
 **Acceptance criteria:**
 
-- [ ] Actor construction has no production-owned random placement path.
-- [ ] Survival rules contain neither actor construction nor coordinate selection.
-- [ ] A non-Survival faction request uses the shared service successfully.
-- [ ] Authored and named-fallback integration paths both pass.
-- [ ] The full suite introduces no failure category beyond the recorded baseline.
+- [ ] Survival status is immutable and pygame-free.
+- [ ] Mode rules contain no rendering or UI imports.
+- [ ] The countdown is drawn by presentation from status only.
+- [ ] Existing Survival transition behavior remains characterized.
 
 **Verification evidence:**
 
@@ -170,7 +167,31 @@ Pending.
 | M6.2 | Add reusable spawn queries and placement constraints | Complete | M6.1 |
 | M6.3 | Construct actors from explicit definitions and positions | Complete | M6.2 |
 | M6.4 | Route Survival waves through the shared spawn service | Complete | M6.3 |
-| M6.5 | Verify reusable spawning and close Phase 6 | In progress | M6.4 |
+| M6.5 | Verify reusable spawning and close Phase 6 | Complete | M6.4 |
+
+## Phase 7 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M7.1 | Define mode/map catalogs and Match configuration | Complete | Phase 6 |
+| M7.2 | Introduce authoritative Match ownership | Complete | M7.1 |
+| M7.3 | Establish narrow mode contract and package Zombie Survival | Complete | M7.2 |
+| M7.4 | Expose mode status and remove rendering from rules | In progress | M7.3 |
+| M7.5 | Add leave/select/start application flow | Not started | M7.4 |
+| M7.6 | Verify disposal, consecutive matches, and integration checkpoint 2 | Not started | M7.5 |
+
+## Phase 6 Exit Review
+
+- [x] TMX spawn points/regions normalize with semantic metadata.
+- [x] Modes validate required map capabilities without map-identity branches.
+- [x] Seeded spawn selection composes bounds, visibility, distance, occupancy, and collision.
+- [x] Selection failures are explicit and do not construct actors.
+- [x] Actor definitions/requests are neutral and creation receives explicit positions.
+- [x] Production `Zombie` construction is isolated to one pygame adapter.
+- [x] Survival owns wave timing/count only and uses shared spawning.
+- [x] Authored sources and the named incomplete-map fallback are verified.
+- [x] A non-Survival faction uses the same spawn pipeline and neutral world stores.
+- [x] The full suite adds no failure category beyond the recorded baseline.
 
 ## Phase 5 Exit Review
 
@@ -275,6 +296,10 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M6.2 | 978 passed, 33 failed in 33.32s | Deterministic semantic queries and composable placement constraints pass; explicit failure replaces origin fallback |
 | 2026-08-21 | `uv run pytest` after M6.3 | 985 passed, 33 failed in 37.65s | Neutral actor creation, explicit-position adapter, production construction audit, and wave wiring pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M6.4 | 989 passed, 33 failed in 31.95s | Shared batch spawning, authored enemy regions, explicit failures, and named legacy fallback pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M6.5 | 992 passed, 33 failed in 34.15s | Non-Survival spawn/registry proof and pygame/rules boundary audits pass; Phase 6 closes |
+| 2026-08-21 | `uv run pytest` after M7.1 | 999 passed, 33 failed in 33.42s | Stable catalogs, immutable configuration, lightweight metadata, and structured compatibility resolution pass |
+| 2026-08-21 | `uv run pytest` after M7.2 | 1005 passed, 33 failed in 45.08s | Match lifecycle, owned stores, named deterministic RNG, disposal, compatibility rejection, and Session bridge pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M7.3 | 1009 passed, 33 failed in 53.40s | Narrow mode lifecycle, Survival package ownership, reusable economy, mode cash/outcome state, and compatibility imports pass; failure categories remain unchanged |
 
 ### Static checks
 
@@ -495,6 +520,8 @@ When one is introduced, record:
 | Legacy projectile adapter | Neutral attributed attack descriptions become current `Shot`/`Swing` sprites and gunshot audio in one pygame-facing adapter | M5.3 | Projectile simulation and presentation consume neutral attacks directly | Active |
 | Legacy carried/equipped view | `Session.carried` and `Session.equipped` adapt old list assignment/slicing onto the authoritative loadout | M5.4 | Legacy tests and UI consume `ActorInventory`/`Loadout` directly | Active |
 | Legacy direct Zombie placement | Direct `Zombie(...)` callers still choose a legacy ring position when no explicit position is supplied; production waves use the actor factory | M6.3 | Tests/callers construct through actor creation requests and shared spawning | Active |
+| Legacy Session/Match bridge | `Session` aliases Match-owned stores while it still owns pygame groups and presentation orchestration | M7.2 | Gameplay/presentation consumes Match directly and Session is decomposed | Active |
+| Legacy Survival module imports | Former `systems.waves`, `systems.shop`, and `systems.survival_consequences` paths re-export mode-owned policy for existing callers/tests | M7.3 | Callers use the mode package and obsolete module paths are deleted | Active |
 
 ## Known Failures and Risks
 
@@ -556,8 +583,12 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M6.2 spawn selection | Role/tag/faction/kind queries and seeded box/ellipse/polygon sampling compose bounds, visibility, distance, occupancy, and collision constraints |
 | 2026-08-21 | Completed M6.3 explicit actor creation | Neutral definitions/requests create the same actor at explicit positions; production `Zombie` construction is isolated to one pygame adapter |
 | 2026-08-21 | Completed M6.4 Survival spawn routing | Survival owns counts/timing only; shared service selects and constructs batches from authored sources or the explicit legacy-ring fallback |
+| 2026-08-21 | Completed M6.5 and Phase 6 | Neutral spawn pipeline and non-Survival world-store integration pass; full suite is 992 passed/33 recorded failures |
+| 2026-08-21 | Completed M7.1 pre-match selection data | Stable mode/map catalogs resolve immutable seeded configurations or structured missing-capability reports before state construction |
+| 2026-08-21 | Completed M7.2 authoritative Match ownership | Match now owns lifecycle, tick, events, registries, simulation stores, damage policy, and deterministic named RNG; Session temporarily consumes that owner; full suite is 1005 passed/33 recorded failures |
+| 2026-08-21 | Completed M7.3 mode packaging | Match uses a narrow explicit lifecycle; Survival owns waves, rewards, shop stock/prices, cash, and outcome policy while reusable purchasing remains shared; full suite is 1009 passed/33 recorded failures |
 
 ## Next Action
 
-Begin M6.5 by adding a non-Survival spawn proof and executable production-boundary
-audits, then close Phase 6 at the full-suite checkpoint.
+Begin M7.4 by exposing immutable Survival status and moving the remaining wave
+countdown rendering out of mode rules into presentation.

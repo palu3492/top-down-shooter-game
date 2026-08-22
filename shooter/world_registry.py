@@ -72,3 +72,7 @@ class WorldRegistry:
 
     def __len__(self):
         return len(self._records)
+
+    def clear(self):
+        self._records.clear()
+        self._ids_by_object.clear()

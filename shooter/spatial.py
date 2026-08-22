@@ -80,3 +80,6 @@ class SpatialStore:
 
     def __len__(self):
         return len(self._states)
+
+    def clear(self):
+        self._states.clear()
