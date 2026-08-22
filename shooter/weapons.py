@@ -20,9 +20,18 @@ from dataclasses import dataclass
 
 from shooter import config, items
 from shooter.entities.projectiles import GUN_SHOT, Shot, Swing, play
-
-NO_AMMO = "no ammo"
-RELOAD = "reload"
+from shooter.weapon_state import (
+    ADVANCE,
+    BEGIN_ATTACK,
+    FIRE,
+    MANUAL_RELOAD,
+    NO_AMMO as NO_AMMO,
+    RELOAD as RELOAD,
+    WeaponDefinition,
+    WeaponOperationRequest,
+    WeaponOperationService,
+    WeaponRuntime,
+)
 
 # Taking the step off a countdown sixty times a second leaves a few parts in a
 # quintillion behind, and a timer that ends at 7e-18 rather than 0 costs a whole
@@ -244,7 +253,17 @@ class Held:
 
     def __init__(self, weapon):
         self.weapon = weapon
-        self.cooling_for = 0.0
+        self.definition = _definition_of(weapon)
+        self.runtime = WeaponRuntime.fresh(self.definition)
+        self.operations = WeaponOperationService(SPENT)
+
+    @property
+    def cooling_for(self):
+        return self.runtime.cooldown_remaining
+
+    @cooling_for.setter
+    def cooling_for(self, value):
+        self.runtime.cooldown_remaining = value
 
     @property
     def damage(self):
@@ -252,14 +271,21 @@ class Held:
 
     @property
     def ready(self):
-        return self.status is None and self.cooling_for <= SPENT
+        return self.operations.ready(self.definition, self.runtime)
 
     def tick(self, dt=config.SIM_DT):
-        self.cooling_for = max(0.0, self.cooling_for - dt)
-        return self.status
+        return self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(ADVANCE, dt),
+        ).status
 
     def _spend(self):
-        self.cooling_for = 1 / self.weapon.rate
+        return self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(BEGIN_ATTACK),
+        )
 
 
 class Blade(Held):
@@ -274,8 +300,14 @@ class Blade(Held):
 
     def __init__(self, which=KNIFE):
         super().__init__(which if isinstance(which, Melee) else weapon(_id_of(which)))
-        self.loaded = None
-        self.reserve = None
+
+    @property
+    def loaded(self):
+        return self.runtime.loaded
+
+    @property
+    def reserve(self):
+        return self.runtime.reserve
 
     @property
     def status(self):
@@ -295,10 +327,16 @@ class Blade(Held):
         ]
 
     def fire(self):
-        return None
+        return self.operations.apply(
+            self.definition, self.runtime, WeaponOperationRequest(FIRE)
+        ).status
 
     def manual_reload(self):
-        return None
+        return self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(MANUAL_RELOAD),
+        ).status
 
     def refill(self):
         """Nothing to refill. A knife is never out."""
@@ -317,9 +355,30 @@ class Gun(Held):
         # Match-owned randomness will replace this legacy default. Injection now
         # lets characterization tests reproduce spread without seeding globals.
         self.rng = random if rng is None else rng
-        self.loaded = self.weapon.clip
-        self.reserve = self.weapon.reserve
-        self.locked_for = 0.0
+
+    @property
+    def loaded(self):
+        return self.runtime.loaded
+
+    @loaded.setter
+    def loaded(self, value):
+        self.runtime.loaded = value
+
+    @property
+    def reserve(self):
+        return self.runtime.reserve
+
+    @reserve.setter
+    def reserve(self, value):
+        self.runtime.reserve = value
+
+    @property
+    def locked_for(self):
+        return self.runtime.reload_remaining
+
+    @locked_for.setter
+    def locked_for(self, value):
+        self.runtime.reload_remaining = value
 
     @property
     def automatic(self):
@@ -334,11 +393,7 @@ class Gun(Held):
         came back loaded and unlocked, and an empty one fired a free round on
         every swap. It belongs to the gun.
         """
-        if self.locked_for > SPENT:
-            return RELOAD
-        if self.loaded <= 0:
-            return NO_AMMO
-        return None
+        return self.operations.status(self.definition, self.runtime)
 
     def attack(self, muzzle, aim, damage):
         """One shot, or a shotgun's worth of them.
@@ -369,10 +424,9 @@ class Gun(Held):
         answer here -- `status` refuses the shot before it is taken rather than
         after the bullet has already been spawned.
         """
-        self.loaded -= 1
-        if self.loaded <= 0 and self.reserve > 0:
-            self.reload()
-        return self.status
+        return self.operations.apply(
+            self.definition, self.runtime, WeaponOperationRequest(FIRE)
+        ).status
 
     def reload(self):
         """Move as much of the reserve into the clip as will go, and lock the
@@ -382,16 +436,19 @@ class Gun(Held):
         could fill it, each with `60` written into it, say exactly this. Nothing
         loads a clip past its size, so there is no negative case to guard.
         """
-        taken = min(self.weapon.clip - self.loaded, self.reserve)
-        self.loaded += taken
-        self.reserve -= taken
-        self.locked_for = self.weapon.reload_seconds
-        return RELOAD
+        result = self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(MANUAL_RELOAD),
+        )
+        return result.status
 
     def manual_reload(self):
-        if self.reserve > 0:
-            return self.reload()
-        return self.status
+        return self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(MANUAL_RELOAD),
+        ).status
 
     def refill(self):
         self.reserve = self.weapon.reserve
@@ -403,9 +460,33 @@ class Gun(Held):
         lockout escapable by tapping two number keys, and the lockout is the
         entire cost of reloading.
         """
-        self.locked_for = max(0.0, self.locked_for - dt)
         return super().tick(dt)
 
 
 def _id_of(which):
     return which.id if isinstance(which, items.Item) else which
+
+
+def _definition_of(made):
+    if isinstance(made, Melee):
+        return WeaponDefinition(
+            definition_id=made.id,
+            attack_kind="melee",
+            damage=made.damage,
+            rate=made.rate,
+            reach=made.reach,
+            arc=made.arc,
+        )
+    return WeaponDefinition(
+        definition_id=made.id,
+        attack_kind="ballistic",
+        damage=made.damage,
+        rate=made.rate,
+        magazine_capacity=made.clip,
+        reserve_capacity=made.reserve,
+        reload_seconds=made.reload_seconds,
+        ammo_id=made.ammo.id,
+        pellets=made.pellets,
+        spread=made.spread,
+        automatic=made.automatic,
+    )

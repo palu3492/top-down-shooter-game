@@ -26,7 +26,7 @@ package.
 |---|---|
 | Migration phase | Phase 5 — Weapon operation and inventory integration |
 | Phase status | In progress |
-| Active work package | M5.1 — Separate weapon definitions from runtime state |
+| Active work package | M5.3 — Create attributed attacks through adapters |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 7 — Reusable Match and mode boundary |
 | Last updated | 2026-08-21 |
@@ -59,7 +59,7 @@ package.
 | 2 | Neutral commands, events, and entity IDs | Complete | Boundary audit and exit criteria verified |
 | 3 | Authoritative actor state and world position | Complete | Explicit map/spatial/camera/collision boundaries verified |
 | 4 | Unified health, damage, death, and attribution | Complete | Shared attributed damage pipeline verified at integration checkpoint 1 |
-| 5 | Weapon operation and inventory integration | In progress | M5.1 active |
+| 5 | Weapon operation and inventory integration | In progress | M5.1-M5.2 complete; M5.3 active |
 | 6 | Reusable spawning | Not started | — |
 | 7 | Neutral Match and game-mode boundary | Not started | Integration checkpoint 2 |
 | 8 | Complete presentation separation | Not started | — |
@@ -68,32 +68,32 @@ package.
 
 ## Active Work Package
 
-### M5.1 — Separate weapon definitions from runtime state
+### M5.3 — Create attributed attacks through adapters
 
 **Status:** In progress
 
-**Objective:** Represent immutable weapon configuration separately from the mutable
-state of each equipped weapon instance.
+**Objective:** Have weapon operation produce attributed, renderer-independent attack
+descriptions and adapt those descriptions into current pygame projectiles.
 
 **Scope:**
 
-- Inventory current gun, blade, and throwable configuration versus mutable state.
-- Introduce pygame-free immutable weapon definitions with stable definition IDs.
-- Introduce owner-independent runtime state for ammo, cooldown, and reload progress.
-- Adapt existing equipment construction without changing fire behavior yet.
+- Define neutral attack descriptions for ballistic pellets and melee sweeps.
+- Include instigator, weapon definition, damage, origin, direction, and attack kind.
+- Generate spread through an injected random source at the simulation boundary.
+- Convert neutral descriptions to legacy `Shot`/`Swing` objects in one adapter.
 
 **Non-goals:**
 
-- Moving projectile creation behind the weapon service; that follows in M5.2/M5.3.
+- Rewriting projectile motion or collision resolution.
 - Consolidating the backpack and carried equipment; that follows after operation.
 - Replacing current weapon graphics or audio reactions.
 
 **Acceptance criteria:**
 
-- [ ] Definitions contain configuration only and are immutable.
-- [ ] Runtime state can exist independently for two instances of one definition.
-- [ ] Neutral definition/state tests require no HUD, actor, zombie, or pygame surface.
-- [ ] Existing equipment construction adapts through the new values.
+- [ ] A controller can request an attack without importing pygame.
+- [ ] Attack descriptions carry stable attribution and primitive geometry.
+- [ ] Seeded spread is deterministic before projectile adaptation.
+- [ ] One production adapter owns creation of legacy attack sprites.
 
 **Verification evidence:**
 
@@ -154,9 +154,9 @@ Pending.
 
 | ID | Work package | Status | Depends on |
 |---|---|---|---|
-| M5.1 | Separate weapon definitions from runtime state | In progress | Phase 4 |
-| M5.2 | Route fire, reload, cooldown, and ammo through a neutral weapon service | Not started | M5.1 |
-| M5.3 | Create attributed attacks through adapters and injected spread RNG | Not started | M5.2 |
+| M5.1 | Separate weapon definitions from runtime state | Complete | Phase 4 |
+| M5.2 | Route fire, reload, cooldown, and ammo through a neutral weapon service | Complete | M5.1 |
+| M5.3 | Create attributed attacks through adapters and injected spread RNG | In progress | M5.2 |
 | M5.4 | Reconcile carried equipment and backpack into an explicit loadout | Not started | M5.3 |
 | M5.5 | Verify reusable weapon operation and close Phase 5 | Not started | M5.4 |
 
@@ -242,6 +242,8 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M4.3 | 940 passed, 34 failed in 83.63s | Five routed attack/faction tests pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M4.4 | 944 passed, 33 failed in 53.65s | Attributed damage/death and event-driven Survival consequences pass; one obsolete snapshot-loot test removed; remaining failures match recorded categories |
 | 2026-08-21 | `uv run pytest` after M4.5 | 945 passed, 33 failed in 61.82s | Integrated kill-to-removal/reward/loot proof passes; Phase 4 closes with only recorded failure categories |
+| 2026-08-21 | `uv run pytest` after M5.1 | 950 passed, 33 failed in 44.56s | Five definition/runtime and adapter tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M5.2 | 955 passed, 33 failed in 32.28s | Neutral operation requests/results preserve ammo, reload, cooldown, and timing behavior; failure categories remain unchanged |
 
 ### Static checks
 
@@ -458,6 +460,7 @@ When one is introduced, record:
 | Default Session map | Direct legacy `Session(...)` calls adapt the current TMX when no map definition is supplied; production `GameplayScene` passes one explicitly | M3.5 | Legacy callers pass match configuration/map definition | Active |
 | Legacy combat-state mirror | Player/enemy actor-owned health is mirrored into the stable-ID combat store while old attacks still mutate actors directly | M4.1 | M4.3 routes attacks through the damage service and makes combat state authoritative | Removed from attack paths in M4.3 |
 | Legacy actor health reflection | Authoritative damage results are copied to `Human.health`/`Zombie.zombie_health` for current rendering, outcomes, and regeneration | M4.3 | Presentation reads combat state and vitality effects route through shared services | Active |
+| Legacy held-weapon properties | `Gun`/`Blade` expose `loaded`, `reserve`, cooldown, reload, and method results while neutral runtime/service own weapon operation | M5.1 | Callers consume explicit weapon-operation state/results | Active |
 
 ## Known Failures and Risks
 
@@ -510,8 +513,10 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M4.3 shared attack routing | Ballistic, melee, explosive, and contact attacks use stable-ID damage service; policy precedes mutation; nuke stays a removal |
 | 2026-08-21 | Completed M4.4 attributed consequences | Damage and first-lethal facts carry attribution; Survival owns cash/loot policy; enemies no longer hold cash; despawns and nukes award nothing |
 | 2026-08-21 | Completed M4.5 and Phase 4 | Production attack audit and integrated consequence proof pass; full suite is 945 passed/33 recorded failures |
+| 2026-08-21 | Completed M5.1 weapon state separation | Immutable pygame-free definitions and isolated runtime ammo/timers now back legacy equipment through compatibility properties |
+| 2026-08-21 | Completed M5.2 neutral weapon operation | Explicit requests/results now govern readiness, fire, ammo, reload, cooldown, and timer advancement without actors or pygame |
 
 ## Next Action
 
-Begin M5.1 by inventorying immutable weapon configuration and per-instance mutable
-state, then introduce pygame-free definition and runtime values.
+Begin M5.3 by defining attributed neutral attack descriptions and a single adapter
+that creates current projectile sprites from them.

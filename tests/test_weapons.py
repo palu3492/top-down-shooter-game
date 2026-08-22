@@ -143,6 +143,23 @@ def test_two_guns_do_not_share_ammo(gun):
     assert other.loaded == 60
 
 
+def test_equipped_gun_adapts_configuration_and_state_to_neutral_values(gun):
+    assert gun.definition.definition_id == M16.id
+    assert gun.definition.magazine_capacity == gun.weapon.clip
+    assert gun.definition.reserve_capacity == gun.weapon.reserve
+    assert gun.runtime.loaded == gun.loaded
+    assert gun.runtime.reserve == gun.reserve
+
+
+def test_equipped_blade_adapts_without_inventing_ammunition():
+    blade = equip(KNIFE)
+
+    assert blade.definition.definition_id == KNIFE.id
+    assert blade.definition.attack_kind == "melee"
+    assert blade.runtime.loaded is None
+    assert blade.runtime.reserve is None
+
+
 # ----------------------------------------------------------------------
 # The clip size is a number in one place
 # ----------------------------------------------------------------------

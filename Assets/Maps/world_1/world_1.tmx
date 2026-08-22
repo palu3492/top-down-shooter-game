@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="16" nextobjectid="193">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="17" nextobjectid="194">
  <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="547" tilecount="25" columns="0" objectalignment="topleft">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="vehicle">
@@ -560,6 +560,11 @@
   </object>
   <object id="192" x="2477.22" y="5067.72">
    <polyline points="0,0 470.328,-206.846 655.011,-746.122 733.809,-1181.97 746.122,-1659.69 563.901,-1829.6 -41.8616,-1994.58 -861.857,-2181.73 -955.43,-2147.25 -1211.52,-1903.47 -1297.71,-1622.75 -1268.16,-1233.69 -1278.01,-790.446 -1273.09,-253.632 -1226.3,-162.522 -1041.62,-56.6363 -231.47,7.38734"/>
+  </object>
+ </objectgroup>
+ <objectgroup id="16" name="Firepit">
+  <object id="193" x="4793.3" y="7779.92" width="159.094" height="128.962">
+   <ellipse/>
   </object>
  </objectgroup>
  <objectgroup id="6" name="Spawn" visible="0">
