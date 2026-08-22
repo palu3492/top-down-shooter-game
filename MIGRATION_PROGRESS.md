@@ -24,9 +24,9 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 3 — Authoritative actor state and world position |
+| Migration phase | Phase 4 — Unified health, damage, death, and attribution |
 | Phase status | In progress |
-| Active work package | M3.4 — Separate simulation collision from sprite rectangles |
+| Active work package | M4.1 — Introduce neutral health and armor state |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 4 — Shared damage pipeline |
 | Last updated | 2026-08-21 |
@@ -57,8 +57,8 @@ package.
 | 0 | Baseline and decision record | Complete | Baseline, smoke path, behavior classification, and test audit recorded |
 | 1 | Characterize the current vertical slice | Complete | All ten characterization gaps dispositioned and verified |
 | 2 | Neutral commands, events, and entity IDs | Complete | Boundary audit and exit criteria verified |
-| 3 | Authoritative actor state and world position | In progress | M3.1-M3.3 complete; M3.4 active |
-| 4 | Unified health, damage, death, and attribution | Not started | Integration checkpoint 1 |
+| 3 | Authoritative actor state and world position | Complete | Explicit map/spatial/camera/collision boundaries verified |
+| 4 | Unified health, damage, death, and attribution | In progress | M4.1 active; integration checkpoint 1 |
 | 5 | Weapon operation and inventory integration | Not started | — |
 | 6 | Reusable spawning | Not started | — |
 | 7 | Neutral Match and game-mode boundary | Not started | Integration checkpoint 2 |
@@ -68,33 +68,33 @@ package.
 
 ## Active Work Package
 
-### M3.4 — Separate simulation collision from sprite rectangles
+### M4.1 — Introduce neutral health and armor state
 
 **Status:** In progress
 
-**Objective:** Resolve actor/world collision from neutral spatial shapes and world
-coordinates rather than sprite rectangles or camera-relative geometry.
+**Objective:** Establish reusable pygame-independent health and optional armor state
+addressed by stable entity ID before attacks are routed through a damage service.
 
 **Scope:**
 
-- Add pygame-independent overlap calculations for the required neutral shapes.
-- Normalize current obstacle geometry into a simulation collision representation.
-- Move player collision checks to authoritative world coordinates.
-- Retain sprites and pygame rectangles only as presentation/legacy adapters.
+- Define health/armor values and explicit alive/depleted invariants.
+- Store combat state by stable entity ID rather than actor class.
+- Bridge player and enemy health without changing attack paths yet.
+- Verify independent actors can share the same combat-state mechanism.
 
 **Non-goals:**
 
-- Navigation/pathfinding and destructible collision updates beyond the first seam.
-- Replacing every projectile/enemy collision path before Phase 4.
+- Damage requests, relationship policy, and attribution, which follow in M4.2.
+- Balance values or regeneration/armor mechanics not yet required by Survival.
 - Networking, prediction, reconciliation, or a generic event bus.
 - Migrating every legacy control in one change.
 
 **Acceptance criteria:**
 
-- [ ] Player collision uses neutral shapes in world coordinates.
-- [ ] Collision tests can run without a display, sprite, or camera.
-- [ ] Visual rectangle/animation changes cannot alter the player collision body.
-- [ ] Existing authored obstacle intent survives normalization.
+- [ ] Health state contains no pygame or actor-type dependency.
+- [ ] Player and enemy state is addressed by stable ID.
+- [ ] Damage/depletion arithmetic is deterministic and bounded.
+- [ ] Optional armor behavior is testable without adding it to every actor.
 
 **Verification evidence:**
 
@@ -138,8 +138,28 @@ Pending.
 | M3.1 | Introduce neutral transforms and collision shapes | Complete | Phase 2 |
 | M3.2 | Move the player through authoritative world position | Complete | M3.1 |
 | M3.3 | Make the presentation camera follow the selected actor | Complete | M3.2 |
-| M3.4 | Separate simulation collision from sprite rectangles | In progress | M3.2 |
-| M3.5 | Parameterize world creation by neutral map data and close Phase 3 | Not started | M3.3, M3.4 |
+| M3.4 | Separate simulation collision from sprite rectangles | Complete | M3.2 |
+| M3.5 | Parameterize world creation by neutral map data and close Phase 3 | Complete | M3.3, M3.4 |
+
+## Phase 4 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M4.1 | Introduce neutral health and armor state | In progress | Phase 3 |
+| M4.2 | Define damage requests/results and relationship policy | Not started | M4.1 |
+| M4.3 | Route ranged, melee, explosion, contact, and power damage | Not started | M4.2 |
+| M4.4 | Emit attributed death/removal facts and move rewards/loot | Not started | M4.3 |
+| M4.5 | Verify shared damage pipeline and integration checkpoint 1 | Not started | M4.4 |
+
+## Phase 3 Exit Review
+
+- [x] Player and enemy actors have stable-ID-addressed world transforms.
+- [x] Authoritative movement precedes presentation camera updates.
+- [x] Camera and viewport changes cannot mutate world position.
+- [x] Player collision uses neutral world-coordinate shapes.
+- [x] World creation receives an explicit neutral map definition in production.
+- [x] Incomplete TMX maps adapt with capability defaults rather than final-schema assumptions.
+- [x] Two map definitions create worlds without identity-specific branches.
 
 ## Phase 2 Exit Review
 
@@ -195,6 +215,8 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M3.1 | 914 passed, 34 failed in 30.28s | Three neutral spatial-store/player-bridge tests pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M3.2 | 916 passed, 34 failed in 30.26s | World-transform movement/bounds tests pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M3.3 | 919 passed, 34 failed in 29.92s | Three camera-follow/presentation-isolation tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M3.4 | 923 passed, 34 failed in 30.59s | Four headless collision-shape tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M3.5 | 925 passed, 34 failed in 41.12s | Two production map-definition tests pass; Phase 3 exit criteria satisfied |
 
 ### Static checks
 
@@ -407,6 +429,8 @@ When one is introduced, record:
 | Legacy Session input wrappers | `Session.handle` and `Session.step` adapt pygame events/key state for existing callers while production gameplay supplies neutral commands | M2.1 | Legacy tests/callers use `ActionCommand` and `ControlFrame`; remove during Session decomposition | Active |
 | Player spatial snapshot bridge | `Session` records a neutral player transform while legacy camera offsets still drive movement | M3.1 | M3.2 makes the transform authoritative and derives the legacy camera from it | Removed in M3.2 |
 | Legacy camera compatibility setters | Old callers can assign `camera_x`/`camera_y`, which repositions the authoritative player and resynchronizes the follow camera | M3.2 | Legacy tests stop positioning the player through camera offsets | Active |
+| Legacy obstacle normalization | Session converts current pygame/TMX obstacle and prop rectangles into neutral collision values at query time | M3.4 | Production map adapter and world object lifecycle supply/update neutral collision directly | Active |
+| Default Session map | Direct legacy `Session(...)` calls adapt the current TMX when no map definition is supplied; production `GameplayScene` passes one explicitly | M3.5 | Legacy callers pass match configuration/map definition | Active |
 
 ## Known Failures and Risks
 
@@ -452,8 +476,10 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M3.1 neutral spatial state | Immutable transforms and box/circle shapes, ID-addressed store operations, and viewport-independent player snapshot verified |
 | 2026-08-21 | Completed M3.2 authoritative player movement | Commands update bounded world transforms first; legacy camera offsets are derived and compatibility writes cannot silently diverge |
 | 2026-08-21 | Completed M3.3 presentation camera extraction | Stable-ID follow camera clamps offsets, viewport resize is presentation-only, and world interactions use authoritative position |
+| 2026-08-21 | Completed M3.4 neutral player collision | Headless AABB/ellipse/polygon overlap and world-coordinate obstruction replace camera/sprite-dependent player checks |
+| 2026-08-21 | Completed M3.5 and Phase 3 | Neutral TMX adapter, explicit production map selection, two-map world creation, and enemy spatial synchronization verified |
 
 ## Next Action
 
-Begin M3.4 by normalizing collision into pygame-independent world shapes and moving
-player obstruction checks off sprite/camera-relative rectangles.
+Begin M4.1 with stable-ID-addressed health and optional armor state, bridging the
+current player and enemy values before attack routing changes.

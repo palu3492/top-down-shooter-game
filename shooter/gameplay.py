@@ -18,6 +18,7 @@ import pygame
 
 from shooter import config
 from shooter.input_adapter import PygameInputAdapter
+from shooter.map_definition import current_map_definition
 from shooter.scenes import Scene
 from shooter.session import Session
 
@@ -29,9 +30,13 @@ class GameplayScene(Scene):
     opaque = True
     simulates = True
 
-    def __init__(self, window, manager=None, rules=None):
+    def __init__(self, window, manager=None, rules=None, map_definition=None):
         super().__init__(window, manager)
-        self.session = Session(window) if rules is None else Session(window, rules)
+        selected_map = map_definition or current_map_definition()
+        if rules is None:
+            self.session = Session(window, map_definition=selected_map)
+        else:
+            self.session = Session(window, rules, map_definition=selected_map)
         self.reported = False
         self.input_adapter = PygameInputAdapter()
 

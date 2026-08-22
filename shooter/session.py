@@ -36,12 +36,13 @@ from shooter.ui.shopfront import ShopFront
 from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
 from shooter.domain_events import EventQueue
+from shooter.map_definition import current_map_definition
+from shooter.world_collision import Aabb, actor_box, overlaps
 from shooter.world_registry import WorldRegistry
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 INSTAKILL_TOP = 40
 RELOADING_TOP = 100
-TMX_MAP = "Maps/world_1/world_1.tmx"
 COLLISION_DEBUG = (255, 0, 255)
 
 # Legacy public key constants retained only while direct Session-input tests are
@@ -121,7 +122,8 @@ def centred_text(screen, window, message, top, size, colour=config.WHITE):
 class Session:
     """A game in progress."""
 
-    def __init__(self, window, rules=WaveSystem):
+    def __init__(self, window, rules=WaveSystem, map_definition=None):
+        self.map_definition = map_definition or current_map_definition()
         self.window = window
         self._camera_x, self._camera_y = 0, 0
         self.previous_camera = (0, 0)
@@ -135,35 +137,15 @@ class Session:
         self.change_x = self.change_y = 0
         self.shooting = False
 
-        self.background = TiledBackground(TMX_MAP)
-        self.world_size = self.background.size
+        self.background = TiledBackground(self.map_definition.presentation_source)
+        self.world_size = self.map_definition.size
         self.camera_x = self.window[0] / 2 - self.world_size[0] / 2
         self.camera_y = self.window[1] / 2 - self.world_size[1] / 2
         self.previous_camera = self.camera
-        tmx = self.background.map
-        layers = {layer.name: layer for layer in tmx.layers}
-        self.obstacles = load_obstacles(TMX_MAP)
-        collision_layer = layers.get("Collision", ())
-        self.collision_rects = [
-            pygame.Rect(
-                obj.x + getattr(collision_layer, "offsetx", 0),
-                obj.y + getattr(collision_layer, "offsety", 0),
-                obj.width,
-                obj.height,
-            )
-            for obj in collision_layer
-        ]
-        objects_layer = layers.get("Objects", ())
-        for obj in objects_layer:
-            if obj.properties.get("solid") is True:
-                self.collision_rects.append(
-                    pygame.Rect(
-                        obj.x + getattr(objects_layer, "offsetx", 0),
-                        obj.y + getattr(objects_layer, "offsety", 0),
-                        obj.width,
-                        obj.height,
-                    )
-                )
+        self.obstacles = load_obstacles(self.map_definition.presentation_source)
+        # Compatibility container for tests and legacy runtime additions.
+        # Authored collision arrives through the neutral map definition.
+        self.collision_rects = []
         self.human = Human(window)
         self.human_group = pygame.sprite.Group(self.human)
         self.zombies = pygame.sprite.Group()
@@ -522,13 +504,29 @@ class Session:
         """Temporary bridge while legacy rules still mutate a sprite group."""
         present = set(self.zombies)
         for zombie in present - self._enemy_ids.keys():
-            self._enemy_ids[zombie] = self.entities.register(
+            entity_id = self.entities.register(
                 zombie, ("actor", "enemy")
             )
-        for zombie in self._enemy_ids.keys() - present:
-            self.entities.remove(
-                self._enemy_ids.pop(zombie), reason="legacy_group_removal"
+            self._enemy_ids[zombie] = entity_id
+            self.spatial.attach(
+                entity_id,
+                Transform(
+                    zombie.world_x + config.ZOMBIE_SIZE[0] / 2,
+                    zombie.world_y + config.ZOMBIE_SIZE[1] / 2,
+                ),
+                Box(*config.ZOMBIE_SIZE),
             )
+        for zombie in present:
+            entity_id = self._enemy_ids[zombie]
+            self.spatial.move_to(
+                entity_id,
+                zombie.world_x + config.ZOMBIE_SIZE[0] / 2,
+                zombie.world_y + config.ZOMBIE_SIZE[1] / 2,
+            )
+        for zombie in self._enemy_ids.keys() - present:
+            entity_id = self._enemy_ids.pop(zombie)
+            self.spatial.remove(entity_id)
+            self.entities.remove(entity_id, reason="legacy_group_removal")
 
     def _advance_player(self):
         """Move authoritative world state, unless something is in the way.
@@ -538,22 +536,19 @@ class Session:
         in either direction -- a player who somehow ends up inside a footprint
         should be able to walk out of it rather than be held there.
         """
-        stuck = self._blocked(self.camera_x, self.camera_y)
         current = self.spatial.get(self.player_id).transform
+        stuck = self._blocked_world(current)
 
         wanted = self.player_bounds.clamp(
             Transform(current.x + self.change_x, current.y)
         )
-        wanted_camera_x = self.window[0] / 2 - wanted.x
-        if stuck or not self._blocked(wanted_camera_x, self.camera_y):
+        if stuck or not self._blocked_world(wanted):
             current = wanted
 
         wanted = self.player_bounds.clamp(
             Transform(current.x, current.y + self.change_y)
         )
-        wanted_camera_y = self.window[1] / 2 - wanted.y
-        current_camera_x = self.window[0] / 2 - current.x
-        if stuck or not self._blocked(current_camera_x, wanted_camera_y):
+        if stuck or not self._blocked_world(wanted):
             current = wanted
 
         self.spatial.move_to(self.player_id, current.x, current.y)
@@ -568,15 +563,29 @@ class Session:
         return box
 
     def _blocked(self, camera_x, camera_y):
-        here = self._standing_at(camera_x, camera_y)
-        return (
-            any(obstacle.colliderect(here) for obstacle in self.obstacles)
-            or any(rect.colliderect(here) for rect in self.collision_rects)
-            or any(
-                prop.footprint is not None and prop.footprint.colliderect(here)
-                for prop in self.props
+        """Compatibility query for callers still positioning through a camera."""
+        return self._blocked_world(
+            Transform(
+                self.window[0] / 2 - camera_x,
+                self.window[1] / 2 - camera_y,
             )
         )
+
+    def _blocked_world(self, transform):
+        state = self.spatial.get(self.player_id)
+        here = actor_box(transform, state.collision)
+        return any(overlaps(here, obstacle) for obstacle in self._world_obstacles())
+
+    def _world_obstacles(self):
+        yield from self.map_definition.collision
+        for rect in self.collision_rects:
+            yield Aabb(rect.x, rect.y, rect.width, rect.height)
+        for prop in self.props:
+            footprint = prop.footprint
+            if footprint is not None:
+                yield Aabb(
+                    footprint.x, footprint.y, footprint.width, footprint.height
+                )
 
     def _animate_player(self, dt):
         # Preserves the original rule, quirks included: MOVE only when both

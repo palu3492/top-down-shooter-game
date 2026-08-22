@@ -2,6 +2,7 @@
 
 from shooter.entities.zombie import Zombie
 from shooter.session import Session
+from shooter.spatial import Box, Transform
 from shooter.viewport import Viewport
 from shooter.world_registry import WorldRegistry
 
@@ -57,9 +58,15 @@ def test_session_bridges_player_and_enemy_lifecycle(display, cash):
 
     assert session.entities.get(session.player_id) is session.human
     assert session.entities.ids("enemy") == (enemy_id,)
+    assert session.spatial.get(enemy_id).transform == Transform(
+        enemy.world_x + enemy.rect.width / 2,
+        enemy.world_y + enemy.rect.height / 2,
+    )
+    assert session.spatial.get(enemy_id).collision == Box(*enemy.rect.size)
 
     enemy.kill()
     session._sync_enemy_registry()
 
     assert enemy_id not in session.entities
     assert session.entities.id_for(enemy) is None
+    assert enemy_id not in session.spatial
