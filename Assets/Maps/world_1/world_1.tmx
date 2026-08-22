@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="18" nextobjectid="293">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="18" nextobjectid="297">
  <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="547" tilecount="25" columns="0" objectalignment="topleft">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="vehicle">
@@ -108,7 +108,7 @@
  <imagelayer id="3" name="Background">
   <image source="../../map_10000_high_detail/map_master_10000_high_detail_merged.png" width="10000" height="10000"/>
  </imagelayer>
- <objectgroup id="17" name="Placed Trees">
+ <objectgroup id="17" name="Placed Trees" visible="0">
   <object id="194" name="tree_01" type="tree" gid="26" x="423.26" y="1303.35" width="220" height="330"/>
   <object id="281" name="tree_02" type="tree" gid="27" x="502.682" y="1614.26" width="220" height="330"/>
   <object id="282" name="tree_08" type="tree" gid="33" x="456.582" y="1916.87" width="220" height="330"/>
@@ -635,10 +635,10 @@
    <polyline points="0,0 372.793,-255.069 519.948,-1036.63 202.747,-1298.23 -62.1321,-1422.5 -1121.65,-1445.39 -1618.71,-1049.71 -1687.38,-879.66 -1726.62,-588.62 -1703.73,-212.557 -1530.41,179.856 -1487.9,353.172 -856.769,366.252 -196.207,98.1033"/>
   </object>
   <object id="159" x="4068.02" y="3116.42">
-   <polyline points="0,0 -349.902,52.3218 -1209.94,-716.154 -1046.44,-977.763 -909.091,-1641.6 -850.229,-2089.6 -444.735,-2387.18 170.046,-2076.52 627.861,-1801.83 670.373,-1599.08 634.402,-1386.53"/>
+   <polyline points="-1.74672,-18.3406 -349.902,52.3218 -1209.94,-716.154 -1046.44,-977.763 -909.091,-1641.6 -850.229,-2089.6 -444.735,-2387.18 170.046,-2076.52 627.861,-1801.83 670.373,-1599.08 634.402,-1386.53"/>
   </object>
   <object id="160" x="4672.99" y="1854.15">
-   <polyline points="0,0 -156.965,1128.19 -418.574,1196.86"/>
+   <polyline points="0,0 -162.205,1164.87 -418.574,1196.86"/>
   </object>
   <object id="179" x="5300.74" y="1915.02">
    <polyline points="0,0 -164.92,-19.4024 -217.307,143.578 -258.052,485.06 -314.319,1127.28 -133.877,1319.36 186.263,1408.61"/>
@@ -682,8 +682,20 @@
   <object id="192" x="2477.22" y="5067.72">
    <polyline points="0,0 470.328,-206.846 655.011,-746.122 733.809,-1181.97 746.122,-1659.69 563.901,-1829.6 -41.8616,-1994.58 -861.857,-2181.73 -955.43,-2147.25 -1211.52,-1903.47 -1297.71,-1622.75 -1268.16,-1233.69 -1278.01,-790.446 -1273.09,-253.632 -1226.3,-162.522 -1041.62,-56.6363 -231.47,7.38734"/>
   </object>
+  <object id="293" x="8621.31" y="4355.11">
+   <polyline points="0,0 10.308,851.694 -180.389,998.583 -438.088,993.429"/>
+  </object>
+  <object id="294" x="8067.26" y="5349.83">
+   <polyline points="0,0 -463.858,-16.7504"/>
+  </object>
+  <object id="295" x="7410.13" y="5331.79">
+   <polyline points="0,0 -668.728,-7.73096 -838.809,-100.503 -834.944,-239.66"/>
+  </object>
+  <object id="296" x="6505.6" y="4956.84">
+   <polyline points="0,0 -6.44247,-568.226"/>
+  </object>
  </objectgroup>
- <objectgroup id="16" name="Firepit">
+ <objectgroup id="16" name="Firepit" visible="0">
   <object id="193" x="4793.3" y="7779.92" width="159.094" height="128.962">
    <ellipse/>
   </object>

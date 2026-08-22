@@ -112,7 +112,9 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
     # What it drops is looked up by this. One kind today; a table, not a branch.
     kind = "walker"
 
-    def __init__(self, window_size, cash=None, visible=None, rng=None):
+    def __init__(
+        self, window_size, cash=None, visible=None, rng=None, position=None
+    ):
         # Test-owned and, later, match-owned randomness can be supplied without
         # changing legacy callers. The module remains the default until Match owns
         # a seeded source in the new architecture.
@@ -146,7 +148,12 @@ class Zombie(Interpolated, pygame.sprite.Sprite):
         # movement need one stable footprint; artwork is centred over it.
         self.rect = pygame.Rect((0, 0), config.ZOMBIE_SIZE)
         self._centre_image()
-        self.spawn_zombie(visible)
+        if position is None:
+            # Temporary compatibility for direct legacy callers. Production
+            # creation supplies a selected world position through the actor factory.
+            self.spawn_zombie(visible)
+        else:
+            self.set_position(*position)
         self.remember_position()
 
     # Spawns zombies out side of screen size

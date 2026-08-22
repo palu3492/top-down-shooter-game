@@ -26,7 +26,7 @@ package.
 |---|---|
 | Migration phase | Phase 6 — Reusable spawning |
 | Phase status | In progress |
-| Active work package | M6.2 — Add reusable spawn queries and constraints |
+| Active work package | M6.4 — Route Survival waves through the spawn service |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 7 — Reusable Match and mode boundary |
 | Last updated | 2026-08-21 |
@@ -60,7 +60,7 @@ package.
 | 3 | Authoritative actor state and world position | Complete | Explicit map/spatial/camera/collision boundaries verified |
 | 4 | Unified health, damage, death, and attribution | Complete | Shared attributed damage pipeline verified at integration checkpoint 1 |
 | 5 | Weapon operation and inventory integration | Complete | Owner-independent weapon pipeline verified |
-| 6 | Reusable spawning | In progress | M6.1 complete; M6.2 active |
+| 6 | Reusable spawning | In progress | M6.1-M6.3 complete; M6.4 active |
 | 7 | Neutral Match and game-mode boundary | Not started | Integration checkpoint 2 |
 | 8 | Complete presentation separation | Not started | — |
 | 9 | Prove reuse with a sandbox ruleset | Not started | Integration checkpoint 3 |
@@ -68,32 +68,33 @@ package.
 
 ## Active Work Package
 
-### M6.2 — Add reusable spawn queries and constraints
+### M6.4 — Route Survival waves through the spawn service
 
 **Status:** In progress
 
-**Objective:** Select valid positions from neutral spawn data using reusable filters
-and constraints rather than actor constructors or mode-specific random placement.
+**Objective:** Make Survival decide wave timing/composition while a shared service
+selects positions and constructs actors from reusable requests.
 
 **Scope:**
 
-- Query spawn sources by role, tags, faction, and actor kind.
-- Sample points and supported region geometry through an injected random source.
-- Apply bounds, visibility, distance, occupancy, and collision constraints.
-- Return explicit selection failure rather than silently falling back to the origin.
+- Introduce a spawn service that composes query, constraints, selection, and factory.
+- Make wave rules submit actor/count/semantic spawn requests rather than instantiate.
+- Support authored enemy spawns when available and an explicit legacy-ring policy
+  while the current TMX remains incomplete.
+- Return per-request success/failure information to the mode.
 
 **Non-goals:**
 
-- Choosing final spawn locations or requiring edits to the current TMX.
-- Actor construction and Survival wave migration; those follow in M6.3/M6.4.
-- Mode-specific wave composition or timing.
+- Choosing final authored spawn locations or requiring edits to the current TMX.
+- Redesigning Survival wave counts, timing, or difficulty.
+- Generic Match ownership, which begins in Phase 7.
 
 **Acceptance criteria:**
 
-- [ ] Spawn queries filter semantic sources without knowing map identity.
-- [ ] Selection is reproducible with an injected random source.
-- [ ] Visibility, distance, occupancy, bounds, and collision constraints compose.
-- [ ] No valid candidate returns an explicit failure without constructing an actor.
+- [ ] Survival wave rules do not instantiate `Zombie` or choose coordinates.
+- [ ] Shared spawning returns explicit successes/failures for requested actors.
+- [ ] Authored enemy spawns are used when a compatible map provides them.
+- [ ] The incomplete current map uses a named fallback policy, not a silent origin.
 
 **Verification evidence:**
 
@@ -165,9 +166,9 @@ Pending.
 | ID | Work package | Status | Depends on |
 |---|---|---|---|
 | M6.1 | Define spawn data and TMX capability validation | Complete | Phase 5 |
-| M6.2 | Add reusable spawn queries and placement constraints | In progress | M6.1 |
-| M6.3 | Construct actors from explicit definitions and positions | Not started | M6.2 |
-| M6.4 | Route Survival waves through the shared spawn service | Not started | M6.3 |
+| M6.2 | Add reusable spawn queries and placement constraints | Complete | M6.1 |
+| M6.3 | Construct actors from explicit definitions and positions | Complete | M6.2 |
+| M6.4 | Route Survival waves through the shared spawn service | In progress | M6.3 |
 | M6.5 | Verify reusable spawning and close Phase 6 | Not started | M6.4 |
 
 ## Phase 5 Exit Review
@@ -270,6 +271,8 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M5.4 | 965 passed, 33 failed in 29.71s | Explicit loadout/inventory, shop integration, selection, and runtime preservation pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M5.5 | 969 passed, 33 failed in 30.82s | Non-player operation, refill routing, construction-site audit, and mutation-boundary audit pass; Phase 5 closes |
 | 2026-08-21 | `uv run pytest` after M6.1 | 973 passed, 33 failed in 32.16s | Neutral point/region parsing, metadata, offsets, supported modes, and capability reports pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M6.2 | 978 passed, 33 failed in 33.32s | Deterministic semantic queries and composable placement constraints pass; explicit failure replaces origin fallback |
+| 2026-08-21 | `uv run pytest` after M6.3 | 985 passed, 33 failed in 37.65s | Neutral actor creation, explicit-position adapter, production construction audit, and wave wiring pass; failure categories remain unchanged |
 
 ### Static checks
 
@@ -489,6 +492,7 @@ When one is introduced, record:
 | Legacy held-weapon properties | `Gun`/`Blade` expose `loaded`, `reserve`, cooldown, reload, and method results while neutral runtime/service own weapon operation | M5.1 | Callers consume explicit weapon-operation state/results | Active |
 | Legacy projectile adapter | Neutral attributed attack descriptions become current `Shot`/`Swing` sprites and gunshot audio in one pygame-facing adapter | M5.3 | Projectile simulation and presentation consume neutral attacks directly | Active |
 | Legacy carried/equipped view | `Session.carried` and `Session.equipped` adapt old list assignment/slicing onto the authoritative loadout | M5.4 | Legacy tests and UI consume `ActorInventory`/`Loadout` directly | Active |
+| Legacy direct Zombie placement | Direct `Zombie(...)` callers still choose a legacy ring position when no explicit position is supplied; production waves use the actor factory | M6.3 | Tests/callers construct through actor creation requests and shared spawning | Active |
 
 ## Known Failures and Risks
 
@@ -547,8 +551,10 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M5.4 explicit loadout | Owner-independent slots preserve weapon runtimes; Session/shop use loadout operations; stackable cargo remains an explicit backpack boundary |
 | 2026-08-21 | Completed M5.5 and Phase 5 | Non-player weapon use and executable bypass audits pass; full suite is 969 passed/33 recorded failures |
 | 2026-08-21 | Completed M6.1 spawn map contract | TMX points/regions and semantic metadata normalize neutrally; modes can validate required capabilities while incomplete maps remain loadable |
+| 2026-08-21 | Completed M6.2 spawn selection | Role/tag/faction/kind queries and seeded box/ellipse/polygon sampling compose bounds, visibility, distance, occupancy, and collision constraints |
+| 2026-08-21 | Completed M6.3 explicit actor creation | Neutral definitions/requests create the same actor at explicit positions; production `Zombie` construction is isolated to one pygame adapter |
 
 ## Next Action
 
-Begin M6.2 by implementing deterministic spawn queries and composable placement
-constraints over the neutral map data.
+Begin M6.4 by composing selection and actor creation behind a shared spawn service,
+then make Survival waves request actors through it.

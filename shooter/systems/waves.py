@@ -1,8 +1,8 @@
 import pygame
 
 from shooter import config
+from shooter.actor_adapter import LegacyActorFactory
 from shooter.systems import world
-from shooter.entities.zombie import Zombie
 from shooter.ui.anchor import CENTRE, TOP, place
 
 BANNER_SIZE = (500, 60)
@@ -23,13 +23,21 @@ class WaveSystem:
     level = None
     layout = world.STARTER
 
-    def __init__(self, window, zombie_group, player_cash, visible=None):
+    def __init__(
+        self,
+        window,
+        zombie_group,
+        player_cash,
+        visible=None,
+        actor_factory=None,
+    ):
         self.wave_count = 0
         self.wave_seconds = 0.0
         self._skip_requested = False
+        self.actor_factory = actor_factory or LegacyActorFactory()
         if config.ZOMBIE_SPAWNING_ENABLED:
             for _ in range(config.WAVE_BASE):
-                zombie_group.add(Zombie(window, player_cash, visible))
+                zombie_group.add(self.actor_factory.spawn_walker(window, visible))
 
     def advance(
         self, window, zombie_group, player_cash, dt=config.SIM_DT, visible=None
@@ -41,7 +49,7 @@ class WaveSystem:
             self.wave_count += 1
             if config.ZOMBIE_SPAWNING_ENABLED:
                 for _ in range(config.WAVE_BASE + pow(self.wave_count, 2)):
-                    zombie_group.add(Zombie(window, player_cash, visible))
+                    zombie_group.add(self.actor_factory.spawn_walker(window, visible))
             self.wave_seconds = 0.0
         else:
             self.wave_seconds += dt

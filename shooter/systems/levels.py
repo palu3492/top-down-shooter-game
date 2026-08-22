@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from functools import partial
 
 from shooter import config
-from shooter.entities.zombie import Zombie
+from shooter.actor_adapter import LegacyActorFactory
 from shooter.session import WON
 from shooter.systems import world
 from shooter.systems.waves import WaveSystem
@@ -69,11 +69,20 @@ def rules_for(level):
 class LevelRules(WaveSystem):
     """Waves until the level's target is cleared."""
 
-    def __init__(self, window, zombie_group, player_cash, visible=None, level=FIRST):
+    def __init__(
+        self,
+        window,
+        zombie_group,
+        player_cash,
+        visible=None,
+        level=FIRST,
+        actor_factory=None,
+    ):
         self.level = level
         self.cleared = 0
         self.wave_count = 0
         self.wave_seconds = 0.0
+        self.actor_factory = actor_factory or LegacyActorFactory()
         self._spawn(window, zombie_group, player_cash, visible, self.level.opening)
 
     @property
@@ -118,7 +127,7 @@ class LevelRules(WaveSystem):
         if not config.ZOMBIE_SPAWNING_ENABLED:
             return
         for _ in range(count):
-            zombie_group.add(Zombie(window, player_cash, visible))
+            zombie_group.add(self.actor_factory.spawn_walker(window, visible))
 
     def draw(self, screen, window=config.WINDOW):
         """Between waves, say where the player is in the level.
