@@ -24,7 +24,7 @@ class WorldRegistry:
         self._ids_by_object = {}
         self._events = events
 
-    def register(self, entity, tags=()):
+    def register(self, entity, tags=(), *, emit=True):
         object_key = id(entity)
         existing = self._ids_by_object.get(object_key)
         if existing is not None:
@@ -36,7 +36,7 @@ class WorldRegistry:
             entity_id, entity, frozenset(tags)
         )
         self._ids_by_object[object_key] = entity_id
-        if self._events is not None:
+        if emit and self._events is not None:
             self._events.publish(
                 EntityRegistered(
                     entity_id, tuple(sorted(self._records[entity_id].tags))
@@ -44,10 +44,10 @@ class WorldRegistry:
             )
         return entity_id
 
-    def remove(self, entity_id, reason="removed"):
+    def remove(self, entity_id, reason="removed", *, emit=True):
         record = self._records.pop(entity_id)
         self._ids_by_object.pop(id(record.entity), None)
-        if self._events is not None:
+        if emit and self._events is not None:
             self._events.publish(EntityRemoved(entity_id, reason))
         return record.entity
 

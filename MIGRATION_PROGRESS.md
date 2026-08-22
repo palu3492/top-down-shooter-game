@@ -26,7 +26,7 @@ package.
 |---|---|
 | Migration phase | Phase 8 — Complete presentation separation |
 | Phase status | In progress |
-| Active work package | M8.2 — Bind actors, attacks, and world objects to placeholder shapes |
+| Active work package | M8.3 — Replace the graphical HUD with a text debug overlay |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 9 — Reuse proven by sandbox ruleset |
 | Last updated | 2026-08-22 |
@@ -62,37 +62,37 @@ package.
 | 5 | Weapon operation and inventory integration | Complete | Owner-independent weapon pipeline verified |
 | 6 | Reusable spawning | Complete | Semantic, constrained, explicit-position spawning verified |
 | 7 | Neutral Match and game-mode boundary | Complete | Match/mode boundary and integration checkpoint 2 verified |
-| 8 | Complete presentation separation | In progress | M8.1 complete; M8.2 active |
+| 8 | Complete presentation separation | In progress | M8.1–M8.2 complete; M8.3 active |
 | 9 | Prove reuse with a sandbox ruleset | Not started | Integration checkpoint 3 |
 | 10 | Resume Zombie Survival feature development | Not started | Product development resumes |
 
 ## Active Work Package
 
-### M8.2 — Bind actors, attacks, and world objects to placeholder shapes
+### M8.3 — Replace the graphical HUD with a text debug overlay
 
 **Status:** In progress
 
-**Objective:** Replace gameplay sprite dependencies with simple presentation
-bindings that draw immutable snapshot entities using debug shapes.
+**Objective:** Replace image-backed gameplay HUD components with a text-only debug
+overlay built entirely from immutable snapshot and presentation status values.
 
 **Scope:**
 
-- Define entity-to-shape bindings by stable tags/faction/type metadata.
-- Draw players, enemies, attacks, and interactable objects with pygame primitives.
-- Keep the TMX map as the retained visual background.
+- Show player vitality, faction, position, and stable ID.
+- Show selected weapon, ammunition, reload/cooldown, and equipment state.
+- Show Survival cash, phase, wave, timers, enemy count, outcome, tick, and seed.
 
 **Non-goals:**
 
-- Replacing the graphical HUD; that follows in M8.3.
-- Removing all legacy sprite bridges; that follows after shape coverage in M8.4.
+- Removing legacy authoritative-state bridges; that follows in M8.4.
+- Production HUD artwork or final visual styling.
 - Production artwork, animation, or asset authoring.
 
 **Acceptance criteria:**
 
-- [ ] Core gameplay entities render from snapshot values and stable bindings.
-- [ ] Placeholder rendering does not inspect mutable actor objects.
-- [ ] TMX map rendering remains available beneath debug shapes.
-- [ ] Simulation behavior is unchanged when bindings are replaced or disabled.
+- [ ] Gameplay HUD uses text and basic primitives only.
+- [ ] Displayed values come from immutable snapshots/read-only presentation status.
+- [ ] HUD code owns no health, cash, ammunition, wave, or outcome state.
+- [ ] Existing graphical gameplay HUD components are no longer drawn.
 
 **Verification evidence:**
 
@@ -185,8 +185,8 @@ Pending.
 | ID | Work package | Status | Depends on |
 |---|---|---|---|
 | M8.1 | Define read-only simulation snapshots | Complete | Phase 7 |
-| M8.2 | Bind actors, attacks, and world objects to placeholder shapes | In progress | M8.1 |
-| M8.3 | Replace the graphical HUD with a text debug overlay | Not started | M8.1 |
+| M8.2 | Bind actors, attacks, and world objects to placeholder shapes | Complete | M8.1 |
+| M8.3 | Replace the graphical HUD with a text debug overlay | In progress | M8.1 |
 | M8.4 | Remove legacy sprite/UI authoritative-state bridges | Not started | M8.2, M8.3 |
 | M8.5 | Verify headless Match advancement and close Phase 8 | Not started | M8.4 |
 
@@ -327,6 +327,7 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M7.5 | 1015 passed, 33 failed in 45.00s | Application-owned selection, pre-allocation compatibility checks, cover-vs-remove lifecycle, explicit leave, and fresh restart pass |
 | 2026-08-21 | `uv run pytest` after M7.6 | 1020 passed, 33 failed in 28.60s | Consecutive-match isolation, exact-once disposal, shared/mode boundary audits, and integration checkpoint 2 pass; Phase 7 closes |
 | 2026-08-22 | `uv run pytest` after M8.1 | 1025 passed, 33 failed in 32.18s | Frozen match/entity/combat/weapon snapshots, copied runtime values, immutable mode payload validation, and first presentation consumer pass |
+| 2026-08-22 | `uv run pytest` after M8.2 | 1029 passed, 33 failed in 44.19s | Tag-driven placeholder actors, attacks, effects, pickups, and interactables render from snapshots over the retained TMX map |
 
 ### Static checks
 
@@ -552,6 +553,7 @@ When one is introduced, record:
 | Legacy Survival module imports | Former `systems.waves`, `systems.shop`, and `systems.survival_consequences` paths re-export mode-owned policy for existing callers/tests | M7.3 | Callers use the mode package and obsolete module paths are deleted | Active |
 | Legacy Session mode-status bridge | Session builds immutable status from legacy rule state and sends it to the presentation-only countdown display | M7.4 | Match hosts the concrete mode instance and exposes its status directly | Active |
 | Legacy Session snapshot inputs | Session supplies its player loadout and legacy-hosted mode status while Match state migrates into the snapshot builder | M8.1 | Match owns inventories and its concrete mode, requiring no Session-provided snapshot inputs | Active |
+| Legacy visual-source registry | Session assigns stable IDs and spatial state to legacy projectile/pickup/prop objects without emitting gameplay lifecycle facts | M8.2 | These objects are created directly as neutral Match entities | Active |
 
 ## Known Failures and Risks
 
@@ -621,8 +623,9 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M7.5 application selection flow | MatchHost owns catalogs/configuration and one active Match; incompatible choices allocate nothing; pause preserves gameplay while removal disposes it; leave/select/start works without process restart; full suite is 1015 passed/33 recorded failures |
 | 2026-08-21 | Completed M7.6 and Phase 7 | Consecutive matches isolate simulation/mode/presentation state; disposal is idempotent; executable boundary audits and launch smoke pass; full suite is 1020 passed/33 recorded failures |
 | 2026-08-22 | Completed M8.1 immutable snapshots | Match snapshots copy stable-ID entity, spatial, collision, vitality, faction, weapon runtime, mode status, and result values; mutable nested mode payloads are rejected; full suite is 1025 passed/33 recorded failures |
+| 2026-08-22 | Completed M8.2 placeholder world bindings | Stable tags select debug shapes for actors, melee/ballistic attacks, grenades, effects, pickups, and interactables; renderer reads snapshots only and TMX remains beneath it; full suite is 1029 passed/33 recorded failures |
 
 ## Next Action
 
-Begin M8.2 by binding immutable snapshot entities to placeholder shapes while
-retaining the TMX map as the presentation background.
+Begin M8.3 by replacing image-backed gameplay HUD panels with a text-only debug
+overlay populated exclusively from immutable snapshot values.

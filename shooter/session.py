@@ -27,9 +27,8 @@ from shooter.entities.player import Human
 from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
 from shooter.entities.props import Harvestable
-from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
+from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade, Swing
 from shooter.projectile_adapter import adapt_attacks
-from shooter.render import blit_group
 from shooter.spatial import Bounds, Box, Transform
 from shooter.systems import world
 from shooter.modes.zombie_survival import shop
@@ -39,6 +38,7 @@ from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, promp
 from shooter.ui.radar import RadarScreen
 from shooter.ui.shopfront import ShopFront
 from shooter.ui.mode_status import SurvivalStatusDisplay
+from shooter.ui.placeholder_world import PlaceholderWorldRenderer
 from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
 from shooter.map_definition import current_map_definition
@@ -189,6 +189,7 @@ class Session:
         self.weapon_display = WeaponPanel(window, self.grenade_data)
         self.shop_display = ShopFront(window)
         self.mode_status_display = SurvivalStatusDisplay()
+        self.placeholder_world = PlaceholderWorldRenderer()
         self.radar = RadarScreen()
 
         rule_kwargs = {}
@@ -228,7 +229,9 @@ class Session:
         )
         self._camera_x, self._camera_y = self.presentation_camera.offset
         self._enemy_ids = {}
+        self._legacy_visual_ids = {}
         self._sync_enemy_registry()
+        self._sync_legacy_visual_registry()
         self._sync_combat_state()
         self.match.start()
 
@@ -412,6 +415,7 @@ class Session:
         attacks = adapt_attacks(descriptions)
         self.bullets.add(attacks)
         self.equipped.fire()
+        self._sync_legacy_visual_registry()
 
     def _damage(self):
         return LETHAL if self.instakill_seconds > 0 else self.equipped.damage
@@ -429,6 +433,7 @@ class Session:
         elif not stun and self.grenade_data.grenade_amount > 0:
             self.grenades.add(Grenade(*self._muzzle(), *self.aim))
             self.grenade_data.grenade_amount -= 1
+        self._sync_legacy_visual_registry()
 
     def _grant_everything(self):
         """Every weapon there is, loaded, on the number keys.
@@ -471,6 +476,7 @@ class Session:
                 pile.count += count
                 return
         self.dropped.add(world.spilled(item, count, at))
+        self._sync_legacy_visual_registry()
 
     def _gather(self):
         """Take what is underfoot, as far as there is room for it.
@@ -523,6 +529,7 @@ class Session:
         self.match.advance(dt)
         self._sync_enemy_registry()
         self._sync_combat_state()
+        self._sync_legacy_visual_registry()
         self.previous_camera = self.camera
         self._advance_player()
 
@@ -571,6 +578,7 @@ class Session:
             self.rules.advance(self.window, self.zombies, self.cash, dt, self.visible)
         self._sync_enemy_registry()
         self._sync_combat_state()
+        self._sync_legacy_visual_registry()
 
         self.instakill_seconds = max(0.0, self.instakill_seconds - dt)
         self.change_x = self.change_y = 0
@@ -611,6 +619,48 @@ class Session:
             self.spatial.remove(entity_id)
             reason = "killed" if zombie.killed else "despawned"
             self.entities.remove(entity_id, reason=reason)
+
+    def _sync_legacy_visual_registry(self):
+        """Temporary stable-ID bridge for not-yet-neutral transient objects."""
+        groups = (
+            (self.bullets, ("attack", "projectile", "ballistic")),
+            (self.grenades, ("attack", "projectile", "grenade")),
+            (self.stun_grenades, ("attack", "projectile", "grenade", "stun")),
+            (self.explosions, ("attack", "area_effect", "explosive")),
+            (self.stun_explosions, ("attack", "area_effect", "stun")),
+            (self.powerups, ("world_object", "pickup", "powerup")),
+            (self.dropped, ("world_object", "pickup")),
+            (self.props, ("world_object", "interactable")),
+        )
+        present = {}
+        for group, tags in groups:
+            for item in group:
+                if not hasattr(item, "world_x") or not hasattr(item, "world_y"):
+                    continue
+                item_tags = (
+                    ("attack", "melee")
+                    if group is self.bullets and isinstance(item, Swing)
+                    else tags
+                )
+                present[item] = item_tags
+                entity_id = self._legacy_visual_ids.get(item)
+                width, height = item.rect.size
+                position = Transform(
+                    item.world_x + width / 2,
+                    item.world_y + height / 2,
+                )
+                if entity_id is None:
+                    entity_id = self.entities.register(item, item_tags, emit=False)
+                    self._legacy_visual_ids[item] = entity_id
+                    self.spatial.attach(entity_id, position, Box(width, height))
+                else:
+                    self.spatial.move_to(entity_id, position.x, position.y)
+        for item in self._legacy_visual_ids.keys() - present.keys():
+            entity_id = self._legacy_visual_ids.pop(item)
+            self.spatial.remove(entity_id)
+            self.entities.remove(
+                entity_id, reason="presentation_source_removed", emit=False
+            )
 
     def _sync_combat_state(self):
         """Mirror legacy actor health until the damage service becomes authoritative."""
@@ -798,29 +848,13 @@ class Session:
         for rect in self.collision_rects:
             pygame.draw.rect(screen, COLLISION_DEBUG, rect.move(draw_x, draw_y), 2)
 
-        blit_group(screen, self.dropped, draw_x, draw_y, alpha)
-        blit_group(screen, self.powerups, draw_x, draw_y, alpha)
-        for zombie in self.zombies:
-            zombie.health_bar(screen, zombie.draw_position(draw_x, draw_y, alpha))
-        blit_group(screen, self.zombies, draw_x, draw_y, alpha)
-        self.human_group.draw(screen)
-        player_solid = pygame.Rect(0, 0, *PLAYER_SOLID)
-        player_solid.center = (self.window[0] / 2, self.window[1] / 2)
-        pygame.draw.rect(screen, COLLISION_DEBUG, player_solid, 2)
-        blit_group(screen, self.bullets, draw_x, draw_y, alpha)
+        snapshot = self.snapshot
+        self.placeholder_world.draw(screen, snapshot, (draw_x, draw_y))
 
         if not self.zombies:
             self.mode_status_display.draw(
                 screen, self.snapshot.mode_status, self.window
             )
-
-        for group in (
-            self.grenades,
-            self.explosions,
-            self.stun_grenades,
-            self.stun_explosions,
-        ):
-            blit_group(screen, group, draw_x, draw_y, alpha)
 
         self._draw_overlays(screen)
 
