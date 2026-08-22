@@ -17,10 +17,16 @@ veil, which is the ghost AT21 removed.
 import pygame
 
 from shooter import config
+from shooter.background import TiledBackground
+from shooter.commands import FIRE
 from shooter.input_adapter import PygameInputAdapter
-from shooter.map_definition import current_map_definition
+from shooter.map_definition import SpawnPoint, SpawnRegion, current_map_definition
+from shooter.modes.sandbox import AttackActor, MoveActor
+from shooter.modes.zombie_survival import DamageEnemy, MoveSurvivor
 from shooter.scenes import Scene
 from shooter.session import Session
+from shooter.ui.snapshot_presentation import SnapshotPresentation
+from shooter.world_collision import Aabb
 
 PAUSE = "PAUSE"
 
@@ -97,3 +103,163 @@ class GameplayScene(Scene):
 
     def draw(self, surface, alpha):
         self.session.draw(surface, alpha)
+
+
+class SnapshotGameplayScene(Scene):
+    """TMX and snapshot presentation shared by neutral runtime modes."""
+
+    opaque = True
+    simulates = True
+
+    def __init__(self, window, manager, match_owner, match_host=None):
+        super().__init__(window, manager)
+        self.match = match_owner
+        self.mode = match_owner.mode
+        self.match_host = match_host
+        self.presenter = SnapshotPresentation()
+        self.background = TiledBackground(
+            self.match.map_definition.presentation_source
+        )
+        self.input_adapter = PygameInputAdapter()
+
+    @property
+    def camera(self):
+        world_width, world_height = self.match.map_definition.size
+        return (
+            self.window[0] / 2 - world_width / 2,
+            self.window[1] / 2 - world_height / 2,
+        )
+
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
+    def dispose(self):
+        if self.match_host is not None:
+            self.match_host.leave()
+        else:
+            self.match.dispose()
+
+    def handle(self, event):
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            return PAUSE
+        return None
+
+    def draw(self, surface, alpha):
+        camera = self.camera
+        self.background.draw(surface, *camera)
+        self.presenter.draw(surface, self.match.snapshot(), camera)
+
+
+class SandboxGameplayScene(SnapshotGameplayScene):
+    """Visible shell for a neutral Sandbox Match and its snapshots."""
+
+    title = "SANDBOX"
+
+    def handle(self, event):
+        routed = super().handle(event)
+        if routed is not None:
+            return routed
+        command = self.input_adapter.action_for(event)
+        if command is not None and command.action == FIRE:
+            red = self.mode.actor_ids.get("red")
+            blue = self.mode.actor_ids.get("blue")
+            if red is not None and blue is not None:
+                self.match.advance(0.0, (AttackActor(red, blue, 10),))
+        return None
+
+    def update(self, inputs, dt=config.SIM_DT):
+        red = self.mode.actor_ids.get("red")
+        commands = () if red is None else (MoveActor(red, inputs.move),)
+        self.match.advance(dt, commands)
+
+
+
+class SurvivalGameplayScene(SnapshotGameplayScene):
+    """Visible shell for the shared-runtime Zombie Survival slice."""
+
+    title = "ZOMBIE SURVIVAL"
+
+    def handle(self, event):
+        routed = super().handle(event)
+        if routed is not None:
+            return routed
+        command = self.input_adapter.action_for(event)
+        if command is not None and command.action == FIRE:
+            target = next(
+                (
+                    enemy_id
+                    for enemy_id in self.mode.enemy_ids
+                    if self.match.combat.get(enemy_id).alive
+                ),
+                None,
+            )
+            if target is not None:
+                self.match.advance(0.0, (DamageEnemy(target, 34),))
+        return None
+
+    def update(self, inputs, dt=config.SIM_DT):
+        self.match.advance(dt, (MoveSurvivor(inputs.move),))
+
+
+def sandbox_spawn_sources(map_definition):
+    """Use authored team starts when present, otherwise an explicit dev fallback."""
+    authored = tuple(
+        source
+        for source in map_definition.spawns
+        if source.role == "player" and source.faction in {"red", "blue"}
+    )
+    if {source.faction for source in authored} >= {"red", "blue"}:
+        return authored
+    width, height = map_definition.size
+    return (
+        SpawnPoint(
+            "sandbox-red",
+            (width / 2 - 120, height / 2),
+            role="player",
+            faction="red",
+            actor_kind="soldier",
+        ),
+        SpawnPoint(
+            "sandbox-blue",
+            (width / 2 + 120, height / 2),
+            role="player",
+            faction="blue",
+            actor_kind="soldier",
+        ),
+    )
+
+
+def survival_spawn_sources(map_definition):
+    """Use authored Survival starts or a named central migration fallback."""
+    player = tuple(
+        source
+        for source in map_definition.spawns
+        if source.role == "player" and source.faction == "survivors"
+    )
+    enemies = tuple(
+        source
+        for source in map_definition.spawns
+        if source.role == "enemy" and source.faction == "horde"
+    )
+    if player and enemies:
+        return player + enemies
+    width, height = map_definition.size
+    return (
+        SpawnPoint(
+            "survival-player",
+            (width / 2, height / 2),
+            role="player",
+            faction="survivors",
+            actor_kind="soldier",
+        ),
+        SpawnRegion(
+            "survival-horde",
+            Aabb(width / 2 - 450, height / 2 - 300, 900, 600),
+            role="enemy",
+            faction="horde",
+            actor_kind="walker",
+        ),
+    )

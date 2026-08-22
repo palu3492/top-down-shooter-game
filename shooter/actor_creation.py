@@ -46,3 +46,13 @@ class ActorCreationService:
             collision_size=definition.collision_size,
             movement_speed=definition.movement_speed,
         )
+
+
+class NeutralActorFactory:
+    """Adapt the shared spawn-service factory shape without creating a renderer."""
+
+    def __init__(self, creation=None):
+        self.creation = creation or ActorCreationService()
+
+    def create(self, window, definition, request):
+        return self.creation.create(definition, request)

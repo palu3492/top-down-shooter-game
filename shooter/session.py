@@ -28,18 +28,17 @@ from shooter.entities.zombie import keep_apart
 from shooter.entities.powerups import PowerUps
 from shooter.entities.props import Harvestable
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade, Swing
+from shooter.equipment_state import EquipmentState
 from shooter.projectile_adapter import adapt_attacks
 from shooter.spatial import Bounds, Box, Transform
 from shooter.systems import world
 from shooter.modes.zombie_survival import shop
 from shooter.modes.zombie_survival import SurvivalConsequences, WaveSystem
 from shooter.modes.zombie_survival.state import SurvivalState
-from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, prompt
-from shooter.ui.radar import RadarScreen
-from shooter.ui.shopfront import ShopFront
-from shooter.ui.mode_status import SurvivalStatusDisplay
 from shooter.ui.placeholder_world import PlaceholderWorldRenderer
-from shooter.weapons import RELOAD, SLOTS, equip, everything
+from shooter.ui.debug_overlay import DebugOverlay
+from shooter.presentation_status import SessionPresentationStatus, ShopOfferStatus
+from shooter.weapons import SLOTS, equip, everything
 from shooter.viewport import visible_world
 from shooter.map_definition import current_map_definition
 from shooter.loadout import ActorInventory, Loadout
@@ -47,8 +46,6 @@ from shooter.match import legacy_survival_match
 from shooter.world_collision import Aabb, actor_box, overlaps
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
-INSTAKILL_TOP = 40
-RELOADING_TOP = 100
 COLLISION_DEBUG = (255, 0, 255)
 
 # Legacy public key constants retained only while direct Session-input tests are
@@ -70,7 +67,6 @@ MERGE_WITHIN = 110
 # player it sits -- fixed heights near the top are where the between-wave
 # banner already is, and the two printed over each other.
 NOTICE_SECONDS = 1.6
-NOTICE_ABOVE = 120
 
 # How a game can finish. `None` means it is still being played.
 LOST, WON = "LOST", "WON"
@@ -115,16 +111,6 @@ def stun_explosion_touching_zombie(zombie, explosion):
         zombie.remove_speed(config.STUN_SPEED)
 
 
-def centred_text(screen, window, message, top, size, colour=config.WHITE):
-    """Measured and centred rather than nudged by a hand-tuned offset.
-
-    `window[0] / 2 - 70` was only ever centred for one particular string at one
-    particular font size.
-    """
-    text = pygame.font.Font(None, size).render(message, True, colour)
-    screen.blit(text, (window[0] / 2.0 - text.get_width() / 2.0, top))
-
-
 class Session:
     """A game in progress."""
 
@@ -157,6 +143,8 @@ class Session:
         # Authored collision arrives through the neutral map definition.
         self.collision_rects = []
         self.human = Human(window)
+        # Still participates in legacy life/death semantics: Sprite.alive()
+        # means membership in at least one group, not merely render ownership.
         self.human_group = pygame.sprite.Group(self.human)
         self.zombies = pygame.sprite.Group()
         self.bullets = pygame.sprite.Group()
@@ -167,7 +155,7 @@ class Session:
         self.powerups = pygame.sprite.Group(PowerUps())
 
         self.survival_state = SurvivalState()
-        self.cash = Cash(self.survival_state.cash)
+        self.cash = self.survival_state.cash
         self.inventory = ActorInventory(
             loadout=Loadout(
                 (equip(which) for which in SLOTS), capacity=commands.SLOT_COUNT
@@ -183,14 +171,9 @@ class Session:
         self.dropped = pygame.sprite.Group()
         self.notice = None
         self.notice_seconds = 0.0
-        self.grenade_data = GrenadeData()
-        self.heads_up_display = HUD(window)
-        self.health_display = HealthBar(window)
-        self.weapon_display = WeaponPanel(window, self.grenade_data)
-        self.shop_display = ShopFront(window)
-        self.mode_status_display = SurvivalStatusDisplay()
+        self.grenade_data = EquipmentState()
         self.placeholder_world = PlaceholderWorldRenderer()
-        self.radar = RadarScreen()
+        self.debug_overlay = DebugOverlay()
 
         rule_kwargs = {}
         if "spawn_sources" in inspect.signature(rules).parameters:
@@ -265,6 +248,34 @@ class Session:
             loadouts={self.player_id: self.loadout},
             mode_status=self.mode_status,
             result=self.outcome,
+        )
+
+    @property
+    def presentation_status(self):
+        offers = ()
+        if self.shopping:
+            offers = tuple(
+                ShopOfferStatus(
+                    slot=index,
+                    weapon_id=offer.weapon,
+                    name=offer.name,
+                    price=shop.price_of(offer, self.loadout),
+                    affordable=self.cash.balance
+                    >= shop.price_of(offer, self.loadout),
+                    owned=shop.carrying(tuple(self.loadout), offer) is not None,
+                )
+                for index, offer in enumerate(shop.STOCK, start=1)
+            )
+        return SessionPresentationStatus(
+            grenades=self.grenade_data.grenade_amount,
+            stun_grenades=self.grenade_data.stun_grenade_amount,
+            instakill_remaining=self.instakill_seconds,
+            cargo=tuple((stack.item.id, stack.count) for stack in self.backpack),
+            notice=self.notice,
+            interaction=None if self.nearby is None else self.nearby.label,
+            shopping=self.shopping,
+            shop_feedback=self.shop_says,
+            shop_offers=offers,
         )
 
     @property
@@ -851,12 +862,7 @@ class Session:
         snapshot = self.snapshot
         self.placeholder_world.draw(screen, snapshot, (draw_x, draw_y))
 
-        if not self.zombies:
-            self.mode_status_display.draw(
-                screen, self.snapshot.mode_status, self.window
-            )
-
-        self._draw_overlays(screen)
+        self._draw_overlays(screen, snapshot)
 
     def _interpolated_camera(self, alpha):
         return (
@@ -864,45 +870,6 @@ class Session:
             self.previous_camera[1] + (self.camera_y - self.previous_camera[1]) * alpha,
         )
 
-    def _draw_overlays(self, screen):
-        self.radar.draw(
-            screen,
-            -self.camera_x + self.window[0] / 2,
-            -self.camera_y + self.window[1] / 2,
-        )
-        for zombie in self.zombies:
-            self.radar.update_zom(screen, zombie)
-
-        if self.instakill_seconds > 0:
-            centred_text(
-                screen,
-                self.window,
-                f"INSTAKILL {int(self.instakill_seconds) + 1}s",
-                INSTAKILL_TOP,
-                size=34,
-                colour=config.INSTAKILL_TEXT,
-            )
-
-        self.heads_up_display.update(screen, self.window)
-        self.health_display.draw(screen, self.human.get_health())
-        self.weapon_display.draw(screen, self.equipped)
-        self.cash.update(screen, self.window)
-
-        if self.ammo_count == RELOAD:
-            centred_text(screen, self.window, "Reloading", RELOADING_TOP, size=30)
-
-        if self.notice:
-            centred_text(
-                screen,
-                self.window,
-                self.notice,
-                self.window[1] / 2 - NOTICE_ABOVE,
-                size=30,
-            )
-
-        if self.shopping:
-            self.shop_display.draw(
-                screen, self.cash, tuple(self.loadout), self.shop_says
-            )
-        elif self.nearby is not None:
-            prompt(screen, self.window, self.nearby.label)
+    def _draw_overlays(self, screen, snapshot):
+        status = self.presentation_status
+        self.debug_overlay.draw(screen, snapshot, status)

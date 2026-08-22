@@ -29,7 +29,7 @@ from shooter.ui.sky import Sky
 ART = "Backgrounds/menu_pixel.png"
 GAME_TITLE = "TOP DOWN SHOOTER"
 
-MENU, START, CONTINUE = "MENU", "START", "CONTINUE"
+MENU, START, CONTINUE, SANDBOX = "MENU", "START", "CONTINUE", "SANDBOX"
 
 FADE_IN = 0.7
 HOLD = 1.3
@@ -139,6 +139,7 @@ class MainMenuScene(TitleScene):
             listed.append(("NEW GAME", START))
         else:
             listed.append(("START GAME", START))
+        listed.append(("SANDBOX", SANDBOX))
         listed.append(("SETTINGS", menu.SETTINGS))
         if config.DEV_TOOLS:
             listed.append(("DEV", menu.DEV))

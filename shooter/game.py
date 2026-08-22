@@ -13,8 +13,18 @@ import pygame
 from shooter import config
 from shooter.assets import load_image
 from shooter.application import MatchHost
-from shooter.gameplay import PAUSE, GameplayScene
+from shooter.gameplay import (
+    PAUSE,
+    GameplayScene,
+    SandboxGameplayScene,
+    SurvivalGameplayScene,
+    sandbox_spawn_sources,
+    survival_spawn_sources,
+)
 from shooter.input_adapter import PygameInputAdapter
+from shooter.match_configuration import SANDBOX, ZOMBIE_SURVIVAL, MatchConfiguration
+from shooter.modes.sandbox import SandboxMode
+from shooter.modes.zombie_survival import SurvivalMode
 from shooter.preload import preload
 from shooter.progress import Progress
 from shooter.scenes import SceneStack
@@ -60,7 +70,11 @@ def match_resolution(window, scenes):
     scenes.resize(window)
     for scene in scenes.visible():
         if scene.simulates:
-            scene.session.resize()
+            resize = getattr(scene, "resize", None)
+            if resize is not None:
+                resize()
+            elif hasattr(scene, "session"):
+                scene.session.resize()
     return surface
 
 
@@ -88,7 +102,14 @@ def start_level(scenes, window, level, replacing=0, match_host=None):
     """Put a game of this level on the stack, dropping whatever it replaces."""
     for _ in range(replacing):
         scenes.pop()
-    match_owner = None if match_host is None else match_host.start()
+    match_owner = None
+    if match_host is not None:
+        selected = MatchConfiguration(
+            ZOMBIE_SURVIVAL,
+            match_host.configuration.map_id,
+            match_host.configuration.seed,
+        )
+        match_owner = match_host.start(selected)
     open_scene(
         scenes,
         GameplayScene(
@@ -96,6 +117,58 @@ def start_level(scenes, window, level, replacing=0, match_host=None):
             scenes.manager,
             rules=levels.rules_for(level),
             match_owner=match_owner,
+            match_host=match_host,
+        ),
+    )
+
+
+def start_sandbox(scenes, window, replacing=0, match_host=None):
+    """Start the visible non-Survival reuse proof on the selected map."""
+    if match_host is None:
+        match_host = MatchHost()
+    for _ in range(replacing):
+        scenes.pop()
+    selected = MatchConfiguration(
+        SANDBOX,
+        match_host.configuration.map_id,
+        match_host.configuration.seed,
+    )
+    resolved = match_host.select(selected)
+    mode = SandboxMode(spawn_sources=sandbox_spawn_sources(resolved.map_definition))
+    match_owner = match_host.start(selected, mode)
+    open_scene(
+        scenes,
+        SandboxGameplayScene(
+            window,
+            scenes.manager,
+            match_owner,
+            match_host=match_host,
+        ),
+    )
+
+
+def start_shared_survival(scenes, window, replacing=0, match_host=None):
+    """Start the neutral Survival slice while the legacy harness still exists."""
+    if match_host is None:
+        match_host = MatchHost()
+    for _ in range(replacing):
+        scenes.pop()
+    selected = MatchConfiguration(
+        ZOMBIE_SURVIVAL,
+        match_host.configuration.map_id,
+        match_host.configuration.seed,
+    )
+    resolved = match_host.select(selected)
+    mode = SurvivalMode(
+        spawn_sources=survival_spawn_sources(resolved.map_definition)
+    )
+    match_owner = match_host.start(selected, mode)
+    open_scene(
+        scenes,
+        SurvivalGameplayScene(
+            window,
+            scenes.manager,
+            match_owner,
             match_host=match_host,
         ),
     )
@@ -154,7 +227,12 @@ def route(action, scenes, window, settings, progress=None, match_host=None):
         scenes.pop()
         open_scene(scenes, title.MainMenuScene(window, scenes.manager, progress))
     elif action == title.START:
-        start_level(scenes, window, levels.FIRST, match_host=match_host)
+        if match_host is None:
+            start_level(scenes, window, levels.FIRST)
+        else:
+            start_shared_survival(scenes, window, match_host=match_host)
+    elif action == title.SANDBOX:
+        start_sandbox(scenes, window, match_host=match_host)
     elif action == title.CONTINUE:
         reached = progress.reached if progress else levels.FIRST.number
         start_level(

@@ -84,7 +84,7 @@ def test_consecutive_matches_isolate_simulation_mode_and_presentation(display):
     assert second.rules.wave_seconds == 0.0
     assert second.notice is None
     assert second.human is not first.human
-    assert second.mode_status_display is not first.mode_status_display
+    assert second.debug_overlay is not first.debug_overlay
 
     pristine = MatchHost().start()
     assert second_match.random_stream("loot").random() == pristine.random_stream(

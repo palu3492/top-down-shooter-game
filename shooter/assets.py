@@ -8,15 +8,11 @@ same file asked for two ways is the same surface.
 """
 
 from functools import cache
-from pathlib import Path
 
 import pygame
 
-ASSETS_DIR = Path(__file__).resolve().parent.parent / "Assets"
-
-
-def asset_path(relative):
-    return str(ASSETS_DIR / relative)
+from shooter.asset_paths import ASSETS_DIR as ASSETS_DIR
+from shooter.asset_paths import asset_path
 
 
 def _cache_controls(public, cached):

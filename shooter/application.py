@@ -30,7 +30,7 @@ class MatchHost:
         self.configuration = configuration
         return resolved
 
-    def start(self, configuration=None):
+    def start(self, configuration=None, mode=None):
         selected = configuration or self.configuration
         resolved = self._resolve(selected)
         if not resolved.compatible:
@@ -39,6 +39,8 @@ class MatchHost:
         self.configuration = selected
         relationships = RelationshipPolicy(resolved.mode.hostile_factions)
         self.active_match = Match(resolved, relationships)
+        if mode is not None:
+            self.active_match.start(mode)
         return self.active_match
 
     def leave(self):

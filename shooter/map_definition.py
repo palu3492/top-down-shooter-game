@@ -5,7 +5,7 @@ from functools import cache
 from pathlib import Path
 from xml.etree import ElementTree
 
-from shooter.assets import asset_path
+from shooter.asset_paths import asset_path
 from shooter.world_collision import Aabb, Ellipse, Polygon
 
 CURRENT_MAP_SOURCE = "Maps/world_1/world_1.tmx"

@@ -51,7 +51,11 @@ class Match:
         self.spatial = SpatialStore()
         self.combat = CombatStateStore()
         self.factions = FactionStore()
-        self.relationships = relationships or RelationshipPolicy()
+        self.relationships = (
+            RelationshipPolicy(resolved.mode.hostile_factions)
+            if relationships is None
+            else relationships
+        )
         self.damage = DamageService(
             self.combat, self.factions, self.relationships, self.events
         )

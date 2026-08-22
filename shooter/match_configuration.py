@@ -10,6 +10,7 @@ from shooter.map_definition import (
 )
 
 ZOMBIE_SURVIVAL = "zombie_survival"
+SANDBOX = "sandbox"
 
 
 class UnknownCatalogEntryError(KeyError):
@@ -121,6 +122,13 @@ def default_mode_catalog():
                 "Survive escalating enemy waves.",
                 MapRequirements(capabilities=frozenset(("bounds",))),
                 (("survivors", "horde"),),
+            ),
+            ModeDescriptor(
+                SANDBOX,
+                "Sandbox",
+                "Exercise shared mechanics without mode-specific objectives.",
+                MapRequirements(capabilities=frozenset(("bounds",))),
+                (("red", "blue"),),
             ),
         )
     )

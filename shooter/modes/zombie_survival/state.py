@@ -30,6 +30,16 @@ class SurvivalWallet:
         self.balance += amount
         return True
 
+    # Compatibility name for callers that predate the neutral wallet. It is a
+    # view of the same value, not a second presentation-owned cash balance.
+    @property
+    def cash_amount(self):
+        return self.balance
+
+    @cash_amount.setter
+    def cash_amount(self, value):
+        self.balance = value
+
 
 @dataclass
 class SurvivalState:

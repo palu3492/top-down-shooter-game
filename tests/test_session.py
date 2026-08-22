@@ -272,8 +272,6 @@ def test_everything_in_a_session_follows_a_resize(display):
     assert session.window == (1920, 1080)
     assert session.human.rect.centerx == pytest.approx(960, abs=1)
     assert session.human.rect.centery == pytest.approx(540, abs=1)
-    assert tuple(session.weapon_display.window) == (1920, 1080)
-    assert tuple(session.health_display.window_size) == (1920, 1080)
     assert tuple(zombie.window_size) == (1920, 1080), (
         "an existing zombie walks at half the window, so a stale size sends it "
         "at a point the player is not standing on"
