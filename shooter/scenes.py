@@ -53,6 +53,9 @@ class Scene:
             element.kill()
         self.elements.clear()
 
+    def dispose(self):
+        """Release permanent scene-owned state after removal from the stack."""
+
     def handle(self, event):
         """Return an action name, or None to stay put."""
         return None
@@ -117,7 +120,9 @@ class SceneStack:
     def pop(self):
         if not self._scenes:
             return
-        self._scenes.pop().close()
+        removed = self._scenes.pop()
+        removed.close()
+        removed.dispose()
         if self._scenes:
             self._scenes[-1].open()
         self._sync_pointer()

@@ -53,6 +53,12 @@ class RecordingMode:
     def advance(self, match, commands, dt):
         self.calls.append(("advance", match.tick, commands, dt))
 
+    def status(self, match):
+        return {"tick": match.tick}
+
+    def result(self, match):
+        return "complete" if match.tick >= 1 else None
+
     def dispose(self, match):
         self.calls.append(("dispose", match.tick))
 
@@ -67,6 +73,8 @@ def test_match_owns_state_and_drives_a_mode_through_its_lifecycle():
 
     assert match.state == RUNNING
     assert match.tick == 1
+    assert match.mode_status == {"tick": 1}
+    assert match.result == "complete"
     match.dispose()
     assert mode.calls == [
         ("start", 0),

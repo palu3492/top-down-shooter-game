@@ -12,9 +12,10 @@ import pygame
 import pytest
 
 from shooter import config
-from shooter.systems import waves as waves_module
 from shooter.systems.waves import WaveSystem
 from shooter.ui import hud
+from shooter.ui import mode_status
+from shooter.ui.mode_status import SurvivalStatusDisplay
 from shooter.weapons import Gun
 from shooter.ui.anchor import (
     BOTTOM,
@@ -142,29 +143,33 @@ def test_the_hud_panels_move_when_the_window_does(display):
 
 
 @pytest.mark.parametrize("window", SIZES)
-def test_the_wave_banner_is_centred_rather_than_pinned(display, window, cash):
+def test_the_mode_status_banner_is_centred_rather_than_pinned(display, window, cash):
     """It used to start at x=300 whatever the window was."""
     surface = pygame.Surface(window)
     waves = WaveSystem(window, pygame.sprite.Group(), cash)
-    waves.draw(surface, window)
+    SurvivalStatusDisplay().draw(surface, waves.status(), window)
 
     banner = place(
-        waves_module.BANNER_SIZE, window, CENTRE, TOP, waves_module.BANNER_INSET
+        mode_status.BANNER_SIZE, window, CENTRE, TOP, mode_status.BANNER_INSET
     )
     assert banner.centerx == pytest.approx(window[0] / 2)
     assert pygame.Rect((0, 0), window).contains(banner)
 
 
-def test_the_wave_banner_still_draws_at_the_default(display, cash):
+def test_the_mode_status_banner_still_draws_at_the_default(display, cash):
     """Anywhere in the banner rather than one pixel of it: the previous version
     happened to sample the middle of a board that has since been deleted, and
     said the banner had stopped drawing when only the board had."""
     surface = pygame.Surface(config.WINDOW)
     waves = WaveSystem(config.WINDOW, pygame.sprite.Group(), cash)
-    waves.draw(surface)
+    SurvivalStatusDisplay().draw(surface, waves.status())
 
     banner = place(
-        waves_module.BANNER_SIZE, config.WINDOW, CENTRE, TOP, waves_module.BANNER_INSET
+        mode_status.BANNER_SIZE,
+        config.WINDOW,
+        CENTRE,
+        TOP,
+        mode_status.BANNER_INSET,
     )
     painted = [
         (x, y)

@@ -12,6 +12,7 @@ import pygame
 
 from shooter import config
 from shooter.assets import load_image
+from shooter.application import MatchHost
 from shooter.gameplay import PAUSE, GameplayScene
 from shooter.input_adapter import PygameInputAdapter
 from shooter.preload import preload
@@ -83,13 +84,20 @@ def played_level(scenes):
     return None
 
 
-def start_level(scenes, window, level, replacing=0):
+def start_level(scenes, window, level, replacing=0, match_host=None):
     """Put a game of this level on the stack, dropping whatever it replaces."""
     for _ in range(replacing):
         scenes.pop()
+    match_owner = None if match_host is None else match_host.start()
     open_scene(
         scenes,
-        GameplayScene(window, scenes.manager, rules=levels.rules_for(level)),
+        GameplayScene(
+            window,
+            scenes.manager,
+            rules=levels.rules_for(level),
+            match_owner=match_owner,
+            match_host=match_host,
+        ),
     )
 
 
@@ -129,12 +137,13 @@ def advance_simulation(scenes, inputs, accumulator, dt=config.SIM_DT):
     return accumulator
 
 
-def route(action, scenes, window, settings, progress=None):
+def route(action, scenes, window, settings, progress=None, match_host=None):
     """Turn a scene's action into a move on the stack. False means quit.
 
     Every navigation decision the game makes is here, which is the whole of
     what "start a game" and "end a game" turned out to be.
     """
+    match_host = match_host or getattr(scenes, "match_host", None)
     if action is None:
         return True
     if action == PAUSE:
@@ -145,10 +154,15 @@ def route(action, scenes, window, settings, progress=None):
         scenes.pop()
         open_scene(scenes, title.MainMenuScene(window, scenes.manager, progress))
     elif action == title.START:
-        start_level(scenes, window, levels.FIRST)
+        start_level(scenes, window, levels.FIRST, match_host=match_host)
     elif action == title.CONTINUE:
         reached = progress.reached if progress else levels.FIRST.number
-        start_level(scenes, window, levels.level_number(reached))
+        start_level(
+            scenes,
+            window,
+            levels.level_number(reached),
+            match_host=match_host,
+        )
     elif action in (session.LOST, session.WON):
         level = played_level(scenes)
         if action == session.WON and level is not None and progress is not None:
@@ -164,17 +178,29 @@ def route(action, scenes, window, settings, progress=None):
             ),
         )
     elif action == menu.RETRY:
-        start_level(scenes, window, played_level(scenes) or levels.FIRST, replacing=2)
+        start_level(
+            scenes,
+            window,
+            played_level(scenes) or levels.FIRST,
+            replacing=2,
+            match_host=match_host,
+        )
     elif action == menu.NEXT_LEVEL:
         finished = played_level(scenes) or levels.FIRST
         start_level(
-            scenes, window, levels.level_number(finished.number + 1), replacing=2
+            scenes,
+            window,
+            levels.level_number(finished.number + 1),
+            replacing=2,
+            match_host=match_host,
         )
     elif action == menu.END_GAME:
         # The main menu is still underneath, so ending a game is dropping
         # whatever is over it and finding it where it was left.
         while len(scenes) > 1:
             scenes.pop()
+        if match_host is not None:
+            match_host.leave()
     elif action in (menu.RESUME, menu.BACK):
         scenes.pop()
     elif action == menu.SETTINGS:
@@ -213,6 +239,8 @@ def game_loop():
 
     cursor = load_image("cursor.png")
     scenes = SceneStack(window)
+    match_host = MatchHost()
+    scenes.match_host = match_host
     scenes.push(title.SplashScene(window, scenes.manager))
 
     clock = pygame.time.Clock()

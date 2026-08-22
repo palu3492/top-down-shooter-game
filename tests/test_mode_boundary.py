@@ -1,7 +1,11 @@
 """Zombie Survival is a Match-hosted policy package, not the shared engine."""
 
 import ast
+from dataclasses import FrozenInstanceError
 from pathlib import Path
+
+import pygame
+import pytest
 
 from shooter.modes.zombie_survival import SurvivalConsequences, WaveSystem
 from shooter.modes.zombie_survival import shop
@@ -31,7 +35,7 @@ def test_mode_contract_is_pygame_free_and_intentionally_small():
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
 
-    assert methods == {"start", "advance", "dispose"}
+    assert methods == {"start", "advance", "status", "result", "dispose"}
     roots = {
         name.split(".")[0] for name in direct_imports("shooter/modes/contract.py")
     }
@@ -64,3 +68,20 @@ def test_shared_economy_does_not_import_a_game_mode():
         name.startswith("shooter.modes")
         for name in direct_imports("shooter/economy.py")
     )
+
+
+def test_survival_rules_expose_immutable_status_without_rendering_dependencies(
+    window, cash
+):
+    rules = WaveSystem(window, pygame.sprite.Group(), cash)
+    status = rules.status(cash=75, enemies_remaining=3)
+
+    assert status.phase == "combat"
+    assert status.cash == 75
+    assert status.enemies_remaining == 3
+    with pytest.raises(FrozenInstanceError):
+        status.wave = 99
+
+    imports = direct_imports("shooter/modes/zombie_survival/waves.py")
+    assert "pygame" not in imports
+    assert not any(name.startswith("shooter.ui") for name in imports)

@@ -80,6 +80,24 @@ class Match:
             self._random_streams[name] = random.Random(seed)
         return self._random_streams[name]
 
+    @property
+    def mode_status(self):
+        self._ensure_available()
+        return None if self.mode is None else self.mode.status(self)
+
+    @property
+    def result(self):
+        self._ensure_available()
+        return None if self.mode is None else self.mode.result(self)
+
+    def snapshot(self, **adapters):
+        self._ensure_available()
+        from shooter.simulation_snapshot import build_match_snapshot
+
+        adapters.setdefault("mode_status", self.mode_status)
+        adapters.setdefault("result", self.result)
+        return build_match_snapshot(self, **adapters)
+
     def dispose(self):
         if self.state == DISPOSED:
             return

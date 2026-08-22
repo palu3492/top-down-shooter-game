@@ -24,12 +24,12 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 7 — Neutral Match and game-mode boundary |
+| Migration phase | Phase 8 — Complete presentation separation |
 | Phase status | In progress |
-| Active work package | M7.4 — Expose mode status and remove rendering from rules |
+| Active work package | M8.2 — Bind actors, attacks, and world objects to placeholder shapes |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
-| Next integration checkpoint | End of Phase 7 — Reusable Match and mode boundary |
-| Last updated | 2026-08-21 |
+| Next integration checkpoint | End of Phase 9 — Reuse proven by sandbox ruleset |
+| Last updated | 2026-08-22 |
 
 ## Confirmed Project Constraints
 
@@ -61,38 +61,38 @@ package.
 | 4 | Unified health, damage, death, and attribution | Complete | Shared attributed damage pipeline verified at integration checkpoint 1 |
 | 5 | Weapon operation and inventory integration | Complete | Owner-independent weapon pipeline verified |
 | 6 | Reusable spawning | Complete | Semantic, constrained, explicit-position spawning verified |
-| 7 | Neutral Match and game-mode boundary | In progress | M7.1–M7.3 complete; M7.4 active; integration checkpoint 2 |
-| 8 | Complete presentation separation | Not started | — |
+| 7 | Neutral Match and game-mode boundary | Complete | Match/mode boundary and integration checkpoint 2 verified |
+| 8 | Complete presentation separation | In progress | M8.1 complete; M8.2 active |
 | 9 | Prove reuse with a sandbox ruleset | Not started | Integration checkpoint 3 |
 | 10 | Resume Zombie Survival feature development | Not started | Product development resumes |
 
 ## Active Work Package
 
-### M7.4 — Expose mode status and remove rendering from rules
+### M8.2 — Bind actors, attacks, and world objects to placeholder shapes
 
 **Status:** In progress
 
-**Objective:** Expose immutable Survival status for presentation and remove the
-remaining pygame countdown/banner work from mode rules.
+**Objective:** Replace gameplay sprite dependencies with simple presentation
+bindings that draw immutable snapshot entities using debug shapes.
 
 **Scope:**
 
-- Define a read-only status value for wave, phase, timing, cash, enemies, and outcome.
-- Make presentation consume status instead of reading mutable rules internals.
-- Remove pygame imports and banner drawing from Zombie Survival rules.
+- Define entity-to-shape bindings by stable tags/faction/type metadata.
+- Draw players, enemies, attacks, and interactable objects with pygame primitives.
+- Keep the TMX map as the retained visual background.
 
 **Non-goals:**
 
-- Replacing all Session rendering or pygame actor groups; that follows in Phase 8.
-- Building the visible selection flow; that follows in M7.5.
-- Adding a second proof mode; that is Phase 9.
+- Replacing the graphical HUD; that follows in M8.3.
+- Removing all legacy sprite bridges; that follows after shape coverage in M8.4.
+- Production artwork, animation, or asset authoring.
 
 **Acceptance criteria:**
 
-- [ ] Survival status is immutable and pygame-free.
-- [ ] Mode rules contain no rendering or UI imports.
-- [ ] The countdown is drawn by presentation from status only.
-- [ ] Existing Survival transition behavior remains characterized.
+- [ ] Core gameplay entities render from snapshot values and stable bindings.
+- [ ] Placeholder rendering does not inspect mutable actor objects.
+- [ ] TMX map rendering remains available beneath debug shapes.
+- [ ] Simulation behavior is unchanged when bindings are replaced or disabled.
 
 **Verification evidence:**
 
@@ -176,9 +176,32 @@ Pending.
 | M7.1 | Define mode/map catalogs and Match configuration | Complete | Phase 6 |
 | M7.2 | Introduce authoritative Match ownership | Complete | M7.1 |
 | M7.3 | Establish narrow mode contract and package Zombie Survival | Complete | M7.2 |
-| M7.4 | Expose mode status and remove rendering from rules | In progress | M7.3 |
-| M7.5 | Add leave/select/start application flow | Not started | M7.4 |
-| M7.6 | Verify disposal, consecutive matches, and integration checkpoint 2 | Not started | M7.5 |
+| M7.4 | Expose mode status and remove rendering from rules | Complete | M7.3 |
+| M7.5 | Add leave/select/start application flow | Complete | M7.4 |
+| M7.6 | Verify disposal, consecutive matches, and integration checkpoint 2 | Complete | M7.5 |
+
+## Phase 8 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M8.1 | Define read-only simulation snapshots | Complete | Phase 7 |
+| M8.2 | Bind actors, attacks, and world objects to placeholder shapes | In progress | M8.1 |
+| M8.3 | Replace the graphical HUD with a text debug overlay | Not started | M8.1 |
+| M8.4 | Remove legacy sprite/UI authoritative-state bridges | Not started | M8.2, M8.3 |
+| M8.5 | Verify headless Match advancement and close Phase 8 | Not started | M8.4 |
+
+## Phase 7 Exit Review
+
+- [x] Match owns configuration, lifecycle, tick, stores, events, damage, and RNG.
+- [x] Modes use a narrow pygame-free lifecycle/status/result contract.
+- [x] Zombie Survival policy is isolated under its mode package.
+- [x] Mode/map compatibility is validated before Match construction.
+- [x] The application can leave, select, and start again without process restart.
+- [x] Pause covers gameplay without disposal; removal disposes exactly once.
+- [x] Consecutive matches isolate actors, stores, cash, timers, RNG, and UI bindings.
+- [x] Shared simulation and mode presentation boundary audits pass.
+- [x] Integration checkpoint 2 launch smoke succeeds.
+- [x] The full suite adds no failure category beyond the recorded baseline.
 
 ## Phase 6 Exit Review
 
@@ -300,6 +323,10 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M7.1 | 999 passed, 33 failed in 33.42s | Stable catalogs, immutable configuration, lightweight metadata, and structured compatibility resolution pass |
 | 2026-08-21 | `uv run pytest` after M7.2 | 1005 passed, 33 failed in 45.08s | Match lifecycle, owned stores, named deterministic RNG, disposal, compatibility rejection, and Session bridge pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M7.3 | 1009 passed, 33 failed in 53.40s | Narrow mode lifecycle, Survival package ownership, reusable economy, mode cash/outcome state, and compatibility imports pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M7.4 | 1010 passed, 33 failed in 45.24s | Immutable mode status and Match status/result access pass; countdown presentation consumes snapshots; wave/level rules have no pygame or UI imports |
+| 2026-08-21 | `uv run pytest` after M7.5 | 1015 passed, 33 failed in 45.00s | Application-owned selection, pre-allocation compatibility checks, cover-vs-remove lifecycle, explicit leave, and fresh restart pass |
+| 2026-08-21 | `uv run pytest` after M7.6 | 1020 passed, 33 failed in 28.60s | Consecutive-match isolation, exact-once disposal, shared/mode boundary audits, and integration checkpoint 2 pass; Phase 7 closes |
+| 2026-08-22 | `uv run pytest` after M8.1 | 1025 passed, 33 failed in 32.18s | Frozen match/entity/combat/weapon snapshots, copied runtime values, immutable mode payload validation, and first presentation consumer pass |
 
 ### Static checks
 
@@ -313,6 +340,7 @@ Pending.
 |---|---|---|---|
 | 2026-08-21 | Launch with `uv run python main.py` | Launched | pygame initialized and the application remained running until intentionally interrupted after approximately six seconds |
 | 2026-08-21 | Menu/gameplay smoke suite | 70 passed, 3 failed in 19.78s | `test_smoke`, startup/shutdown, display, scenes, menu, and shop; two failures require spawned zombies and one is BASE-004 |
+| 2026-08-21 | Integration checkpoint 2 launch with `uv run python main.py` | Launched | pygame initialized and the application remained running until intentionally interrupted after approximately nine seconds |
 
 ### Reproducible pre-migration smoke path
 
@@ -522,6 +550,8 @@ When one is introduced, record:
 | Legacy direct Zombie placement | Direct `Zombie(...)` callers still choose a legacy ring position when no explicit position is supplied; production waves use the actor factory | M6.3 | Tests/callers construct through actor creation requests and shared spawning | Active |
 | Legacy Session/Match bridge | `Session` aliases Match-owned stores while it still owns pygame groups and presentation orchestration | M7.2 | Gameplay/presentation consumes Match directly and Session is decomposed | Active |
 | Legacy Survival module imports | Former `systems.waves`, `systems.shop`, and `systems.survival_consequences` paths re-export mode-owned policy for existing callers/tests | M7.3 | Callers use the mode package and obsolete module paths are deleted | Active |
+| Legacy Session mode-status bridge | Session builds immutable status from legacy rule state and sends it to the presentation-only countdown display | M7.4 | Match hosts the concrete mode instance and exposes its status directly | Active |
+| Legacy Session snapshot inputs | Session supplies its player loadout and legacy-hosted mode status while Match state migrates into the snapshot builder | M8.1 | Match owns inventories and its concrete mode, requiring no Session-provided snapshot inputs | Active |
 
 ## Known Failures and Risks
 
@@ -587,8 +617,12 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M7.1 pre-match selection data | Stable mode/map catalogs resolve immutable seeded configurations or structured missing-capability reports before state construction |
 | 2026-08-21 | Completed M7.2 authoritative Match ownership | Match now owns lifecycle, tick, events, registries, simulation stores, damage policy, and deterministic named RNG; Session temporarily consumes that owner; full suite is 1005 passed/33 recorded failures |
 | 2026-08-21 | Completed M7.3 mode packaging | Match uses a narrow explicit lifecycle; Survival owns waves, rewards, shop stock/prices, cash, and outcome policy while reusable purchasing remains shared; full suite is 1009 passed/33 recorded failures |
+| 2026-08-21 | Completed M7.4 read-only mode status | Frozen Survival snapshots now carry phase/wave/timing/cash/enemy/outcome data; Match exposes status/result and pygame countdown drawing lives only in presentation; full suite is 1010 passed/33 recorded failures |
+| 2026-08-21 | Completed M7.5 application selection flow | MatchHost owns catalogs/configuration and one active Match; incompatible choices allocate nothing; pause preserves gameplay while removal disposes it; leave/select/start works without process restart; full suite is 1015 passed/33 recorded failures |
+| 2026-08-21 | Completed M7.6 and Phase 7 | Consecutive matches isolate simulation/mode/presentation state; disposal is idempotent; executable boundary audits and launch smoke pass; full suite is 1020 passed/33 recorded failures |
+| 2026-08-22 | Completed M8.1 immutable snapshots | Match snapshots copy stable-ID entity, spatial, collision, vitality, faction, weapon runtime, mode status, and result values; mutable nested mode payloads are rejected; full suite is 1025 passed/33 recorded failures |
 
 ## Next Action
 
-Begin M7.4 by exposing immutable Survival status and moving the remaining wave
-countdown rendering out of mode rules into presentation.
+Begin M8.2 by binding immutable snapshot entities to placeholder shapes while
+retaining the TMX map as the presentation background.

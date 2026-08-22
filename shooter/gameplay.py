@@ -30,14 +30,30 @@ class GameplayScene(Scene):
     opaque = True
     simulates = True
 
-    def __init__(self, window, manager=None, rules=None, map_definition=None):
+    def __init__(
+        self,
+        window,
+        manager=None,
+        rules=None,
+        map_definition=None,
+        match_owner=None,
+        match_host=None,
+    ):
         super().__init__(window, manager)
         selected_map = map_definition or current_map_definition()
         if rules is None:
-            self.session = Session(window, map_definition=selected_map)
+            self.session = Session(
+                window, map_definition=selected_map, match_owner=match_owner
+            )
         else:
-            self.session = Session(window, rules, map_definition=selected_map)
+            self.session = Session(
+                window,
+                rules,
+                map_definition=selected_map,
+                match_owner=match_owner,
+            )
         self.reported = False
+        self.match_host = match_host
         self.input_adapter = PygameInputAdapter()
 
     def open(self):
@@ -46,6 +62,12 @@ class GameplayScene(Scene):
 
     def close(self):
         """Nothing to tear down. Dropping the scene drops the session with it."""
+
+    def dispose(self):
+        if self.match_host is not None:
+            self.match_host.leave()
+        else:
+            self.session.match.dispose()
 
     def handle(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:

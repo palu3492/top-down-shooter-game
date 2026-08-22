@@ -38,6 +38,7 @@ from shooter.modes.zombie_survival.state import SurvivalState
 from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, prompt
 from shooter.ui.radar import RadarScreen
 from shooter.ui.shopfront import ShopFront
+from shooter.ui.mode_status import SurvivalStatusDisplay
 from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
 from shooter.map_definition import current_map_definition
@@ -187,6 +188,7 @@ class Session:
         self.health_display = HealthBar(window)
         self.weapon_display = WeaponPanel(window, self.grenade_data)
         self.shop_display = ShopFront(window)
+        self.mode_status_display = SurvivalStatusDisplay()
         self.radar = RadarScreen()
 
         rule_kwargs = {}
@@ -244,6 +246,23 @@ class Session:
         declares one.
         """
         return self.survival_state.outcome(self.human.alive(), self.rules.outcome)
+
+    @property
+    def mode_status(self):
+        return self.rules.status(
+            cash=self.survival_state.cash.balance,
+            enemies_remaining=len(self.zombies),
+            outcome=self.outcome,
+        )
+
+    @property
+    def snapshot(self):
+        """Temporary adapter for state not yet moved from Session into Match."""
+        return self.match.snapshot(
+            loadouts={self.player_id: self.loadout},
+            mode_status=self.mode_status,
+            result=self.outcome,
+        )
 
     @property
     def visible(self):
@@ -791,7 +810,9 @@ class Session:
         blit_group(screen, self.bullets, draw_x, draw_y, alpha)
 
         if not self.zombies:
-            self.rules.draw(screen, self.window)
+            self.mode_status_display.draw(
+                screen, self.snapshot.mode_status, self.window
+            )
 
         for group in (
             self.grenades,

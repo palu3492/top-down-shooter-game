@@ -22,6 +22,7 @@ class ModeDescriptor:
     display_name: str
     description: str
     map_requirements: MapRequirements = field(default_factory=MapRequirements)
+    hostile_factions: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +120,7 @@ def default_mode_catalog():
                 "Zombie Survival",
                 "Survive escalating enemy waves.",
                 MapRequirements(capabilities=frozenset(("bounds",))),
+                (("survivors", "horde"),),
             ),
         )
     )

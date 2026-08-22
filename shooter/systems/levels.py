@@ -9,7 +9,7 @@ every level the same shape -- the point of authoring them is that the third one
 can be a step up rather than four per cent harder than the second.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import partial
 
 from shooter import config
@@ -18,7 +18,6 @@ from shooter.session import WON
 from shooter.systems import world
 from shooter.spawn_service import SpawnService
 from shooter.modes.zombie_survival.waves import WaveSystem
-from shooter.ui.anchor import CENTRE, TOP, place
 
 
 @dataclass(frozen=True)
@@ -45,10 +44,6 @@ LEVELS = (
 )
 
 FIRST = LEVELS[0]
-
-BANNER_SIZE = (500, 60)
-BANNER_INSET = (0, 150)
-
 
 def level_number(number):
     """The level with this number, or the last one repeated.
@@ -136,21 +131,15 @@ class LevelRules(WaveSystem):
             return
         self._spawn_actors(window, zombie_group, visible, count)
 
-    def draw(self, screen, window=config.WINDOW):
-        """Between waves, say where the player is in the level.
-
-        The endless banner counted down to a round that would always come; this
-        has somewhere to be counting towards.
-        """
-        if self.outcome is not None:
-            return
-
-        remaining = max(0, int(config.WAVE_INTERVAL_SECONDS - self.wave_seconds))
-        banner = place(BANNER_SIZE, window, CENTRE, TOP, BANNER_INSET)
-        self._centred(
-            screen,
-            f"{self.level.title}  --  WAVE {self.wave} OF {self.level.waves}",
-            banner,
-            0,
+    def status(self, *, cash=0, enemies_remaining=0, outcome=None):
+        status = super().status(
+            cash=cash,
+            enemies_remaining=enemies_remaining,
+            outcome=self.outcome if outcome is None else outcome,
         )
-        self._centred(screen, f"next in {remaining}, or [SPACE]", banner, 30)
+        return replace(
+            status,
+            wave=self.wave,
+            wave_target=self.level.waves,
+            title=self.level.title,
+        )

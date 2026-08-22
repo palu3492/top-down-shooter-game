@@ -67,6 +67,9 @@ class WorldRegistry:
     def entities(self, tag=None):
         return tuple(self.get(entity_id) for entity_id in self.ids(tag))
 
+    def tags_for(self, entity_id):
+        return self._records[entity_id].tags
+
     def __contains__(self, entity_id):
         return entity_id in self._records
 

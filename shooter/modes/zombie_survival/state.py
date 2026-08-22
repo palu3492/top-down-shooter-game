@@ -5,6 +5,18 @@ from dataclasses import dataclass, field
 LOST = "LOST"
 
 
+@dataclass(frozen=True, slots=True)
+class SurvivalStatus:
+    phase: str
+    wave: int
+    preparation_remaining: float
+    cash: int
+    enemies_remaining: int
+    outcome: str | None = None
+    wave_target: int | None = None
+    title: str = "Zombie Survival"
+
+
 class SurvivalWallet:
     def __init__(self, balance=0):
         self.balance = balance
@@ -26,4 +38,3 @@ class SurvivalState:
     @staticmethod
     def outcome(player_alive, rules_outcome=None):
         return rules_outcome if player_alive else LOST
-
