@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="18" tilewidth="24" tileheight="24" infinite="0" nextlayerid="3" nextobjectid="5">
+ <properties>
+  <property name="map_id" value="riverside"/>
+  <property name="display_name" value="Riverside Fixture"/>
+  <property name="schema_version" type="int" value="1"/>
+  <property name="supported_modes" value="zombie_survival"/>
+ </properties>
+ <objectgroup id="1" name="Collision">
+  <object id="1" x="216" y="72" width="72" height="288"/>
+  <object id="2" x="432" y="168" width="120" height="120"><ellipse/></object>
+ </objectgroup>
+ <objectgroup id="2" name="Spawns">
+  <object id="3" name="survivor-south" type="spawn" x="360" y="384" point="1">
+   <properties><property name="role" value="survivor"/></properties>
+  </object>
+  <object id="4" name="horde-north" type="spawn_region" x="24" y="24" width="672" height="48">
+   <properties><property name="role" value="enemy"/></properties>
+  </object>
+ </objectgroup>
+</map>

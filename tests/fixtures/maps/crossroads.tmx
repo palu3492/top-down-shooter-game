@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="20" height="15" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="8">
+ <properties>
+  <property name="map_id" value="crossroads"/>
+  <property name="display_name" value="Crossroads Fixture"/>
+  <property name="schema_version" type="int" value="1"/>
+  <property name="supported_modes" value="zombie_survival,team_deathmatch"/>
+ </properties>
+ <objectgroup id="1" name="Collision">
+  <object id="1" x="128" y="96" width="160" height="64"/>
+  <object id="2" x="416" y="256">
+   <polygon points="0,0 96,0 48,80"/>
+  </object>
+ </objectgroup>
+ <objectgroup id="2" name="Spawns">
+  <object id="3" name="survivor-west" type="spawn" x="64" y="240" point="1">
+   <properties><property name="role" value="survivor"/></properties>
+  </object>
+  <object id="4" name="horde-east" type="spawn_region" x="544" y="64" width="64" height="352">
+   <properties><property name="role" value="enemy"/></properties>
+  </object>
+  <object id="5" name="alpha" type="spawn" x="96" y="96" point="1">
+   <properties><property name="role" value="team_a"/></properties>
+  </object>
+  <object id="6" name="bravo" type="spawn" x="544" y="384" point="1">
+   <properties><property name="role" value="team_b"/></properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="3" name="Interactions">
+  <object id="7" name="weapon-station" type="interaction" x="304" y="208" point="1">
+   <properties><property name="kind" value="weapon_station"/></properties>
+  </object>
+ </objectgroup>
+</map>

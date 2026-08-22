@@ -18,6 +18,7 @@ import pygame
 
 from shooter import commands, config, items
 from shooter.background import TiledBackground
+from shooter.camera import FollowCamera
 from shooter.collision import load_obstacles
 from shooter.entities import powerups as powerup_kinds
 from shooter.entities.player import Human
@@ -26,6 +27,7 @@ from shooter.entities.powerups import PowerUps
 from shooter.entities.props import Harvestable
 from shooter.entities.projectiles import LETHAL, Grenade, StunGrenade
 from shooter.render import blit_group
+from shooter.spatial import Bounds, Box, SpatialStore, Transform
 from shooter.systems import loot, shop, world
 from shooter.systems.waves import WaveSystem
 from shooter.ui.hud import HUD, Cash, GrenadeData, HealthBar, WeaponPanel, prompt
@@ -33,6 +35,8 @@ from shooter.ui.radar import RadarScreen
 from shooter.ui.shopfront import ShopFront
 from shooter.weapons import RELOAD, SLOTS, equip, everything
 from shooter.viewport import visible_world
+from shooter.domain_events import EventQueue
+from shooter.world_registry import WorldRegistry
 
 INSTAKILL_SECONDS = config.INSTAKILL_SECONDS
 INSTAKILL_TOP = 40
@@ -40,17 +44,11 @@ RELOADING_TOP = 100
 TMX_MAP = "Maps/world_1/world_1.tmx"
 COLLISION_DEBUG = (255, 0, 255)
 
-# Firing is the left button only. Any `MOUSEBUTTONDOWN` used to do it, so a
-# right-click, a middle-click or either side button emptied the clip -- and `E`
-# being the interaction means the other buttons have their own jobs coming.
-LEFT_BUTTON = 1
-
-# `1`-`5` pick a weapon, in the order the controls map lists them.
+# Legacy public key constants retained only while direct Session-input tests are
+# migrated. Production input translation lives in `PygameInputAdapter`.
 SLOT_KEYS = (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5)
-
-# `E` uses whatever the player is standing next to. Not a mouse button, because
-# the mouse is aiming; not `Tab`, because that is the backpack.
 INTERACT = pygame.K_e
+GRANT_ALL = pygame.K_0
 
 # What the player bumps into. Smaller than the sprite, and fixed rather than
 # read from `human.rect`, which grows and shrinks as the player turns -- a
@@ -66,11 +64,6 @@ MERGE_WITHIN = 110
 # banner already is, and the two printed over each other.
 NOTICE_SECONDS = 1.6
 NOTICE_ABOVE = 120
-
-# `0` fills the five slots with one of everything -- which is now a way past the
-# gun stand as well as past the armoury. A cheat, so it is behind `DEV_TOOLS`
-# and read live: turning the setting off puts the key back to doing nothing.
-GRANT_ALL = pygame.K_0
 
 # How a game can finish. `None` means it is still being played.
 LOST, WON = "LOST", "WON"
@@ -130,7 +123,7 @@ class Session:
 
     def __init__(self, window, rules=WaveSystem):
         self.window = window
-        self.camera_x, self.camera_y = 0, 0
+        self._camera_x, self._camera_y = 0, 0
         self.previous_camera = (0, 0)
         self.instakill_seconds = 0.0
         # Sampled now rather than left at the origin: input is handled before
@@ -199,6 +192,27 @@ class Session:
 
         self.rules = rules(window, self.zombies, self.cash, self.visible)
         self.props = pygame.sprite.Group()
+        self.events = EventQueue()
+        self.entities = WorldRegistry(self.events)
+        self.player_id = self.entities.register(self.human, ("actor", "player"))
+        self.spatial = SpatialStore()
+        self.spatial.attach(
+            self.player_id,
+            Transform(*self._muzzle()),
+            Box(*PLAYER_SOLID),
+        )
+        self.player_bounds = Bounds(
+            self.window[0] / 2,
+            self.window[1] / 2,
+            self.world_size[0] - self.window[0] / 2,
+            self.world_size[1] - self.window[1] / 2,
+        )
+        self.presentation_camera = FollowCamera(
+            self.window, self.world_size, self.spatial, self.player_id
+        )
+        self._camera_x, self._camera_y = self.presentation_camera.offset
+        self._enemy_ids = {}
+        self._sync_enemy_registry()
 
     @property
     def outcome(self):
@@ -221,6 +235,38 @@ class Session:
     def camera(self):
         return (self.camera_x, self.camera_y)
 
+    @property
+    def camera_x(self):
+        if hasattr(self, "presentation_camera"):
+            return self.presentation_camera.offset[0]
+        return self._camera_x
+
+    @camera_x.setter
+    def camera_x(self, value):
+        self._camera_x = value
+        if hasattr(self, "spatial"):
+            current = self.spatial.get(self.player_id).transform
+            self.spatial.move_to(
+                self.player_id, self.window[0] / 2 - value, current.y
+            )
+            self.presentation_camera.sync()
+
+    @property
+    def camera_y(self):
+        if hasattr(self, "presentation_camera"):
+            return self.presentation_camera.offset[1]
+        return self._camera_y
+
+    @camera_y.setter
+    def camera_y(self, value):
+        self._camera_y = value
+        if hasattr(self, "spatial"):
+            current = self.spatial.get(self.player_id).transform
+            self.spatial.move_to(
+                self.player_id, current.x, self.window[1] / 2 - value
+            )
+            self.presentation_camera.sync()
+
     def resize(self):
         """Take no window: there is only ever one.
 
@@ -231,6 +277,7 @@ class Session:
         player is the only thing holding a position derived from it.
         """
         self.human.recentre(self.window)
+        self.presentation_camera.resize(self.window)
 
     def aim_at(self, pointer):
         """Sampled once per frame; the pointer does not move between steps."""
@@ -244,10 +291,12 @@ class Session:
     # ------------------------------------------------------------------
 
     def handle(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == LEFT_BUTTON:
-            self._shoot()
-        elif event.type == pygame.KEYDOWN:
-            self._key(event.key)
+        """Temporary compatibility for callers still sending pygame events."""
+        from shooter.input_adapter import PygameInputAdapter
+
+        command = PygameInputAdapter().action_for(event)
+        if command is not None:
+            self.apply_action(command)
 
     def apply_action(self, command):
         """Apply discrete player intent without exposing pygame to the caller."""
@@ -270,9 +319,9 @@ class Session:
             if request_skip is not None:
                 request_skip()
         elif command.action == commands.USE_GRENADE:
-            self._key(pygame.K_g)
+            self._use_grenade(stun=False)
         elif command.action == commands.USE_STUN_GRENADE:
-            self._key(pygame.K_f)
+            self._use_grenade(stun=True)
         elif command.action == commands.RELOAD:
             self.equipped.manual_reload()
         elif command.action == commands.SELECT_SLOT and command.value is not None:
@@ -306,29 +355,13 @@ class Session:
         here = self._muzzle()
         return next((prop for prop in self.props if prop.within(here)), None)
 
-    def _key(self, key):
-        if self.shopping:
-            self._shop_key(key)
-            return
-        if key == INTERACT:
-            self._interact()
-            return
-        if key == pygame.K_SPACE:
-            request_skip = getattr(self.rules, "request_skip", None)
-            if request_skip is not None:
-                request_skip()
-        elif key == pygame.K_g and self.grenade_data.grenade_amount > 0:
-            self.grenades.add(Grenade(*self._muzzle(), *self.aim))
-            self.grenade_data.grenade_amount -= 1
-        elif key == pygame.K_f and self.grenade_data.stun_grenade_amount > 0:
+    def _use_grenade(self, stun):
+        if stun and self.grenade_data.stun_grenade_amount > 0:
             self.stun_grenades.add(StunGrenade(*self._muzzle(), *self.aim))
             self.grenade_data.stun_grenade_amount -= 1
-        elif key == pygame.K_r:
-            self.equipped.manual_reload()
-        elif key in SLOT_KEYS:
-            self._equip(SLOT_KEYS.index(key))
-        elif key == GRANT_ALL and config.DEV_TOOLS:
-            self._grant_everything()
+        elif not stun and self.grenade_data.grenade_amount > 0:
+            self.grenades.add(Grenade(*self._muzzle(), *self.aim))
+            self.grenade_data.grenade_amount -= 1
 
     def _grant_everything(self):
         """Every weapon there is, loaded, on the number keys.
@@ -337,7 +370,7 @@ class Session:
         slots is left out rather than made unreachable -- five keys is five
         weapons, and which five is a choice AT41 gives the player properly.
         """
-        self.carried = everything()[: len(SLOT_KEYS)]
+        self.carried = everything()[: commands.SLOT_COUNT]
         self.equipped = self.carried[0]
 
     def _equip(self, slot):
@@ -406,22 +439,10 @@ class Session:
         self.notice = message
         self.notice_seconds = NOTICE_SECONDS
 
-    def _shop_key(self, key):
-        """While the stand is open the number keys buy rather than equip.
-
-        The panel is showing exactly those numbers against exactly those guns,
-        so there is nothing to remember -- and firing and reloading are off,
-        because both hands are busy.
-        """
-        if key == INTERACT:
-            self.shopping = False
-            return
-        if key in SLOT_KEYS:
-            line = SLOT_KEYS.index(key)
-            if line < len(shop.STOCK):
-                self.shop_says = shop.buy(shop.STOCK[line], self.cash, self.carried)
-
     def _muzzle(self):
+        if hasattr(self, "spatial") and self.player_id in self.spatial:
+            position = self.spatial.get(self.player_id).transform
+            return (position.x, position.y)
         return (
             (self.window[0] / 2.0) - self.camera_x,
             (self.window[1] / 2.0) - self.camera_y,
@@ -432,21 +453,24 @@ class Session:
     # ------------------------------------------------------------------
 
     def step(self, pressed, dt=config.SIM_DT, trigger=False):
-        if self.human.alive():
-            self._walk(pressed, dt)
-        self._step_after_movement(dt, trigger)
+        """Temporary compatibility for pygame-key-state tests and callers."""
+        from shooter.input_adapter import PygameInputAdapter
+
+        controls = PygameInputAdapter().legacy_controls(pressed, self.aim, trigger)
+        self.step_controls(controls, dt)
 
     def step_controls(self, controls, dt=config.SIM_DT):
         """Advance from neutral continuous intent during the migration seam."""
         self.aim = controls.aim
         if self.human.alive():
-            self.change_x = -controls.move[0] * config.PLAYER_SPEED * dt
-            self.change_y = -controls.move[1] * config.PLAYER_SPEED * dt
+            self.change_x = controls.move[0] * config.PLAYER_SPEED * dt
+            self.change_y = controls.move[1] * config.PLAYER_SPEED * dt
         self._step_after_movement(dt, controls.trigger_held)
 
     def _step_after_movement(self, dt, trigger):
+        self._sync_enemy_registry()
         self.previous_camera = self.camera
-        self._advance_camera()
+        self._advance_player()
 
         for held in self.carried:
             held.tick(dt)
@@ -488,13 +512,26 @@ class Session:
 
         if not self.zombies:
             self.rules.advance(self.window, self.zombies, self.cash, dt, self.visible)
+        self._sync_enemy_registry()
 
         self.instakill_seconds = max(0.0, self.instakill_seconds - dt)
         self.change_x = self.change_y = 0
         self.shooting = False
 
-    def _advance_camera(self):
-        """Move, unless something is in the way.
+    def _sync_enemy_registry(self):
+        """Temporary bridge while legacy rules still mutate a sprite group."""
+        present = set(self.zombies)
+        for zombie in present - self._enemy_ids.keys():
+            self._enemy_ids[zombie] = self.entities.register(
+                zombie, ("actor", "enemy")
+            )
+        for zombie in self._enemy_ids.keys() - present:
+            self.entities.remove(
+                self._enemy_ids.pop(zombie), reason="legacy_group_removal"
+            )
+
+    def _advance_player(self):
+        """Move authoritative world state, unless something is in the way.
 
         One axis at a time, so walking into a tree at an angle slides along it
         rather than stopping dead. Anything already overlapping is let through
@@ -502,17 +539,25 @@ class Session:
         should be able to walk out of it rather than be held there.
         """
         stuck = self._blocked(self.camera_x, self.camera_y)
+        current = self.spatial.get(self.player_id).transform
 
-        wanted = self._on_the_map(self.camera_x + self.change_x, 0)
-        if stuck or not self._blocked(wanted, self.camera_y):
-            self.camera_x = wanted
+        wanted = self.player_bounds.clamp(
+            Transform(current.x + self.change_x, current.y)
+        )
+        wanted_camera_x = self.window[0] / 2 - wanted.x
+        if stuck or not self._blocked(wanted_camera_x, self.camera_y):
+            current = wanted
 
-        wanted = self._on_the_map(self.camera_y + self.change_y, 1)
-        if stuck or not self._blocked(self.camera_x, wanted):
-            self.camera_y = wanted
+        wanted = self.player_bounds.clamp(
+            Transform(current.x, current.y + self.change_y)
+        )
+        wanted_camera_y = self.window[1] / 2 - wanted.y
+        current_camera_x = self.window[0] / 2 - current.x
+        if stuck or not self._blocked(current_camera_x, wanted_camera_y):
+            current = wanted
 
-    def _on_the_map(self, camera, axis):
-        return min(0, max(-(self.world_size[axis] - self.window[axis]), camera))
+        self.spatial.move_to(self.player_id, current.x, current.y)
+        self._camera_x, self._camera_y = self.presentation_camera.sync()
 
     def _standing_at(self, camera_x, camera_y):
         box = pygame.Rect(0, 0, *PLAYER_SOLID)
@@ -532,16 +577,6 @@ class Session:
                 for prop in self.props
             )
         )
-
-    def _walk(self, pressed, dt):
-        if pressed[pygame.K_w]:
-            self.change_y = config.PLAYER_SPEED * dt
-        elif pressed[pygame.K_s]:
-            self.change_y = -config.PLAYER_SPEED * dt
-        if pressed[pygame.K_a]:
-            self.change_x = config.PLAYER_SPEED * dt
-        elif pressed[pygame.K_d]:
-            self.change_x = -config.PLAYER_SPEED * dt
 
     def _animate_player(self, dt):
         # Preserves the original rule, quirks included: MOVE only when both

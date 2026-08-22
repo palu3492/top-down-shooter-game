@@ -24,9 +24,9 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 2 — Neutral commands, events, and entity IDs |
+| Migration phase | Phase 3 — Authoritative actor state and world position |
 | Phase status | In progress |
-| Active work package | M2.2 — Introduce stable entity IDs and world registration seam |
+| Active work package | M3.4 — Separate simulation collision from sprite rectangles |
 | Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
 | Next integration checkpoint | End of Phase 4 — Shared damage pipeline |
 | Last updated | 2026-08-21 |
@@ -56,8 +56,8 @@ package.
 |---:|---|---|---|
 | 0 | Baseline and decision record | Complete | Baseline, smoke path, behavior classification, and test audit recorded |
 | 1 | Characterize the current vertical slice | Complete | All ten characterization gaps dispositioned and verified |
-| 2 | Neutral commands, events, and entity IDs | In progress | M2.1 complete; M2.2 active |
-| 3 | Authoritative actor state and world position | Not started | — |
+| 2 | Neutral commands, events, and entity IDs | Complete | Boundary audit and exit criteria verified |
+| 3 | Authoritative actor state and world position | In progress | M3.1-M3.3 complete; M3.4 active |
 | 4 | Unified health, damage, death, and attribution | Not started | Integration checkpoint 1 |
 | 5 | Weapon operation and inventory integration | Not started | — |
 | 6 | Reusable spawning | Not started | — |
@@ -68,36 +68,33 @@ package.
 
 ## Active Work Package
 
-### M2.2 — Introduce stable entity IDs and world registration seam
+### M3.4 — Separate simulation collision from sprite rectangles
 
 **Status:** In progress
 
-**Objective:** Give simulation entities stable match-scoped identities and introduce
-controlled registration/removal without treating pygame sprite identity as the
-durable reference.
+**Objective:** Resolve actor/world collision from neutral spatial shapes and world
+coordinates rather than sprite rectangles or camera-relative geometry.
 
 **Scope:**
 
-- Define a small immutable entity ID value and deterministic match-scoped allocator.
-- Add a neutral registry with explicit register, lookup, query, and removal paths.
-- Establish a temporary bridge from legacy actors without replacing sprite groups
-  as presentation containers yet.
-- Verify IDs are stable, never silently reused, and isolated between matches.
+- Add pygame-independent overlap calculations for the required neutral shapes.
+- Normalize current obstacle geometry into a simulation collision representation.
+- Move player collision checks to authoritative world coordinates.
+- Retain sprites and pygame rectangles only as presentation/legacy adapters.
 
 **Non-goals:**
 
-- Replacing every pygame group or extracting actor components, which belongs to
-  Phase 3.
-- The domain-event queue, which follows in M2.3.
+- Navigation/pathfinding and destructible collision updates beyond the first seam.
+- Replacing every projectile/enemy collision path before Phase 4.
 - Networking, prediction, reconciliation, or a generic event bus.
 - Migrating every legacy control in one change.
 
 **Acceptance criteria:**
 
-- [ ] IDs are pygame-independent primitive values scoped to one match.
-- [ ] Registration and removal are explicit and testable without rendering.
-- [ ] Removed IDs are not silently reused during a match.
-- [ ] Two registries do not share allocation or entity state.
+- [ ] Player collision uses neutral shapes in world coordinates.
+- [ ] Collision tests can run without a display, sprite, or camera.
+- [ ] Visual rectangle/animation changes cannot alter the player collision body.
+- [ ] Existing authored obstacle intent survives normalization.
 
 **Verification evidence:**
 
@@ -129,10 +126,30 @@ Pending.
 | ID | Work package | Status | Depends on |
 |---|---|---|---|
 | M2.1 | Define neutral command values and input adapter | Complete | Phase 1 |
-| M2.2 | Introduce stable entity IDs and world registration seam | In progress | M2.1 |
-| M2.3 | Define lifecycle/combat events and a small event queue | Not started | M2.2 |
-| M2.4 | Route essential controls and mode requests through commands | Not started | M2.1, M2.3 |
-| M2.5 | Verify Phase 2 boundaries and retire temporary polling paths | Not started | M2.4 |
+| M2.2 | Introduce stable entity IDs and world registration seam | Complete | M2.1 |
+| M2.3 | Define lifecycle/combat events and a small event queue | Complete | M2.2 |
+| M2.4 | Route essential controls and mode requests through commands | Complete | M2.1, M2.3 |
+| M2.5 | Verify Phase 2 boundaries and retire temporary polling paths | Complete | M2.4 |
+
+## Phase 3 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M3.1 | Introduce neutral transforms and collision shapes | Complete | Phase 2 |
+| M3.2 | Move the player through authoritative world position | Complete | M3.1 |
+| M3.3 | Make the presentation camera follow the selected actor | Complete | M3.2 |
+| M3.4 | Separate simulation collision from sprite rectangles | In progress | M3.2 |
+| M3.5 | Parameterize world creation by neutral map data and close Phase 3 | Not started | M3.3, M3.4 |
+
+## Phase 2 Exit Review
+
+- [x] Production gameplay input crosses one pygame-to-command adapter.
+- [x] Essential actions are driven in tests without pygame events or key state.
+- [x] Simulation and mode rules do not poll pygame input state.
+- [x] Stable match-scoped entity IDs support explicit registration and removal.
+- [x] Ordered lifecycle facts are observable without inspecting UI state.
+- [x] Neutral command, event, and registry modules have no pygame dependency.
+- [x] Legacy Session input wrappers are isolated and have a removal condition.
 
 ## Phase 1 Exit Review
 
@@ -171,6 +188,13 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M1.4 | 886 passed, 34 failed in 33.16s | Five Survival transition tests pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M1.6 | 894 passed, 34 failed in 39.45s | Four map-contract cases and M1.5 coverage pass; failure categories remain unchanged |
 | 2026-08-21 | `uv run pytest` after M2.1 | 898 passed, 34 failed in 42.61s | Four command/input-adapter tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M2.2 | 902 passed, 34 failed in 29.60s | Four registry/legacy-bridge tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M2.3 | 906 passed, 34 failed in 30.37s | Four event-value/queue/bridge tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M2.4 | 908 passed, 34 failed in 30.93s | Essential actions execute from commands; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M2.5 | 911 passed, 34 failed in 30.04s | Three executable boundary-audit tests pass; Phase 2 exit criteria satisfied |
+| 2026-08-21 | `uv run pytest` after M3.1 | 914 passed, 34 failed in 30.28s | Three neutral spatial-store/player-bridge tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M3.2 | 916 passed, 34 failed in 30.26s | World-transform movement/bounds tests pass; failure categories remain unchanged |
+| 2026-08-21 | `uv run pytest` after M3.3 | 919 passed, 34 failed in 29.92s | Three camera-follow/presentation-isolation tests pass; failure categories remain unchanged |
 
 ### Static checks
 
@@ -380,6 +404,9 @@ When one is introduced, record:
 | Adapter | Why it exists | Introduced | Removal condition | Status |
 |---|---|---|---|---|
 | Legacy RNG injection defaults | `Zombie`, `Gun`, and `PowerUps` accept isolated RNGs while legacy callers still default to module randomness | M1.1 | Match owns and supplies its seeded random sources | Active |
+| Legacy Session input wrappers | `Session.handle` and `Session.step` adapt pygame events/key state for existing callers while production gameplay supplies neutral commands | M2.1 | Legacy tests/callers use `ActionCommand` and `ControlFrame`; remove during Session decomposition | Active |
+| Player spatial snapshot bridge | `Session` records a neutral player transform while legacy camera offsets still drive movement | M3.1 | M3.2 makes the transform authoritative and derives the legacy camera from it | Removed in M3.2 |
+| Legacy camera compatibility setters | Old callers can assign `camera_x`/`camera_y`, which repositions the authoritative player and resynchronizes the follow camera | M3.2 | Legacy tests stop positioning the player through camera offsets | Active |
 
 ## Known Failures and Risks
 
@@ -418,8 +445,15 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M1.5 command/lifecycle characterization | Four target, weapon-state, session-isolation, and outcome tests pass; focused Ruff passes |
 | 2026-08-21 | Completed M1.6 and Phase 1 | Two synthetic TMX maps pass four neutral contract cases; full suite has only 34 recorded legacy failures |
 | 2026-08-21 | Completed M2.1 neutral command boundary | Immutable primitive-only controls/actions, pygame adapter, gameplay movement, and reload path verified |
+| 2026-08-21 | Completed M2.2 stable entity identity | Match-scoped monotonic IDs, neutral lookup/query/removal, and player/enemy legacy bridge verified |
+| 2026-08-21 | Completed M2.3 domain-event seam | Immutable lifecycle/combat facts, ordered match queue, isolation, and registry lifecycle emission verified |
+| 2026-08-21 | Completed M2.4 essential command routing | Fire, reload, selection, equipment, interaction, shop semantics, and phase skip route through neutral values |
+| 2026-08-21 | Completed M2.5 and Phase 2 | Executable audit confirms one production input adapter, pygame-free neutral values, stable IDs, and ordered lifecycle facts |
+| 2026-08-21 | Completed M3.1 neutral spatial state | Immutable transforms and box/circle shapes, ID-addressed store operations, and viewport-independent player snapshot verified |
+| 2026-08-21 | Completed M3.2 authoritative player movement | Commands update bounded world transforms first; legacy camera offsets are derived and compatibility writes cannot silently diverge |
+| 2026-08-21 | Completed M3.3 presentation camera extraction | Stable-ID follow camera clamps offsets, viewport resize is presentation-only, and world interactions use authoritative position |
 
 ## Next Action
 
-Begin M2.2 with a deterministic match-scoped entity ID allocator and neutral world
-registry, then bridge the first legacy actors without making sprites authoritative.
+Begin M3.4 by normalizing collision into pygame-independent world shapes and moving
+player obstruction checks off sprite/camera-relative rectangles.
