@@ -21,6 +21,7 @@ class MapDefinition:
     capabilities: frozenset[str] = frozenset()
     spawns: tuple["SpawnPoint | SpawnRegion", ...] = ()
     supported_modes: frozenset[str] = frozenset()
+    interactions: tuple["MapInteraction", ...] = ()
 
     def spawn_roles(self):
         return frozenset(spawn.role for spawn in self.spawns if spawn.role)
@@ -49,6 +50,16 @@ class SpawnRegion:
     tags: frozenset[str] = frozenset()
     faction: str | None = None
     actor_kind: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MapInteraction:
+    interaction_id: str
+    kind: str
+    position: tuple[float, float] | None = None
+    area: Aabb | Ellipse | Polygon | None = None
+    tags: frozenset[str] = frozenset()
+    properties: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +128,25 @@ def _spawn(obj, offset_x, offset_y):
     return None if area is None else SpawnRegion(area=area, **common)
 
 
+def _interaction(obj, offset_x, offset_y):
+    properties = _properties(obj)
+    kind = properties.get("kind") or obj.get("type", "")
+    if not kind or kind == "interaction":
+        return None
+    common = {
+        "interaction_id": obj.get("name") or f"interaction-{obj.get('id', 'unknown')}",
+        "kind": kind,
+        "tags": _csv(properties.get("tags", "")),
+        "properties": tuple(sorted(properties.items())),
+    }
+    x = float(obj.get("x", 0)) + offset_x
+    y = float(obj.get("y", 0)) + offset_y
+    if obj.get("point") == "1":
+        return MapInteraction(position=(x, y), **common)
+    area = _shape(obj, offset_x, offset_y)
+    return None if area is None else MapInteraction(area=area, **common)
+
+
 @cache
 def load_tmx_definition(source, presentation_source=None):
     """Adapt available TMX semantics without requiring a complete future schema."""
@@ -126,6 +156,7 @@ def load_tmx_definition(source, presentation_source=None):
     metadata = _properties(root)
     collisions = []
     spawns = []
+    interactions = []
     for layer in root.findall("objectgroup"):
         layer_name = layer.get("name", "")
         include = layer_name in {"Collision", "Obstacles"}
@@ -136,6 +167,11 @@ def load_tmx_definition(source, presentation_source=None):
                 spawn = _spawn(obj, offset_x, offset_y)
                 if spawn is not None:
                     spawns.append(spawn)
+                continue
+            if layer_name == "Interactions":
+                interaction = _interaction(obj, offset_x, offset_y)
+                if interaction is not None:
+                    interactions.append(interaction)
                 continue
             solid = _properties(obj).get("solid", "false").lower() == "true"
             if not include and not solid:
@@ -150,6 +186,11 @@ def load_tmx_definition(source, presentation_source=None):
         capabilities.add("collision")
     if spawns:
         capabilities.add("spawns")
+    if interactions:
+        capabilities.add("interactions")
+        capabilities.update(
+            f"interaction:{interaction.kind}" for interaction in interactions
+        )
     return MapDefinition(
         map_id=map_id,
         display_name=metadata.get("display_name", map_id.replace("_", " ").title()),
@@ -162,6 +203,7 @@ def load_tmx_definition(source, presentation_source=None):
         capabilities=frozenset(capabilities),
         spawns=tuple(spawns),
         supported_modes=_csv(metadata.get("supported_modes", "")),
+        interactions=tuple(interactions),
     )
 
 

@@ -7,10 +7,19 @@ from shooter import config
 from shooter.actor_creation import ActorDefinition
 from shooter.damage import DamageRequest
 from shooter.loadout import Loadout
-from shooter.match_actors import move_match_actor, spawn_match_actors
+from shooter.match_actors import (
+    move_match_actor,
+    remove_match_actor,
+    spawn_match_actors,
+)
 from shooter.modes.zombie_survival.state import LOST, SurvivalStatus, SurvivalWallet
+from shooter.modes.zombie_survival.wave_config import (
+    EnemyWaveRule,
+    SurvivalWavePlan,
+)
 from shooter.spawn_selection import PlacementConstraints, SpawnQuery
 from shooter.spawn_service import SpawnActorRequest
+from shooter.steering import pursue_match_actor
 from shooter.targeting import first_box_target_on_ray
 from shooter.weapon_attacks import AttackDescriptionService
 from shooter.weapon_state import EquippedWeapon, WeaponDefinition
@@ -37,6 +46,10 @@ RIFLE = WeaponDefinition(
     config.RELOAD_SECONDS,
     "556",
 )
+DEFAULT_WAVE_PLAN = SurvivalWavePlan(
+    (EnemyWaveRule(WALKER, config.WAVE_BASE, growth=1, exponent=2),),
+    config.WAVE_INTERVAL_SECONDS,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,18 +70,27 @@ class ReloadSurvivorWeapon:
 class SurvivalMode:
     """Shared-runtime Survival state with repeatable escalating waves."""
 
-    def __init__(self, spawn_sources=(), enemy_count=None, preparation_seconds=None):
+    def __init__(
+        self,
+        spawn_sources=(),
+        enemy_count=None,
+        preparation_seconds=None,
+        wave_plan=None,
+    ):
         self.spawn_sources = tuple(spawn_sources)
-        self.initial_enemy_count = (
-            config.WAVE_BASE if enemy_count is None else enemy_count
-        )
-        self.preparation_seconds = (
-            config.WAVE_INTERVAL_SECONDS
+        selected_plan = DEFAULT_WAVE_PLAN if wave_plan is None else wave_plan
+        entries = selected_plan.entries
+        if enemy_count is not None:
+            entries = (EnemyWaveRule(WALKER, enemy_count, growth=1, exponent=2),)
+        self.wave_plan = SurvivalWavePlan(
+            entries,
+            selected_plan.preparation_seconds
             if preparation_seconds is None
-            else preparation_seconds
+            else preparation_seconds,
         )
         self.player_id = None
         self.enemy_ids = ()
+        self.retired_enemy_ids = ()
         self.spawn_results = ()
         self.loadouts = {}
         self.attacks = AttackDescriptionService()
@@ -101,38 +123,52 @@ class SurvivalMode:
             "survival-player-spawns",
             tags=("player",),
         )
-        enemies = self._spawn_wave(match)
+        enemy_batches = self._spawn_wave(match)
         self.player_id = player.actor_ids[0] if player.actor_ids else None
         if self.player_id is not None:
             self.loadouts[self.player_id] = Loadout(
                 (EquippedWeapon(RIFLE),), capacity=1
             )
-        self.spawn_results = (player.spawn_result, enemies.spawn_result)
+        self.spawn_results = (
+            player.spawn_result,
+            *(batch.spawn_result for batch in enemy_batches),
+        )
 
     def _spawn_wave(self, match):
         width, height = match.map_definition.size
-        enemies = spawn_match_actors(
-            match,
-            SpawnActorRequest(
-                WALKER,
-                SpawnQuery(role="enemy", faction="horde", actor_kind="walker"),
-                PlacementConstraints(
-                    footprint=WALKER.collision_size,
-                    minimum_occupant_distance=max(WALKER.collision_size),
-                    bounds=Aabb(0, 0, width, height),
-                    collision=match.map_definition.collision,
+        batches = []
+        for entry in self.wave_plan.entries:
+            definition = entry.actor
+            count = entry.count_for(self.wave)
+            if count <= 0:
+                continue
+            batch = spawn_match_actors(
+                match,
+                SpawnActorRequest(
+                    definition,
+                    SpawnQuery(
+                        role="enemy",
+                        faction=definition.faction,
+                        actor_kind=definition.actor_kind,
+                    ),
+                    PlacementConstraints(
+                        footprint=definition.collision_size,
+                        minimum_occupant_distance=max(definition.collision_size),
+                        bounds=Aabb(0, 0, width, height),
+                        collision=match.map_definition.collision,
+                    ),
+                    count,
                 ),
-                self.initial_enemy_count + (self.wave - 1) ** 2,
-            ),
-            self.spawn_sources,
-            f"survival-enemy-spawns-wave-{self.wave}",
-            tags=("enemy",),
-        )
-        self.enemy_ids += enemies.actor_ids
-        self.spawn_results += (enemies.spawn_result,)
+                self.spawn_sources,
+                f"survival-wave-{self.wave}-{definition.definition_id}",
+                tags=("enemy",),
+            )
+            batches.append(batch)
+            self.enemy_ids += batch.actor_ids
+            self.spawn_results += (batch.spawn_result,)
         self.phase = "combat"
         self.preparation_remaining = 0.0
-        return enemies
+        return tuple(batches)
 
     def advance(self, match, commands, dt):
         if dt < 0:
@@ -160,6 +196,7 @@ class SurvivalMode:
             cash=self.cash.balance,
             enemies_remaining=self.enemies_remaining(match),
             outcome=self.result(match),
+            enemy_composition=self._living_composition(match),
         )
 
     def result(self, match):
@@ -180,15 +217,21 @@ class SurvivalMode:
     def _advance_enemies(self, match, dt):
         if self.player_id is None or self.player_id not in match.spatial:
             return
-        target = match.spatial.get(self.player_id).transform
+        living = tuple(
+            enemy_id
+            for enemy_id in self.enemy_ids
+            if enemy_id in match.combat and match.combat.get(enemy_id).alive
+        )
         for enemy_id in self.enemy_ids:
             if enemy_id not in match.spatial or not match.combat.get(enemy_id).alive:
                 continue
-            current = match.spatial.get(enemy_id).transform
-            dx, dy = target.x - current.x, target.y - current.y
-            distance = math.hypot(dx, dy)
-            direction = (0, 0) if distance == 0 else (dx / distance, dy / distance)
-            move_match_actor(match, enemy_id, direction, dt)
+            pursue_match_actor(
+                match,
+                enemy_id,
+                self.player_id,
+                dt,
+                avoid_ids=(other for other in living if other != enemy_id),
+            )
 
     def _selected_weapon(self):
         return self.loadouts[self.player_id].selected
@@ -222,7 +265,8 @@ class SurvivalMode:
                 (
                     enemy_id
                     for enemy_id in self.enemy_ids
-                    if match.combat.get(enemy_id).alive
+                    if enemy_id in match.combat
+                    and match.combat.get(enemy_id).alive
                 ),
                 config.BULLET_RANGE,
             )
@@ -282,9 +326,34 @@ class SurvivalMode:
         if self.phase == "combat":
             if self.enemies_remaining(match) == 0:
                 self.phase = "preparation"
-                self.preparation_remaining = self.preparation_seconds
+                self.preparation_remaining = self.wave_plan.preparation_seconds
             return
+        self._cleanup_defeated_enemies(match)
         self.preparation_remaining = max(0.0, self.preparation_remaining - dt)
         if self.preparation_remaining == 0:
             self.wave += 1
             self._spawn_wave(match)
+
+    def _cleanup_defeated_enemies(self, match):
+        defeated = tuple(
+            enemy_id
+            for enemy_id in self.enemy_ids
+            if enemy_id in match.combat and not match.combat.get(enemy_id).alive
+        )
+        for enemy_id in defeated:
+            remove_match_actor(match, enemy_id, reason="defeated")
+        if defeated:
+            retired = set(defeated)
+            self.enemy_ids = tuple(
+                enemy_id for enemy_id in self.enemy_ids if enemy_id not in retired
+            )
+            self.retired_enemy_ids += defeated
+
+    def _living_composition(self, match):
+        counts = {}
+        for enemy_id in self.enemy_ids:
+            if enemy_id not in match.combat or not match.combat.get(enemy_id).alive:
+                continue
+            definition_id = match.entities.get(enemy_id).definition_id
+            counts[definition_id] = counts.get(definition_id, 0) + 1
+        return tuple(sorted(counts.items()))

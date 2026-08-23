@@ -35,7 +35,19 @@ def spawn_match_actors(match, request, sources, stream_name, tags=()):
     return RegisteredSpawnBatch(tuple(actor_ids), result)
 
 
-def move_match_actor(match, actor_id, direction, dt):
+def remove_match_actor(match, actor_id, reason="removed"):
+    """Remove one actor from every shared Match-owned capability store."""
+    if actor_id not in match.entities:
+        return None
+    if actor_id in match.spatial:
+        match.spatial.remove(actor_id)
+    if actor_id in match.combat:
+        match.combat.remove(actor_id)
+    match.factions.remove(actor_id)
+    return match.entities.remove(actor_id, reason=reason)
+
+
+def move_match_actor(match, actor_id, direction, dt, occupied_ids=()):
     if actor_id not in match.spatial:
         return None
     actor = match.entities.get(actor_id)
@@ -53,7 +65,19 @@ def move_match_actor(match, actor_id, direction, dt):
     delta_x = dx * actor.movement_speed * dt
     delta_y = dy * actor.movement_speed * dt
     collision = match.spatial.get(actor_id).collision
-    obstacles = match.map_definition.collision
+    obstacles = (
+        *match.map_definition.collision,
+        *(
+            actor_box(
+                match.spatial.get(occupied_id).transform,
+                match.spatial.get(occupied_id).collision,
+            )
+            for occupied_id in occupied_ids
+            if occupied_id != actor_id
+            and occupied_id in match.spatial
+            and match.spatial.get(occupied_id).collision is not None
+        ),
+    )
     if collision is None or not obstacles:
         target = bounds.clamp(Transform(current.x + delta_x, current.y + delta_y))
         return match.spatial.move_to(actor_id, target.x, target.y)

@@ -15,6 +15,7 @@ class SurvivalStatus:
     outcome: str | None = None
     wave_target: int | None = None
     title: str = "Zombie Survival"
+    enemy_composition: tuple[tuple[str, int], ...] = ()
 
 
 class SurvivalWallet:

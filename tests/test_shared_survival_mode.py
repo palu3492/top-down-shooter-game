@@ -5,6 +5,7 @@ import math
 from pathlib import Path
 
 from shooter import config
+from shooter.actor_creation import ActorDefinition
 from shooter.domain_events import DamageApplied, EntityKilled
 from shooter.map_definition import MapDefinition, SpawnPoint, SpawnRegion
 from shooter.match import Match
@@ -16,12 +17,14 @@ from shooter.match_configuration import (
     default_mode_catalog,
 )
 from shooter.modes.zombie_survival import (
+    EnemyWaveRule,
     FireSurvivorWeapon,
     MoveSurvivor,
     ReloadSurvivorWeapon,
     SurvivalMode,
+    SurvivalWavePlan,
 )
-from shooter.world_collision import Aabb
+from shooter.world_collision import Aabb, actor_box, overlaps
 
 
 def resolved():
@@ -77,6 +80,35 @@ def test_survival_spawns_player_and_initial_horde_into_match_stores():
         for enemy in mode.enemy_ids
     )
     assert snapshot.mode_status.enemies_remaining == 5
+    assert snapshot.mode_status.enemy_composition == (("walker", 5),)
+
+
+def test_wave_plan_spawns_multiple_neutral_enemy_definitions():
+    sprinter = ActorDefinition("sprinter", "sprinter", "horde", 60, (40, 40), 520)
+    plan = SurvivalWavePlan(
+        (EnemyWaveRule(sprinter, 2),), preparation_seconds=1
+    )
+    spawn_sources = (
+        *sources(),
+        SpawnRegion(
+            "sprinters",
+            Aabb(650, 100, 200, 500),
+            role="enemy",
+            faction="horde",
+            actor_kind="sprinter",
+        ),
+    )
+    match = Match(resolved())
+    mode = SurvivalMode(spawn_sources, wave_plan=plan)
+
+    match.start(mode)
+
+    assert len(mode.enemy_ids) == 2
+    assert all(
+        match.entities.get(enemy_id).definition_id == "sprinter"
+        for enemy_id in mode.enemy_ids
+    )
+    assert match.mode_status.enemy_composition == (("sprinter", 2),)
 
 
 def test_survivor_and_enemies_move_in_authoritative_world_space():
@@ -151,13 +183,19 @@ def test_cleared_wave_enters_preparation_then_spawns_an_escalated_wave():
 
     match.advance(1.25)
     assert match.mode_status.preparation_remaining == 0.75
+    defeated = mode.retired_enemy_ids[0]
+    assert defeated not in match.entities
+    assert defeated not in match.spatial
+    assert defeated not in match.combat
     match.advance(0.75)
 
     assert match.mode_status.phase == "combat"
     assert match.mode_status.wave == 2
     assert match.mode_status.enemies_remaining == 2
     assert match.mode_status.cash == config.KILL_REWARD
-    assert len(mode.enemy_ids) == 3
+    assert len(mode.enemy_ids) == 2
+    assert min(mode.enemy_ids) > defeated
+    assert len(match.snapshot().entities) == 3
 
 
 def test_survival_awards_each_eligible_enemy_kill_exactly_once():
@@ -242,6 +280,26 @@ def test_overlapping_enemy_deals_attributed_contact_damage_over_time():
         0.0,
         3,
     )
+
+
+def test_enemy_crowding_avoids_other_enemies_but_allows_player_contact():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=2)
+    match.start(mode)
+    player = match.spatial.get(mode.player_id).transform
+    first, second = mode.enemy_ids
+    match.spatial.move_to(first, player.x - 100, player.y)
+    match.spatial.move_to(second, player.x - 135, player.y)
+
+    match.advance(1.0)
+
+    first_state = match.spatial.get(first)
+    second_state = match.spatial.get(second)
+    assert not overlaps(
+        actor_box(first_state.transform, first_state.collision),
+        actor_box(second_state.transform, second_state.collision),
+    )
+    assert match.combat.get(mode.player_id).health < config.PLAYER_HEALTH
 
 
 def test_lethal_contact_damage_ends_survival_and_stops_progression():

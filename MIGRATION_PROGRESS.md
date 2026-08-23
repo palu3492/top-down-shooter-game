@@ -26,10 +26,10 @@ package.
 |---|---|
 | Migration phase | Phase 10 — Resume Zombie Survival feature development |
 | Phase status | In progress |
-| Active work package | M10.6 — Add neutral enemy death cleanup |
+| Active work package | M10.11 — Add neutral interaction context and intent |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
-| Next integration checkpoint | End of M10.6 — Bounded multi-wave entity lifecycle |
-| Last updated | 2026-08-22 |
+| Next integration checkpoint | End of M10.11 — Reusable proximity interaction loop |
+| Last updated | 2026-08-23 |
 
 ## Confirmed Project Constraints
 
@@ -64,13 +64,156 @@ package.
 | 7 | Neutral Match and game-mode boundary | Complete | Match/mode boundary and integration checkpoint 2 verified |
 | 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
-| 10 | Resume Zombie Survival feature development | In progress | M10.6 active |
+| 10 | Resume Zombie Survival feature development | In progress | M10.11 active |
 
 ## Active Work Package
 
-### M10.6 — Add neutral enemy death cleanup
+### M10.11 — Add neutral interaction context and intent
 
 **Status:** In progress
+
+**Objective:** Turn map interaction discovery into a reusable gameplay seam that
+reports nearby context and accepts explicit interaction intent without embedding
+purchase or door behavior in input, presentation, or the map adapter.
+
+**Planned scope:**
+
+- Track the nearest eligible interaction for an authoritative actor.
+- Route the neutral interact command through mode/application boundaries.
+- Snapshot immutable prompt/context and structured interaction outcomes.
+- Keep behavior absent and harmless on maps with no authored interactions.
+
+## Most Recently Completed Work Package
+
+### M10.10 — Define neutral TMX interactables
+
+**Status:** Complete
+
+**Objective:** Adapt map-authored interaction points and regions into neutral
+values that modes can query without hardcoded coordinates or Tiled/XML access.
+
+**Planned scope:**
+
+- Parse semantic interaction IDs, kinds, tags, and properties from TMX.
+- Add deterministic proximity queries independent of presentation.
+- Report interaction capabilities during mode/map compatibility checks.
+- Keep the unfinished production map valid when no interactions are authored.
+
+**Acceptance criteria:**
+
+- [x] TMX point and region interactions normalize into immutable neutral values.
+- [x] IDs, kinds, tags, properties, geometry, and layer offsets survive adaptation.
+- [x] Deterministic proximity queries filter by kind, tags, and range.
+- [x] Generic/kind capabilities are reported while missing layers remain valid.
+
+**Verification evidence:**
+
+M10.10 closes with 1117 passing tests and focused Ruff clean. The TMX adapter
+exposes `MapInteraction` values and advertises `interactions` plus kind-specific
+capabilities. Neutral queries use point or region distance, explicit filters,
+range, and stable-ID tie-breaking. Stable fixtures cover authored data while the
+unfinished production map remains unchanged and compatible with bounds-only modes.
+
+## Earlier Completed Work Package
+
+### M10.9 — Make Survival waves data-driven
+
+**Status:** Complete
+
+**Objective:** Replace the hardcoded walker/count formula with immutable wave
+configuration that can describe future enemy types and balancing without
+changing shared spawning or Match code.
+
+**Planned scope:**
+
+- Define neutral Survival enemy and wave-composition values.
+- Move count growth and preparation timing behind explicit configuration.
+- Keep seeded spawn streams stable per wave and composition entry.
+- Expose enough status for balancing through the debug overlay and tests.
+
+**Acceptance criteria:**
+
+- [x] Wave composition and growth are immutable Survival-owned values.
+- [x] Multiple neutral enemy definitions use the shared seeded spawn pipeline.
+- [x] Preparation timing is explicit plan configuration.
+- [x] Immutable status/debug text reports live enemy composition.
+
+**Verification evidence:**
+
+M10.9 closes with 1113 passing tests and focused Ruff clean. `EnemyWaveRule`
+describes a neutral actor, base count, growth, and exponent; `SurvivalWavePlan`
+validates unique entries and preparation timing. Survival spawns each composition
+entry with a stable wave/archetype RNG stream and snapshots sorted live counts.
+Legacy constructor overrides remain only as focused test conveniences.
+
+## Earlier Completed Work Package
+
+### M10.8 — Add reusable actor crowding policy
+
+**Status:** Complete
+
+**Objective:** Prevent enemies from collapsing into one indistinguishable stack
+while keeping player-enemy overlap available for explicit contact damage rules.
+
+**Planned scope:**
+
+- Represent actor occupancy separately from static map collision.
+- Add deterministic same-group separation or avoidance.
+- Keep faction/contact policy configurable by the calling mode.
+- Verify crowds remain stable near targets, walls, and narrow approaches.
+
+**Acceptance criteria:**
+
+- [x] Dynamic occupancy is separate from static authored collision.
+- [x] Survival avoids only other living enemies during pursuit.
+- [x] Player-enemy overlap remains available for contact damage.
+- [x] Pursuit cannot overshoot through a nearby target on large time steps.
+
+**Verification evidence:**
+
+M10.8 closes with 1109 passing tests and focused Ruff clean. Shared movement
+accepts explicit dynamic occupiers independently of TMX obstacles. Survival
+supplies only living peer enemies, so crowd boxes remain separate while the
+survivor is intentionally excluded and contact damage continues. Pursuit caps
+travel at target distance to prevent large-step overshoot.
+
+## Earlier Completed Work Package
+
+### M10.7 — Add reusable obstacle-aware pursuit
+
+**Status:** Complete
+
+**Objective:** Prevent direct-chasing enemies from remaining permanently pinned
+to authored obstacles by adding deterministic neutral steering that other modes
+and actor controllers can reuse.
+
+**Planned scope:**
+
+- Separate pursuit-direction choice from Survival wave logic.
+- Detect blocked progress through authoritative movement results.
+- Choose deterministic alternative movement around simple obstacles.
+- Preserve a future seam for richer navigation data authored in TMX.
+
+**Acceptance criteria:**
+
+- [x] Pursuit-direction choice is independent of Survival wave logic.
+- [x] Blocked dominant-axis progress triggers an alternate route.
+- [x] Stable actor identity deterministically selects a side.
+- [x] Simple authored obstacles can be navigated without pygame or mode imports.
+
+**Verification evidence:**
+
+M10.7 closes with 1107 passing tests and focused Ruff clean. The reusable
+controller prefers direct shared movement, detects ineffective dominant-axis
+progress, rolls it back, and selects deterministic perpendicular alternatives.
+This handles simple obstacles now while leaving richer TMX-authored navigation
+or pathfinding as a replaceable future strategy.
+
+## Earlier Completed Work Package
+
+### M10.6 — Add neutral enemy death cleanup
+
+**Status:** Complete
 
 **Objective:** Remove defeated enemies from Match-owned stores through an
 explicit neutral lifecycle so long Survival runs do not accumulate corpses and
@@ -83,7 +226,22 @@ stale entity state across waves.
 - Keep death snapshot visibility deliberate rather than accidental.
 - Verify multi-wave entity counts remain bounded and IDs are never reused.
 
-## Most Recently Completed Work Package
+**Acceptance criteria:**
+
+- [x] One shared operation removes every Match-owned actor capability.
+- [x] Immediate post-kill snapshots retain deliberate death visibility.
+- [x] Defeated enemies are removed before the next wave is spawned.
+- [x] Multi-wave entity counts stay bounded and stable IDs are never reused.
+
+**Verification evidence:**
+
+M10.6 closes with 1104 passing tests and focused Ruff clean. Coordinated removal
+clears registry, spatial, combat, and faction state before publishing an explicit
+removal reason. Survival delays cleanup until preparation advances, preserving
+the immediate death snapshot and reward facts while ensuring the next wave owns
+only live enemy IDs with monotonically increasing identity.
+
+## Earlier Completed Work Package
 
 ### M10.5 — Enforce neutral map collision during movement
 
@@ -359,7 +517,12 @@ start remains only as an isolated compatibility harness, not the production rout
 | M10.3 | Integrate neutral weapons into visible Survival | Complete | M10.2 |
 | M10.4 | Integrate neutral kill rewards and economy | Complete | M10.3 |
 | M10.5 | Enforce neutral map collision during movement | Complete | M10.4 |
-| M10.6 | Add neutral enemy death cleanup | In progress | M10.5 |
+| M10.6 | Add neutral enemy death cleanup | Complete | M10.5 |
+| M10.7 | Add reusable obstacle-aware pursuit | Complete | M10.6 |
+| M10.8 | Add reusable actor crowding policy | Complete | M10.7 |
+| M10.9 | Make Survival waves data-driven | Complete | M10.8 |
+| M10.10 | Define neutral TMX interactables | Complete | M10.9 |
+| M10.11 | Add neutral interaction context and intent | In progress | M10.10 |
 
 ## Phase 9 Exit Review
 
@@ -537,6 +700,11 @@ start remains only as an isolated compatibility harness, not the production rout
 | 2026-08-22 | `uv run pytest` after M10.3 | 1099 passed in 24.20s | Cursor-to-world aim, deterministic nearest-box ray targeting, range limits, and ammunition-consuming misses close reusable weapon-driven Survival combat |
 | 2026-08-22 | `uv run pytest` after M10.4 | 1100 passed in 24.58s | First-lethal attributed enemy kills award the mode-owned wallet once; balance snapshots, wave persistence, event availability, and restart isolation pass |
 | 2026-08-22 | `uv run pytest` after M10.5 | 1103 passed in 24.46s | Shared collision-aware movement stops flush, slides by axis, supports Box/Circle actor bounds and TMX obstacle shapes, and preserves open-map movement |
+| 2026-08-23 | `uv run pytest` after M10.6 | 1104 passed in 29.14s | Coordinated actor removal, deliberate immediate death visibility, preparation cleanup, bounded entity counts, removal events, and non-reused IDs pass |
+| 2026-08-23 | `uv run pytest` after M10.7 | 1107 passed in 28.66s | Reusable direct pursuit, blocked-progress detection, rollback, deterministic side choice, simple-wall navigation, and dependency boundaries pass |
+| 2026-08-23 | `uv run pytest` after M10.8 | 1109 passed in 31.32s | Explicit dynamic occupancy, enemy-only avoidance, preserved player contact, crowd separation, and pursuit distance capping pass |
+| 2026-08-23 | `uv run pytest` after M10.9 | 1113 passed in 38.90s | Immutable wave plans, validated growth, multiple neutral enemy definitions, per-entry seeded spawning, configurable preparation, and composition snapshots pass |
+| 2026-08-23 | `uv run pytest` after M10.10 | 1117 passed in 47.93s | Neutral TMX point/region interactions, semantic metadata, capability reporting, offsets, filtered proximity, range, stable tie-breaking, and incomplete-map behavior pass |
 
 ### Static checks
 
@@ -851,8 +1019,13 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-22 | Completed M10.3 neutral weapon integration | Pygame input emits world aim while reusable neutral ray targeting resolves the nearest valid hit deterministically; misses and hits share weapon operation; full suite is 1099 passed |
 | 2026-08-22 | Completed M10.4 neutral kill rewards | Survival owns reward eligibility and wallet state; eligible first-lethal weapon kills award once, persist across waves, snapshot visibly, and reset on restart; full suite is 1100 passed |
 | 2026-08-22 | Completed M10.5 neutral map collision movement | Shared Match actor movement now resolves authored geometry deterministically for Survival, Sandbox, and future modes while incomplete maps remain open; full suite is 1103 passed |
+| 2026-08-23 | Completed M10.6 neutral enemy death cleanup | Defeated enemies remain visible for the death frame, then coordinated removal clears all Match stores before subsequent waves without reusing IDs; full suite is 1104 passed |
+| 2026-08-23 | Completed M10.7 reusable obstacle-aware pursuit | Stable-ID steering detects ineffective direct travel and uses deterministic perpendicular alternatives around simple authored obstacles; full suite is 1107 passed |
+| 2026-08-23 | Completed M10.8 reusable actor crowding | Dynamic actor occupancy is configurable at shared movement; Survival separates living enemies while retaining player overlap/contact and capped pursuit; full suite is 1109 passed |
+| 2026-08-23 | Completed M10.9 data-driven Survival waves | Immutable plans configure archetypes, counts, growth, and preparation; shared spawning supports multiple enemy definitions and debug status exposes live composition; full suite is 1113 passed |
+| 2026-08-23 | Completed M10.10 neutral TMX interactables | Map-authored interaction values and deterministic proximity queries establish reusable weapon-box, ammo, door, and objective data without changing the production TMX; full suite is 1117 passed |
 
 ## Next Action
 
-Begin M10.6 by defining coordinated neutral actor removal and using it to clean
-defeated enemies between waves without losing death/reward facts or reusing IDs.
+Begin M10.11 by tracking nearby neutral interaction context for the survivor and
+routing explicit interact intent without yet assigning weapon-box purchase policy.

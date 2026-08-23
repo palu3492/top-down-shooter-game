@@ -77,11 +77,15 @@ class DebugOverlay:
             return f"MODE - | RESULT {result or '-'}"
         if hasattr(mode, "wave"):
             target = "∞" if mode.wave_target is None else str(mode.wave_target)
+            composition = ",".join(
+                f"{kind}:{count}" for kind, count in mode.enemy_composition
+            ) or "-"
             return (
                 f"MODE {mode.phase} | WAVE {mode.wave}/{target} | "
                 f"NEXT {mode.preparation_remaining:.1f}s | "
                 f"ENEMIES {mode.enemies_remaining} "
-                f"| CASH {mode.cash} | RESULT {result or mode.outcome or '-'}"
+                f"| TYPES {composition} | CASH {mode.cash} "
+                f"| RESULT {result or mode.outcome or '-'}"
             )
         title = getattr(mode, "title", type(mode).__name__)
         details = []

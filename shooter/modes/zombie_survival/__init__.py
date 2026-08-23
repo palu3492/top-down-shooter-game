@@ -8,12 +8,18 @@ from shooter.modes.zombie_survival.mode import (
     SurvivalMode,
 )
 from shooter.modes.zombie_survival.waves import WaveSystem
+from shooter.modes.zombie_survival.wave_config import (
+    EnemyWaveRule,
+    SurvivalWavePlan,
+)
 
 __all__ = (
     "FireSurvivorWeapon",
+    "EnemyWaveRule",
     "MoveSurvivor",
     "ReloadSurvivorWeapon",
     "SurvivalConsequences",
     "SurvivalMode",
+    "SurvivalWavePlan",
     "WaveSystem",
 )

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from shooter.map_definition import (
     MapDefinition,
+    MapInteraction,
     MapRequirements,
     SpawnPoint,
     SpawnRegion,
@@ -26,16 +27,32 @@ def test_incomplete_tmx_maps_adapt_without_requiring_future_layers():
     assert crossroads.map_id == "crossroads"
     assert riverside.map_id == "riverside"
     assert crossroads.size != riverside.size
-    assert crossroads.capabilities == riverside.capabilities == {
+    assert riverside.capabilities == {
         "bounds",
         "collision",
         "spawns",
+    }
+    assert crossroads.capabilities == {
+        "bounds",
+        "collision",
+        "spawns",
+        "interactions",
+        "interaction:weapon_station",
     }
     assert crossroads.collision != riverside.collision
     assert crossroads.spawn_roles() >= {"survivor", "enemy", "team_a", "team_b"}
     assert riverside.spawn_roles() == {"survivor", "enemy"}
     assert "team_deathmatch" in crossroads.supported_modes
     assert "team_deathmatch" not in riverside.supported_modes
+    assert crossroads.interactions == (
+        MapInteraction(
+            "weapon-station",
+            "weapon_station",
+            position=(304, 208),
+            properties=(("kind", "weapon_station"),),
+        ),
+    )
+    assert riverside.interactions == ()
 
 
 def test_spawn_points_and_regions_normalize_without_map_identity_branches():
@@ -102,6 +119,27 @@ def test_spawn_semantic_metadata_and_layer_offsets_survive_adaptation(tmp_path):
     assert point.tags == {"outdoor", "elevated"}
     assert (point.faction, point.actor_kind) == ("horde", "walker")
     assert region.area == Aabb(30, 50, 40, 50)
+
+
+def test_interaction_regions_preserve_semantics_properties_and_offsets(tmp_path):
+    source = tmp_path / "semantic-interactions.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Interactions" offsetx="10" offsety="20">'
+        '<object id="1" name="ammo-yard" x="5" y="7" width="40" height="50">'
+        '<properties><property name="kind" value="ammo_station"/>'
+        '<property name="tags" value="survival, outdoor"/>'
+        '<property name="price" value="250"/></properties>'
+        '</object></objectgroup></map>'
+    )
+
+    (interaction,) = load_tmx_definition(source).interactions
+
+    assert interaction.interaction_id == "ammo-yard"
+    assert interaction.kind == "ammo_station"
+    assert interaction.area == Aabb(15, 27, 40, 50)
+    assert interaction.tags == {"survival", "outdoor"}
+    assert dict(interaction.properties)["price"] == "250"
 
 
 def test_world_creation_uses_explicit_map_data_without_identity_branches(display):

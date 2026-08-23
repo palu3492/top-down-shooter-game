@@ -40,7 +40,7 @@ def test_shared_survival_moves_kills_and_returns_to_menu(display):
     player = scene.mode.player_id
     first_enemy = scene.mode.enemy_ids[0]
     before = scene.match.spatial.get(player).transform
-    scene.match.spatial.move_to(first_enemy, before.x + 200, before.y)
+    scene.match.spatial.move_to(first_enemy, before.x + 800, before.y)
     for enemy_id in scene.mode.enemy_ids[1:]:
         scene.match.spatial.move_to(enemy_id, before.x, before.y + 400)
 
