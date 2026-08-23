@@ -27,6 +27,9 @@ class WeaponDefinition:
     pellets: int = 1
     spread: float = 0.0
     automatic: bool = False
+    max_range: float | None = None
+    effective_range: float | None = None
+    minimum_damage_fraction: float = 1.0
     reach: float | None = None
     arc: float | None = None
     capabilities: frozenset[str] = frozenset()

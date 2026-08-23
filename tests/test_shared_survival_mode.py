@@ -26,6 +26,7 @@ from shooter.match_configuration import (
 from shooter.modes.zombie_survival import (
     EnemyWaveRule,
     FireSurvivorWeapon,
+    HoldSurvivorWeapon,
     InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
@@ -198,6 +199,21 @@ def test_selection_keeps_each_survival_firearm_runtime_state_while_stowed():
     assert loadout.selected is smg
     assert (smg.runtime.loaded, smg.runtime.reserve) == (17, 88)
     assert loadout.select(2) is False
+
+
+def test_held_trigger_only_operates_automatic_firearms():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    rifle = mode.loadouts[mode.player_id].selected
+    match.advance(0.0, (HoldSurvivorWeapon((1, 0)),))
+    assert rifle.runtime.loaded == rifle.definition.magazine_capacity
+    mode.loadouts[mode.player_id].add(EquippedWeapon(SMG), select=True)
+    match.advance(0.0, (HoldSurvivorWeapon((1, 0)),))
+    assert (
+        mode.loadouts[mode.player_id].selected.runtime.loaded
+        == SMG.magazine_capacity - 1
+    )
 
 
 def test_survival_pickaxe_is_a_separate_configured_tool_role_that_can_melee():

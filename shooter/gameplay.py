@@ -25,6 +25,7 @@ from shooter.map_definition import SpawnPoint, SpawnRegion, current_map_definiti
 from shooter.modes.sandbox import AttackActor, MoveActor
 from shooter.modes.zombie_survival import (
     FireSurvivorWeapon,
+    HoldSurvivorWeapon,
     InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
@@ -252,7 +253,17 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             self.tuner.draw(surface)
 
     def update(self, inputs, dt=config.SIM_DT):
-        self.match.advance(dt, (MoveSurvivor(inputs.move),))
+        commands = [MoveSurvivor(inputs.move)]
+        if inputs.trigger:
+            player = self.match.spatial.get(self.mode.player_id).transform
+            camera_x, camera_y = self.camera
+            pointer = inputs.pointer
+            aim = (
+                pointer[0] - camera_x - player.x,
+                pointer[1] - camera_y - player.y,
+            )
+            commands.append(HoldSurvivorWeapon(aim))
+        self.match.advance(dt, commands)
 
 
 def sandbox_spawn_sources(map_definition):

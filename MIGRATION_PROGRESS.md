@@ -125,6 +125,21 @@ price/count/speed tuning is deferred until this baseline is complete:
 Only after M11.6–M11.10 will M11.5 resume full numerical tuning of reward,
 station-price, ammo, enemy-pressure, and preparation-time values.
 
+### Confirmed Survival loadout divergence — tool-only start
+
+The current starting rifle is a temporary migration aid and is no longer the
+target product design. Survival players must begin a fresh run with only the
+configured melee/harvesting tool (pickaxe-like tool now; knife in modes that
+choose it), no firearm, and no firearm ammunition. The first and cheapest
+authored firearm offer must be a pistol; subsequent weapon stations may offer
+SMGs, rifles, and other configured weapons for more cash.
+
+This requires a dedicated follow-up package after the active combat-feel
+baseline: allow an empty firearm loadout, make fire/reload harmless without a
+selected firearm, add a pistol definition and first weapon-station offer, and
+retune early-wave rewards/spawn pressure around tool-only survival. It must not
+reintroduce a Survival-specific assumption into shared loadout mechanics.
+
 ### Planned reusable weapon-system continuation
 
 The current weapon boundary already owns definitions, individual runtime ammo,
@@ -138,6 +153,11 @@ range are deliberately temporary:
 - Give every ballistic weapon its own maximum range and an optional effective
   range / damage-falloff policy. Rifle and SMG balance must be data-defined, not
   hard-coded in Survival target selection.
+- This applies uniformly to every current and future ballistic weapon,
+  including the planned starting pistol: each definition supplies its own
+  maximum range, effective range, and minimum long-range damage fraction. A
+  weapon may explicitly opt out of falloff, but no shared rifle/SMG default may
+  silently determine another weapon's behavior.
 - Resolve range and damage before shared damage application, so every future
   mode uses the same weapon result while remaining free to choose its own weapon
   catalog and balance values.

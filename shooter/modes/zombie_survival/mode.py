@@ -57,6 +57,9 @@ RIFLE = WeaponDefinition(
     30,
     config.RELOAD_SECONDS,
     "556",
+    max_range=1300,
+    effective_range=800,
+    minimum_damage_fraction=0.7,
 )
 SMG = WeaponDefinition(
     "survivor_smg",
@@ -69,6 +72,9 @@ SMG = WeaponDefinition(
     "9mm",
     spread=5.0,
     automatic=True,
+    max_range=650,
+    effective_range=350,
+    minimum_damage_fraction=0.55,
 )
 PICKAXE = WeaponDefinition(
     "survivor_pickaxe",
@@ -97,6 +103,11 @@ class MoveSurvivor:
 
 @dataclass(frozen=True, slots=True)
 class FireSurvivorWeapon:
+    aim: tuple[float, float]
+
+
+@dataclass(frozen=True, slots=True)
+class HoldSurvivorWeapon:
     aim: tuple[float, float]
 
 
@@ -161,6 +172,9 @@ class SurvivalMode:
             "survivor_rifle", "ballistic", config.BULLET_DAMAGE, 6.0,
             self.balance.starting_magazine, self.balance.starting_reserve,
             config.RELOAD_SECONDS, "556",
+            max_range=1300,
+            effective_range=800,
+            minimum_damage_fraction=0.7,
         )
         self.spawn_sources = tuple(spawn_sources)
         selected_plan = (
@@ -358,6 +372,10 @@ class SurvivalMode:
                 move_match_actor(match, self.player_id, command.direction, dt)
             elif isinstance(command, FireSurvivorWeapon):
                 self._fire_weapon(match, command.aim)
+            elif isinstance(command, HoldSurvivorWeapon):
+                automatic = self._selected_weapon().definition.automatic
+                if not self.tool_equipped and automatic:
+                    self._fire_weapon(match, command.aim)
             elif isinstance(command, ReloadSurvivorWeapon):
                 if not self.tool_equipped:
                     self._selected_weapon().reload()
@@ -488,7 +506,7 @@ class SurvivalMode:
                     if enemy_id in match.combat
                     and match.combat.get(enemy_id).alive
                 ),
-                config.BULLET_RANGE,
+                weapon.definition.max_range or config.BULLET_RANGE,
             )
             if target_id is None:
                 continue
@@ -497,13 +515,30 @@ class SurvivalMode:
                     attack.instigator_id,
                     self.player_id,
                     target_id,
-                    attack.damage,
+                    self._damage_at_range(match, weapon.definition, attack, target_id),
                     attack.attack_kind,
                     match.tick,
                     attack.weapon_id,
                 )
             )
             self._award_kill(result)
+
+    @staticmethod
+    def _damage_at_range(match, definition, attack, target_id):
+        maximum = definition.max_range
+        effective = definition.effective_range
+        if maximum is None or effective is None or maximum <= effective:
+            return attack.damage
+        target = match.spatial.get(target_id).transform
+        distance = math.dist(attack.origin, (target.x, target.y))
+        fraction = max(
+            definition.minimum_damage_fraction,
+            1
+            - (1 - definition.minimum_damage_fraction)
+            * (distance - effective)
+            / (maximum - effective),
+        )
+        return attack.damage * min(1, fraction)
 
     def _use_tool(self, match, aim):
         if self.player_id is None or math.hypot(*aim) == 0:

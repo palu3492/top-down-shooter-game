@@ -320,6 +320,11 @@ Purchases:
 - ammunition
 - weapon upgrades through a separate, explicitly authored upgrade station
 
+Survival starts tool-only: the player begins with a pickaxe-like harvesting
+tool (or a knife where a mode configures one), no firearm, and no firearm ammo.
+The first/cheapest weapon-station offer is a pistol. Higher-price SMGs, rifles,
+and later weapons are earned through match cash rather than granted at spawn.
+
 Weapon upgrades are mode-configured offers, not properties hardcoded into a
 gun or Survival. Each offer targets a compatible owned weapon instance and can
 apply a named, non-duplicated modification such as an extended magazine or an
