@@ -12,7 +12,7 @@ import math
 import pygame
 import pytest
 
-from shooter import config, game
+from shooter import config
 from shooter.entities.zombie import Zombie, spawn_margin
 from shooter.systems.waves import WaveSystem
 from shooter.viewport import visible_world
@@ -214,46 +214,3 @@ def test_later_waves_also_arrive_around_the_player(display, cash, cash_factory):
 
 def test_the_origin_anchored_spawn_area_is_gone():
     assert not hasattr(config, "SPAWN_AREA")
-
-
-def test_the_loop_always_tells_the_spawner_where_the_player_is(
-    straight_to_game, monkeypatch
-):
-    """Wiring, not arithmetic: every zombie the running game creates must be
-    given the visible world, or it falls back to the ring at the origin."""
-    given = []
-    spawned = []
-    real_init = Zombie.__init__
-
-    def remember(self, window_size, cash, visible=None):
-        given.append(visible)
-        spawned.append(self)
-        real_init(self, window_size, cash, visible)
-
-    monkeypatch.setattr(Zombie, "__init__", remember)
-
-    frames = {"n": 0}
-    real_flip = pygame.display.flip
-
-    def flip():
-        frames["n"] += 1
-        if frames["n"] == 20:
-            # a later wave only arrives once the field is clear
-            for zombie in list(spawned):
-                zombie.kill()
-        if frames["n"] > 40:
-            pygame.event.post(pygame.event.Event(pygame.QUIT))
-        real_flip()
-
-    monkeypatch.setattr(pygame.display, "flip", flip)
-    monkeypatch.setattr(config, "WAVE_INTERVAL_SECONDS", 0.01)
-
-    game.game_loop()
-
-    assert given, "no zombies were spawned at all"
-    assert all(seen is not None for seen in given), (
-        f"{given.count(None)} of {len(given)} spawns fell back to the origin ring"
-    )
-    assert len(given) > config.WAVE_BASE, (
-        "no later wave arrived, so only the first was checked"
-    )

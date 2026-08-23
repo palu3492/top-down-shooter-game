@@ -33,7 +33,7 @@ MUTABLE = {
     "GrenadeData": ["grenade_amount", "stun_grenade_amount"],
     "WaveSystem": ["wave_count", "wave_seconds"],
     "PowerUps": ["powerup_selected", "alive_seconds"],
-    "Human": ["health", "current_idle", "current_move", "current_shoot", "type"],
+    "Human": ["health"],
     "Zombie": ["zombie_health", "zombie_speed", "stun_seconds", "zombie_x", "zombie_y"],
     "Shot": ["kill_me", "bullet_x", "bullet_y", "damage"],
     "Grenade": ["explode", "grenade_x", "grenade_y", "travelled", "flight"],

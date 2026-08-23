@@ -6,6 +6,7 @@ import math
 from shooter.actor_creation import NeutralActorFactory
 from shooter.spatial import Bounds, Box, Transform
 from shooter.spawn_service import SpawnService
+from shooter.world_collision import actor_box, overlaps
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,12 +47,48 @@ def move_match_actor(match, actor_id, direction, dt):
     half_width = actor.collision_size[0] / 2
     half_height = actor.collision_size[1] / 2
     width, height = match.map_definition.size
-    bounded = Bounds(
+    bounds = Bounds(
         half_width, half_height, width - half_width, height - half_height
-    ).clamp(
-        Transform(
-            current.x + dx * actor.movement_speed * dt,
-            current.y + dy * actor.movement_speed * dt,
-        )
     )
-    return match.spatial.move_to(actor_id, bounded.x, bounded.y)
+    delta_x = dx * actor.movement_speed * dt
+    delta_y = dy * actor.movement_speed * dt
+    collision = match.spatial.get(actor_id).collision
+    obstacles = match.map_definition.collision
+    if collision is None or not obstacles:
+        target = bounds.clamp(Transform(current.x + delta_x, current.y + delta_y))
+        return match.spatial.move_to(actor_id, target.x, target.y)
+
+    step_limit = max(1.0, min(actor.collision_size) / 2)
+    steps = max(1, math.ceil(max(abs(delta_x), abs(delta_y)) / step_limit))
+    position = current
+    for _ in range(steps):
+        next_x = bounds.clamp(
+            Transform(position.x + delta_x / steps, position.y)
+        )
+        position = _resolve_step(position, next_x, collision, obstacles)
+        next_y = bounds.clamp(
+            Transform(position.x, position.y + delta_y / steps)
+        )
+        position = _resolve_step(position, next_y, collision, obstacles)
+    return match.spatial.move_to(actor_id, position.x, position.y)
+
+
+def _resolve_step(start, target, collision, obstacles):
+    if not _blocked(target, collision, obstacles):
+        return target
+    safe, blocked = start, target
+    for _ in range(20):
+        midpoint = Transform(
+            (safe.x + blocked.x) / 2,
+            (safe.y + blocked.y) / 2,
+        )
+        if _blocked(midpoint, collision, obstacles):
+            blocked = midpoint
+        else:
+            safe = midpoint
+    return safe
+
+
+def _blocked(transform, collision, obstacles):
+    box = actor_box(transform, collision)
+    return any(overlaps(box, obstacle) for obstacle in obstacles)

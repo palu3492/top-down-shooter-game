@@ -94,13 +94,17 @@ class EllipseObstacle:
 
 
 def load_obstacles(relative):
-    """Read the geometry in the TMX ``Obstacles`` object layer."""
+    """Read collision geometry from a TMX semantic object layer.
+
+    ``Collision`` is the current map contract. ``Obstacles`` remains accepted
+    while older authored maps are migrated.
+    """
     root = ElementTree.parse(asset_path(relative)).getroot()
     layer = next(
         (
             node
             for node in root.findall("objectgroup")
-            if node.get("name") == "Obstacles"
+            if node.get("name") in {"Collision", "Obstacles"}
         ),
         None,
     )

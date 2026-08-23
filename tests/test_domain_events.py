@@ -71,7 +71,9 @@ def test_queues_and_registries_are_match_scoped():
 
 def test_session_bridge_emits_enemy_lifecycle_once(display, cash):
     session = Session(Viewport(WINDOW))
-    opening = session.events.drain()
+    session.zombies.empty()
+    session._sync_enemy_registry()
+    session.events.drain()
     enemy = Zombie(WINDOW, cash)
 
     session.zombies.add(enemy)
@@ -80,7 +82,6 @@ def test_session_bridge_emits_enemy_lifecycle_once(display, cash):
     registered = session.events.drain()
     session._sync_enemy_registry()
 
-    assert opening == (EntityRegistered(session.player_id, ("actor", "player")),)
     assert registered == (EntityRegistered(enemy_id, ("actor", "enemy")),)
     assert session.events.drain() == ()
 

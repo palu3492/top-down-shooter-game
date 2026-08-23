@@ -94,14 +94,10 @@ def test_invalid_authored_sources_fail_instead_of_falling_back():
     assert factory.requests == []
 
 
-def test_survival_wave_uses_authored_enemy_region_when_available(
-    display, cash, monkeypatch
-):
+def test_survival_wave_uses_authored_enemy_region_when_available(display, cash):
     group = pygame.sprite.Group()
     source = SpawnRegion("yard", Aabb(1500, 1500, 500, 500), role="enemy")
     factory = LegacyActorFactory(random.Random(10))
-    monkeypatch.setattr(config, "ZOMBIE_SPAWNING_ENABLED", True)
-
     rules = WaveSystem(
         WINDOW,
         group,

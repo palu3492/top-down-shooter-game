@@ -127,8 +127,6 @@ class LevelRules(WaveSystem):
             self.wave_seconds += dt
 
     def _spawn(self, window, zombie_group, player_cash, visible, count):
-        if not config.ZOMBIE_SPAWNING_ENABLED:
-            return
         self._spawn_actors(window, zombie_group, visible, count)
 
     def status(self, *, cash=0, enemies_remaining=0, outcome=None):

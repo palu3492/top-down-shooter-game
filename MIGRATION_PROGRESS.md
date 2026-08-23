@@ -24,11 +24,11 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 8 — Complete presentation separation |
+| Migration phase | Phase 10 — Resume Zombie Survival feature development |
 | Phase status | In progress |
-| Active work package | M8.3 — Replace the graphical HUD with a text debug overlay |
-| Application expected to run | Yes; Phase 2 will retain temporary legacy adapters |
-| Next integration checkpoint | End of Phase 9 — Reuse proven by sandbox ruleset |
+| Active work package | M10.6 — Add neutral enemy death cleanup |
+| Application expected to run | Yes; production START GAME uses the shared Survival runtime |
+| Next integration checkpoint | End of M10.6 — Bounded multi-wave entity lifecycle |
 | Last updated | 2026-08-22 |
 
 ## Confirmed Project Constraints
@@ -62,41 +62,192 @@ package.
 | 5 | Weapon operation and inventory integration | Complete | Owner-independent weapon pipeline verified |
 | 6 | Reusable spawning | Complete | Semantic, constrained, explicit-position spawning verified |
 | 7 | Neutral Match and game-mode boundary | Complete | Match/mode boundary and integration checkpoint 2 verified |
-| 8 | Complete presentation separation | In progress | M8.1–M8.2 complete; M8.3 active |
-| 9 | Prove reuse with a sandbox ruleset | Not started | Integration checkpoint 3 |
-| 10 | Resume Zombie Survival feature development | Not started | Product development resumes |
+| 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
+| 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
+| 10 | Resume Zombie Survival feature development | In progress | M10.6 active |
 
 ## Active Work Package
 
-### M8.3 — Replace the graphical HUD with a text debug overlay
+### M10.6 — Add neutral enemy death cleanup
 
 **Status:** In progress
 
-**Objective:** Replace image-backed gameplay HUD components with a text-only debug
-overlay built entirely from immutable snapshot and presentation status values.
+**Objective:** Remove defeated enemies from Match-owned stores through an
+explicit neutral lifecycle so long Survival runs do not accumulate corpses and
+stale entity state across waves.
+
+**Planned scope:**
+
+- Define reusable coordinated removal from registry and Match stores.
+- Preserve first-lethal facts and rewards before cleanup.
+- Keep death snapshot visibility deliberate rather than accidental.
+- Verify multi-wave entity counts remain bounded and IDs are never reused.
+
+## Most Recently Completed Work Package
+
+### M10.5 — Enforce neutral map collision during movement
+
+**Status:** Complete
+
+**Objective:** Make shared actor movement respect authored TMX collision geometry
+without moving collision decisions into pygame scenes or Survival-specific code.
+
+**Planned scope:**
+
+- Extend shared Match actor movement with neutral obstacle resolution.
+- Preserve deterministic bounds and diagonal movement behavior.
+- Apply the same movement seam to survivors, enemies, and future modes.
+- Characterize incomplete/no-collision maps as valid open spaces.
+
+**Acceptance criteria:**
+
+- [x] Shared actor movement stops against authored neutral obstacles.
+- [x] Diagonal movement slides along an unblocked axis.
+- [x] Bounded substeps and refined contact prevent ordinary obstacle tunneling.
+- [x] No-collision maps retain valid direct movement behavior.
+
+**Verification evidence:**
+
+M10.5 closes with 1103 passing tests and focused Ruff clean. Shared movement
+uses authoritative Box/Circle bounds, TMX AABB/ellipse/polygon obstacles,
+deterministic axis resolution, and world bounds without pygame or mode imports.
+Both Sandbox and Survival already consume this seam; incomplete maps with no
+collision use the existing direct movement path.
+
+## Earlier Completed Work Package
+
+### M10.4 — Integrate neutral kill rewards and economy
+
+**Status:** Complete
+
+**Objective:** Connect attributed neutral enemy deaths to Survival-owned cash
+without putting reward policy into weapons, enemies, presentation, or shared
+combat services.
+
+**Planned scope:**
+
+- Consume neutral kill facts exactly once under Survival rules.
+- Award mode-owned cash only for eligible survivor kills.
+- Expose the authoritative balance through existing immutable mode status.
+- Preserve the seam needed for future reusable purchase interactions.
+
+**Acceptance criteria:**
+
+- [x] Eligible attributed survivor kills award mode-owned cash exactly once.
+- [x] Non-lethal damage, misses, and repeated attacks on dead targets award nothing.
+- [x] Cash persists across waves and is visible through immutable mode status.
+- [x] A restarted Match begins with a new zero-balance wallet.
+
+**Verification evidence:**
+
+M10.4 closes with 1100 passing tests and focused Ruff clean. Reward eligibility
+uses the shared damage result's first-lethal transition and stable attribution,
+so it cannot double-award. The mode owns its reusable `SurvivalWallet`; queued
+combat events remain untouched for other consumers, and the existing economy
+service can consume the same wallet when authored purchase interactions arrive.
+
+## Earlier Completed Work Package
+
+### M10.3 — Integrate neutral weapons into visible Survival
+
+**Status:** Complete
+
+**Objective:** Replace the temporary direct-damage input with reusable,
+owner-independent weapon operation and make its runtime state visible through
+the debug snapshot path.
+
+**Planned scope:**
+
+- Attach a neutral starting loadout to the survivor.
+- Route fire and reload through shared weapon operation values.
+- Create attributed attacks from weapon output rather than UI-selected damage.
+- Expose ammo, cooldown, and reload state in immutable snapshots/debug text.
+
+**Acceptance criteria:**
+
+- [x] The survivor owns a pygame-free neutral starting loadout.
+- [x] Fire/reload use shared cooldown, ammo, reserve, and reload operations.
+- [x] Weapon output drives attributed damage and immutable debug state.
+- [x] Aim and target resolution replace the temporary first-living-enemy choice.
+
+**Verification evidence:**
+
+M10.3 closes with 1099 passing tests and focused Ruff clean. The direct
+`DamageEnemy` command is gone; Survival fire consumes a neutral rifle's runtime
+and produces attributed ballistic attack descriptions. Cursor input becomes
+world-space aim at the pygame boundary, while shared neutral ray targeting
+selects the nearest collision box deterministically within weapon range. Misses
+still spend ammunition, and snapshots expose live weapon debug state.
+
+## Earlier Completed Work Package
+
+### M10.2 — Add neutral wave progression and contact combat
+
+**Status:** Complete
+
+**Objective:** Turn the first shared-runtime Survival slice into a repeatable
+combat loop with escalating waves and an authoritative loss condition.
 
 **Scope:**
 
-- Show player vitality, faction, position, and stable ID.
-- Show selected weapon, ammunition, reload/cooldown, and equipment state.
-- Show Survival cash, phase, wave, timers, enemy count, outcome, tick, and seed.
+- Transition cleared waves through a timed preparation phase.
+- Spawn subsequent waves through the same deterministic neutral pipeline.
+- Route overlapping enemy contact through attributed shared damage.
+- End Survival when the neutral survivor's health is depleted.
+
+**Acceptance criteria:**
+
+- [x] Clearing a wave starts a visible, deterministic preparation countdown.
+- [x] Countdown completion spawns a larger next wave with stable entity IDs.
+- [x] Enemy overlap applies frame-rate-independent attributed contact damage.
+- [x] Lethal contact damage produces a stable Survival loss result.
+- [x] The visible application flow clearly handles loss and restart/exit.
+
+**Verification evidence:**
+
+M10.2 closes with 1097 passing tests and focused Ruff clean. Terminal Match
+results are reported once to the application router, defeat opens the existing
+text result overlay, and retry disposes the defeated Match before starting a
+fresh neutral Survival Match at full health on wave one.
+
+## Earlier Completed Work Package
+
+### M10.1 — Establish the shared-runtime Survival vertical slice
+
+**Status:** Complete
+
+**Objective:** Rebuild the first playable Zombie Survival slice on the shared
+Match runtime proven by Sandbox, beginning with neutral player/enemy spawning.
+
+**Scope:**
+
+- Construct Survival actors through neutral creation and spawn services.
+- Advance their authoritative spatial/combat state through Match-owned systems.
+- Present them through the shared snapshot placeholder path.
 
 **Non-goals:**
 
-- Removing legacy authoritative-state bridges; that follows in M8.4.
-- Production HUD artwork or final visual styling.
+- Restoring every legacy wave/shop/loot behavior in one package.
+- Final graphics, animation, networking, or production HUD work.
+- Production presentation styling.
 - Production artwork, animation, or asset authoring.
 
 **Acceptance criteria:**
 
-- [ ] Gameplay HUD uses text and basic primitives only.
-- [ ] Displayed values come from immutable snapshots/read-only presentation status.
-- [ ] HUD code owns no health, cash, ammunition, wave, or outcome state.
-- [ ] Existing graphical gameplay HUD components are no longer drawn.
+- [x] Survival player and enemies are neutral Match entities, not sprite authority.
+- [x] Initial spawning works through shared seeded placement.
+- [x] Movement, health, damage, and death are visible through snapshots.
+- [x] Obsolete spawning-disabled failures are retired or replaced by new intent tests.
 
 **Verification evidence:**
 
-Pending.
+M10.1 closes with 1093 passing tests and no failures. The MatchHost-backed
+production START GAME route opens the neutral Survival scene on the retained TMX
+map. WASD moves the survivor, the initial horde pursues, click attacks kill the
+current living target, snapshots drive shapes/health/status, and pause/end-game
+disposes the Match. Obsolete spawning-disabled and legacy sprite-authority tests
+were removed or replaced with neutral runtime intent tests. The no-host direct
+start remains only as an isolated compatibility harness, not the production route.
 
 ## Phase 0 Work Packages
 
@@ -186,9 +337,50 @@ Pending.
 |---|---|---|---|
 | M8.1 | Define read-only simulation snapshots | Complete | Phase 7 |
 | M8.2 | Bind actors, attacks, and world objects to placeholder shapes | Complete | M8.1 |
-| M8.3 | Replace the graphical HUD with a text debug overlay | In progress | M8.1 |
-| M8.4 | Remove legacy sprite/UI authoritative-state bridges | Not started | M8.2, M8.3 |
-| M8.5 | Verify headless Match advancement and close Phase 8 | Not started | M8.4 |
+| M8.3 | Replace the graphical HUD with a text debug overlay | Complete | M8.1 |
+| M8.4 | Remove legacy sprite/UI authoritative-state bridges | Complete | M8.2, M8.3 |
+| M8.5 | Verify headless Match advancement and close Phase 8 | Complete | M8.4 |
+
+## Phase 9 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M9.1 | Define the sandbox mode contract and configuration | Complete | Phase 8 |
+| M9.2 | Run reusable actors, movement, combat, and spawning under sandbox rules | Complete | M9.1 |
+| M9.3 | Bind sandbox snapshots to the placeholder presentation | Complete | M9.2 |
+| M9.4 | Verify mode/map switching and integration checkpoint 3 | Complete | M9.3 |
+
+## Phase 10 Work Packages
+
+| ID | Work package | Status | Depends on |
+|---|---|---|---|
+| M10.1 | Establish the shared-runtime Survival vertical slice | Complete | Phase 9 |
+| M10.2 | Add neutral wave progression and contact combat | Complete | M10.1 |
+| M10.3 | Integrate neutral weapons into visible Survival | Complete | M10.2 |
+| M10.4 | Integrate neutral kill rewards and economy | Complete | M10.3 |
+| M10.5 | Enforce neutral map collision during movement | Complete | M10.4 |
+| M10.6 | Add neutral enemy death cleanup | In progress | M10.5 |
+
+## Phase 9 Exit Review
+
+- [x] A non-Survival mode resolves through the shared catalog and Match lifecycle.
+- [x] Sandbox reuses seeded spawning, stable IDs, spatial/combat/faction stores, damage, events, and snapshots.
+- [x] Sandbox has no Zombie Survival or presentation dependency.
+- [x] Shared placeholder presentation renders Sandbox without mutating simulation.
+- [x] Sandbox is selectable and viewable from the main menu on the retained TMX map.
+- [x] Pause/end-game and fresh Survival/Sandbox/map switching dispose state correctly.
+- [x] Integration checkpoint 3 adds no failure category beyond the recorded baseline.
+
+## Phase 8 Exit Review
+
+- [x] Match snapshots are frozen, copied, and presentation-independent.
+- [x] Placeholder actors, attacks, effects, pickups, and props render from snapshots.
+- [x] Gameplay HUD and shop/context output use text-only immutable values.
+- [x] Session does not construct retired HUD, radar, shop, or mode-banner objects.
+- [x] Cash and equipment counters no longer originate in UI modules.
+- [x] Match advances and snapshots in a fresh process that rejects pygame/UI imports.
+- [x] Neutral TMX definitions do not import the pygame asset loader.
+- [x] The full suite adds no failure category beyond the recorded baseline.
 
 ## Phase 7 Exit Review
 
@@ -328,6 +520,23 @@ Pending.
 | 2026-08-21 | `uv run pytest` after M7.6 | 1020 passed, 33 failed in 28.60s | Consecutive-match isolation, exact-once disposal, shared/mode boundary audits, and integration checkpoint 2 pass; Phase 7 closes |
 | 2026-08-22 | `uv run pytest` after M8.1 | 1025 passed, 33 failed in 32.18s | Frozen match/entity/combat/weapon snapshots, copied runtime values, immutable mode payload validation, and first presentation consumer pass |
 | 2026-08-22 | `uv run pytest` after M8.2 | 1029 passed, 33 failed in 44.19s | Tag-driven placeholder actors, attacks, effects, pickups, and interactables render from snapshots over the retained TMX map |
+| 2026-08-22 | `uv run pytest` after M8.3 | 1034 passed, 33 failed in 34.86s | Text-only debug overlay reports Match, mode, player, vitality, weapon, equipment, cargo, and context from immutable values; legacy graphical HUD is not drawn |
+| 2026-08-22 | `uv run pytest` after M8.4 | 1037 passed, 33 failed in 25.77s | Legacy graphical components are not constructed; neutral cash/equipment state and frozen shop/context values feed the text overlay |
+| 2026-08-22 | `uv run pytest` after M8.5 | 1040 passed, 33 failed in 26.38s | Fresh-process headless Match advancement/snapshot, static presentation audit, and pygame-free map path resolution close Phase 8 |
+| 2026-08-22 | `uv run pytest` after M9.1 | 1045 passed, 33 failed in 28.20s | Cataloged non-Survival Sandbox lifecycle, finite/open-ended result policy, immutable status snapshots, disposal, and dependency audit |
+| 2026-08-22 | `uv run pytest` after M9.2 | 1048 passed, 33 failed in 28.37s | Two neutral factions reuse seeded spawning, stable IDs, spatial/combat stores, movement, relationship-aware attributed damage, events, and snapshots |
+| 2026-08-22 | `uv run pytest` after M9.3 | 1051 passed, 33 failed in 27.70s | Shared snapshot presenter draws Sandbox actors and generic text status without mutating Match tick, position, or health |
+| 2026-08-22 | `uv run pytest` after M9.4 | 1054 passed, 33 failed in 49.80s | Main-menu Sandbox route, TMX-backed scene, controls, combat, pause/end flow, and fresh Survival/Sandbox/map switching close Phase 9 |
+| 2026-08-22 | `uv run pytest` during M10.1 shared actor extraction | 1056 passed, 33 failed in 35.00s | Mode-independent Match actor spawn/registration/movement utility replaces Sandbox-owned orchestration before Survival adoption |
+| 2026-08-22 | `uv run pytest` during M10.1 neutral Survival rules | 1060 passed, 33 failed in 29.14s | Neutral survivor/initial-horde spawning, pursuit/movement, attributed enemy death, events, mode status, and immutable snapshots |
+| 2026-08-22 | `uv run pytest` during M10.1 visible Survival integration | 1063 passed, 33 failed in 34.35s | Production START GAME now uses TMX-backed neutral Survival snapshots, movement, pursuit, click damage, pause, and clean disposal |
+| 2026-08-22 | `uv run pytest` after M10.1 | 1093 passed in 50.76s | Removed the spawning-disable switch and obsolete sprite-era expectations; current and legacy TMX collision layer names remain supported; failure ledger is clean |
+| 2026-08-22 | `uv run pytest` during M10.2 neutral loop | 1096 passed in 28.47s | Timed preparation, escalating deterministic respawn, attributed contact damage, and survivor loss run through Match-owned state |
+| 2026-08-22 | `uv run pytest` after M10.2 | 1097 passed in 28.46s | Neutral terminal results open defeat UI once; retry disposes the old Match and creates an isolated full-health wave-one Survival Match |
+| 2026-08-22 | `uv run pytest` during M10.3 neutral weapon integration | 1098 passed in 24.58s | Neutral equipped rifle/loadout, cooldown, ammunition, reload, attributed ballistic attacks, and snapshot debug state replace direct-damage input |
+| 2026-08-22 | `uv run pytest` after M10.3 | 1099 passed in 24.20s | Cursor-to-world aim, deterministic nearest-box ray targeting, range limits, and ammunition-consuming misses close reusable weapon-driven Survival combat |
+| 2026-08-22 | `uv run pytest` after M10.4 | 1100 passed in 24.58s | First-lethal attributed enemy kills award the mode-owned wallet once; balance snapshots, wave persistence, event availability, and restart isolation pass |
+| 2026-08-22 | `uv run pytest` after M10.5 | 1103 passed in 24.46s | Shared collision-aware movement stops flush, slides by axis, supports Box/Circle actor bounds and TMX obstacle shapes, and preserves open-map movement |
 
 ### Static checks
 
@@ -551,17 +760,18 @@ When one is introduced, record:
 | Legacy direct Zombie placement | Direct `Zombie(...)` callers still choose a legacy ring position when no explicit position is supplied; production waves use the actor factory | M6.3 | Tests/callers construct through actor creation requests and shared spawning | Active |
 | Legacy Session/Match bridge | `Session` aliases Match-owned stores while it still owns pygame groups and presentation orchestration | M7.2 | Gameplay/presentation consumes Match directly and Session is decomposed | Active |
 | Legacy Survival module imports | Former `systems.waves`, `systems.shop`, and `systems.survival_consequences` paths re-export mode-owned policy for existing callers/tests | M7.3 | Callers use the mode package and obsolete module paths are deleted | Active |
-| Legacy Session mode-status bridge | Session builds immutable status from legacy rule state and sends it to the presentation-only countdown display | M7.4 | Match hosts the concrete mode instance and exposes its status directly | Active |
+| Legacy Session mode-status bridge | Session builds immutable status from legacy rule state for Match snapshots and the text overlay | M7.4 | Match hosts the concrete mode instance and exposes its status directly | Active |
 | Legacy Session snapshot inputs | Session supplies its player loadout and legacy-hosted mode status while Match state migrates into the snapshot builder | M8.1 | Match owns inventories and its concrete mode, requiring no Session-provided snapshot inputs | Active |
 | Legacy visual-source registry | Session assigns stable IDs and spatial state to legacy projectile/pickup/prop objects without emitting gameplay lifecycle facts | M8.2 | These objects are created directly as neutral Match entities | Active |
+| Legacy presentation status | Session copies grenades, transient effects, cargo, notices, and interaction context into a frozen value for the debug overlay | M8.3 | These values are included in Match-owned snapshots/read models | Active |
 
 ## Known Failures and Risks
 
 | ID | Type | Description | First observed | Blocks | Status |
 |---|---|---|---|---|---|
-| BASE-001 | Test configuration | 31 tests expect spawned zombies, but `config.ZOMBIE_SPAWNING_ENABLED` is intentionally `False`; wave, level, loot, movement, resolution, shop, scene, and session failures cascade from the empty groups | M0.1 | Clean test baseline | Recorded; one obsolete snapshot-loot expectation removed in M4.4 |
-| BASE-002 | Map/test drift | `test_world_obstacles_keep_their_tiled_geometry` expects a polygon obstacle, but the current `world_1.tmx` loader result contains none | M0.1 | Clean test baseline | Redesign: preserve authored collision semantics, not exact object-type composition |
-| BASE-003 | Legacy test drift | Instance-state test expects `Human` animation counters/type that the current `Human` no longer initializes | M0.1 | Clean test baseline | Delete obsolete animation-field expectation |
+| BASE-001 | Test configuration | Legacy tests depended on a global switch that disabled zombie spawning and caused cascading empty-group failures | M0.1 | Clean test baseline | Resolved in M10.1: switch removed; relevant spawn behavior is covered through neutral runtime tests; obsolete legacy expectations deleted |
+| BASE-002 | Map/test drift | A test coupled collision coverage to the unfinished production TMX object's exact geometry mix | M0.1 | Clean test baseline | Resolved in M10.1: stable semantic TMX fixtures cover ellipse/polygon preservation; loader accepts current `Collision` and transitional `Obstacles` names |
+| BASE-003 | Legacy test drift | Instance-state test expected obsolete `Human` animation counters/type | M0.1 | Clean test baseline | Resolved in M10.1: obsolete sprite-animation field expectation removed |
 | BASE-004 | Timing/test behavior | Pause-loop test records animation updates instead of authoritative state | M0.1 | Clean test baseline | Resolved in M1.3: obsolete test removed and replaced by three authoritative pause tests |
 | BASE-005 | Ruff scope | 32 of 35 Ruff violations are in untracked temporary tree-replacement scripts under `tmp/` | M0.1 | Clean lint baseline | Recorded; decide exclusion/deletion separately |
 | BASE-006 | Tracked lint | Three E501 violations exist in `tools/assemble_occlusion_cleanup.py` and `tools/feather_high_detail_map.py` | M0.1 | Clean lint baseline | Recorded; do not fix in M0.1 |
@@ -624,8 +834,25 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-21 | Completed M7.6 and Phase 7 | Consecutive matches isolate simulation/mode/presentation state; disposal is idempotent; executable boundary audits and launch smoke pass; full suite is 1020 passed/33 recorded failures |
 | 2026-08-22 | Completed M8.1 immutable snapshots | Match snapshots copy stable-ID entity, spatial, collision, vitality, faction, weapon runtime, mode status, and result values; mutable nested mode payloads are rejected; full suite is 1025 passed/33 recorded failures |
 | 2026-08-22 | Completed M8.2 placeholder world bindings | Stable tags select debug shapes for actors, melee/ballistic attacks, grenades, effects, pickups, and interactables; renderer reads snapshots only and TMX remains beneath it; full suite is 1029 passed/33 recorded failures |
+| 2026-08-22 | Completed M8.3 text debug HUD | Gameplay no longer draws radar or image-backed health/cash/weapon/grenade/wave panels; one text overlay consumes immutable Match and presentation values; full suite is 1034 passed/33 recorded failures |
+| 2026-08-22 | Completed M8.4 presentation cleanup | Session no longer constructs legacy HUD/radar/shop/mode panels; cash and equipment state are presentation-independent; frozen shop offers replace the graphical shop overlay; full suite is 1037 passed/33 recorded failures |
+| 2026-08-22 | Completed M8.5 and Phase 8 | Match lifecycle and snapshots run while pygame/UI imports are rejected; neutral map path resolution removes the discovered transitive pygame dependency; full suite is 1040 passed/33 recorded failures |
+| 2026-08-22 | Completed M9.1 sandbox mode boundary | A cataloged bounds-only Sandbox mode advances and snapshots through Match with its own immutable status/result and no Survival or presentation dependency; full suite is 1045 passed/33 recorded failures |
+| 2026-08-22 | Completed M9.2 shared mechanics reuse | Red/blue generic actors deterministically spawn, move, take attributed hostile damage, and snapshot through shared Match stores without Session or sprites; full suite is 1048 passed/33 recorded failures |
+| 2026-08-22 | Completed M9.3 sandbox snapshot presentation | Mode-neutral presenter and debug overlay draw Sandbox actors/status from immutable snapshots and cannot advance authoritative state; full suite is 1051 passed/33 recorded failures |
+| 2026-08-22 | Completed M9.4 and Phase 9 | Sandbox is visible from the main menu with TMX, controls, combat, pause/exit, and isolated cross-mode/map restart; integration checkpoint 3 passes with 1054 passed/33 recorded failures |
+| 2026-08-22 | Began M10.1 shared Survival vertical slice | Extracted neutral Match actor registration and movement from Sandbox; both modes can now reuse one pygame-free entity/spatial/combat/faction seam; full suite is 1056 passed/33 recorded failures |
+| 2026-08-22 | Added M10.1 neutral Survival rules | Survivor and initial horde now run through shared Match spawning, movement, combat, events, and snapshots without sprites or legacy Session; full suite is 1060 passed/33 recorded failures |
+| 2026-08-22 | Added M10.1 visible neutral Survival route | MatchHost-backed START GAME now presents the shared-runtime survivor/horde slice over TMX with controls, combat, status, pause, and exit; full suite is 1063 passed/33 recorded failures |
+| 2026-08-22 | Completed M10.1 shared-runtime Survival vertical slice | Neutral actors, seeded spawning, pursuit/movement, attributed damage/death, snapshot presentation, and production routing pass; obsolete spawning-disabled and sprite-era expectations retired; full suite is 1093 passed with no failures |
+| 2026-08-22 | Added M10.2 neutral wave and loss rules | Cleared waves enter preparation and spawn a larger deterministic wave; overlapping enemies deal attributed time-scaled damage; lethal contact produces `LOST`; full suite is 1096 passed |
+| 2026-08-22 | Completed M10.2 repeatable Survival loop | Visible defeat reporting and result overlay reuse the application router; retry replaces all Match-scoped state with a fresh neutral Survival run; full suite is 1097 passed |
+| 2026-08-22 | Added M10.3 neutral starting weapon | Shared weapon runtime now governs visible Survival fire/reload and snapshot state; temporary `DamageEnemy` command removed; full suite is 1098 passed |
+| 2026-08-22 | Completed M10.3 neutral weapon integration | Pygame input emits world aim while reusable neutral ray targeting resolves the nearest valid hit deterministically; misses and hits share weapon operation; full suite is 1099 passed |
+| 2026-08-22 | Completed M10.4 neutral kill rewards | Survival owns reward eligibility and wallet state; eligible first-lethal weapon kills award once, persist across waves, snapshot visibly, and reset on restart; full suite is 1100 passed |
+| 2026-08-22 | Completed M10.5 neutral map collision movement | Shared Match actor movement now resolves authored geometry deterministically for Survival, Sandbox, and future modes while incomplete maps remain open; full suite is 1103 passed |
 
 ## Next Action
 
-Begin M8.3 by replacing image-backed gameplay HUD panels with a text-only debug
-overlay populated exclusively from immutable snapshot values.
+Begin M10.6 by defining coordinated neutral actor removal and using it to clean
+defeated enemies between waves without losing death/reward facts or reusing IDs.

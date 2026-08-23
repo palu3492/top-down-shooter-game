@@ -98,6 +98,13 @@ def played_level(scenes):
     return None
 
 
+def played_shared_survival(scenes):
+    """Whether the result overlay belongs to the neutral Survival runtime."""
+    return any(
+        isinstance(scene, SurvivalGameplayScene) for scene in scenes.visible()
+    )
+
+
 def start_level(scenes, window, level, replacing=0, match_host=None):
     """Put a game of this level on the stack, dropping whatever it replaces."""
     for _ in range(replacing):
@@ -256,13 +263,18 @@ def route(action, scenes, window, settings, progress=None, match_host=None):
             ),
         )
     elif action == menu.RETRY:
-        start_level(
-            scenes,
-            window,
-            played_level(scenes) or levels.FIRST,
-            replacing=2,
-            match_host=match_host,
-        )
+        if played_shared_survival(scenes):
+            start_shared_survival(
+                scenes, window, replacing=2, match_host=match_host
+            )
+        else:
+            start_level(
+                scenes,
+                window,
+                played_level(scenes) or levels.FIRST,
+                replacing=2,
+                match_host=match_host,
+            )
     elif action == menu.NEXT_LEVEL:
         finished = played_level(scenes) or levels.FIRST
         start_level(

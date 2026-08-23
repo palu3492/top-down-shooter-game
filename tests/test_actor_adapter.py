@@ -59,13 +59,9 @@ def test_production_zombie_construction_is_owned_by_actor_adapter():
     assert set(construction_sites) == {"shooter/actor_adapter.py"}
 
 
-def test_wave_system_constructs_walkers_through_the_actor_factory(
-    display, cash, monkeypatch
-):
+def test_wave_system_constructs_walkers_through_the_actor_factory(display, cash):
     group = pygame.sprite.Group()
     factory = LegacyActorFactory(random.Random(12))
-    monkeypatch.setattr(config, "ZOMBIE_SPAWNING_ENABLED", True)
-
     WaveSystem(WINDOW, group, cash, actor_factory=factory)
 
     assert len(group) == config.WAVE_BASE

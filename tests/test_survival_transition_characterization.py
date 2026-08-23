@@ -10,15 +10,14 @@ from shooter.viewport import Viewport
 WINDOW = (1080, 720)
 
 
-def survival_session(monkeypatch):
-    monkeypatch.setattr(config, "ZOMBIE_SPAWNING_ENABLED", True)
+def survival_session():
     return Session(Viewport(WINDOW))
 
 
 def test_preparation_does_not_advance_while_an_enemy_remains(
     monkeypatch, input_frame, advance_steps
 ):
-    session = survival_session(monkeypatch)
+    session = survival_session()
 
     advance_steps(lambda dt: session.step(input_frame().pressed, dt), 12)
 
@@ -30,7 +29,7 @@ def test_preparation_does_not_advance_while_an_enemy_remains(
 def test_removing_the_last_enemy_begins_one_preparation_timer(
     monkeypatch, input_frame
 ):
-    session = survival_session(monkeypatch)
+    session = survival_session()
     for enemy in session.zombies:
         enemy.kill()
 
@@ -44,7 +43,7 @@ def test_removing_the_last_enemy_begins_one_preparation_timer(
 def test_preparation_advances_once_per_fixed_step(
     monkeypatch, input_frame, advance_steps
 ):
-    session = survival_session(monkeypatch)
+    session = survival_session()
     session.zombies.empty()
 
     elapsed = advance_steps(
@@ -57,7 +56,7 @@ def test_preparation_advances_once_per_fixed_step(
 
 
 def test_timer_completion_requests_exactly_one_next_wave(monkeypatch, input_frame):
-    session = survival_session(monkeypatch)
+    session = survival_session()
     session.zombies.empty()
     session.rules.wave_seconds = config.WAVE_INTERVAL_SECONDS
 
@@ -75,7 +74,7 @@ def test_timer_completion_requests_exactly_one_next_wave(monkeypatch, input_fram
 
 
 def test_space_is_an_explicit_one_step_skip_request(monkeypatch, input_frame):
-    session = survival_session(monkeypatch)
+    session = survival_session()
     session.zombies.empty()
 
     session.handle(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE))

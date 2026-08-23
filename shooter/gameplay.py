@@ -18,11 +18,15 @@ import pygame
 
 from shooter import config
 from shooter.background import TiledBackground
-from shooter.commands import FIRE
+from shooter.commands import FIRE, RELOAD
 from shooter.input_adapter import PygameInputAdapter
 from shooter.map_definition import SpawnPoint, SpawnRegion, current_map_definition
 from shooter.modes.sandbox import AttackActor, MoveActor
-from shooter.modes.zombie_survival import DamageEnemy, MoveSurvivor
+from shooter.modes.zombie_survival import (
+    FireSurvivorWeapon,
+    MoveSurvivor,
+    ReloadSurvivorWeapon,
+)
 from shooter.scenes import Scene
 from shooter.session import Session
 from shooter.ui.snapshot_presentation import SnapshotPresentation
@@ -117,6 +121,7 @@ class SnapshotGameplayScene(Scene):
         self.mode = match_owner.mode
         self.match_host = match_host
         self.presenter = SnapshotPresentation()
+        self.reported = False
         self.background = TiledBackground(
             self.match.map_definition.presentation_source
         )
@@ -151,6 +156,14 @@ class SnapshotGameplayScene(Scene):
         camera = self.camera
         self.background.draw(surface, *camera)
         self.presenter.draw(surface, self.match.snapshot(), camera)
+
+    def tick(self, seconds):
+        """Report a terminal Match result once to the application router."""
+        outcome = self.match.result
+        if self.reported or outcome is None:
+            return None
+        self.reported = True
+        return outcome
 
 
 class SandboxGameplayScene(SnapshotGameplayScene):
@@ -188,16 +201,13 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             return routed
         command = self.input_adapter.action_for(event)
         if command is not None and command.action == FIRE:
-            target = next(
-                (
-                    enemy_id
-                    for enemy_id in self.mode.enemy_ids
-                    if self.match.combat.get(enemy_id).alive
-                ),
-                None,
-            )
-            if target is not None:
-                self.match.advance(0.0, (DamageEnemy(target, 34),))
+            player = self.match.spatial.get(self.mode.player_id).transform
+            camera_x, camera_y = self.camera
+            world_pointer = (event.pos[0] - camera_x, event.pos[1] - camera_y)
+            aim = (world_pointer[0] - player.x, world_pointer[1] - player.y)
+            self.match.advance(0.0, (FireSurvivorWeapon(aim),))
+        elif command is not None and command.action == RELOAD:
+            self.match.advance(0.0, (ReloadSurvivorWeapon(),))
         return None
 
     def update(self, inputs, dt=config.SIM_DT):

@@ -32,9 +32,6 @@ ZOMBIE_SIZE = (120, 111)
 ZOMBIE_SCALE = 0.5
 KILL_REWARD = 50
 
-# Temporary gameplay switch. Set this back to True to restore wave spawning.
-ZOMBIE_SPAWNING_ENABLED = False
-
 # A wave starts this many seconds of travel outside the view, so the player
 # sees it coming instead of meeting it at the edge of the screen.
 SPAWN_LEAD_SECONDS = 3.0

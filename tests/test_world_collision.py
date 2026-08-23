@@ -1,6 +1,6 @@
 """Headless world-coordinate collision independent of sprites and cameras."""
 
-from shooter.spatial import Box, Transform
+from shooter.spatial import Box, Circle, Transform
 from shooter.world_collision import Aabb, Ellipse, Polygon, actor_box, overlaps
 
 
@@ -8,6 +8,12 @@ def test_actor_box_uses_stable_shape_not_visual_dimensions():
     shape = Box(70, 50, offset_x=5)
 
     assert actor_box(Transform(100, 80), shape) == Aabb(70, 55, 70, 50)
+
+
+def test_circle_actor_uses_its_bounding_box_for_world_obstacles():
+    shape = Circle(15, offset_x=5, offset_y=-5)
+
+    assert actor_box(Transform(100, 80), shape) == Aabb(90, 60, 30, 30)
 
 
 def test_box_overlap_is_headless_and_edge_contact_is_not_penetration():

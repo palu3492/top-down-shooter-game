@@ -100,6 +100,7 @@ class Match:
 
         adapters.setdefault("mode_status", self.mode_status)
         adapters.setdefault("result", self.result)
+        adapters.setdefault("loadouts", getattr(self.mode, "loadouts", None))
         return build_match_snapshot(self, **adapters)
 
     def dispose(self):

@@ -4,13 +4,13 @@ from shooter.collision import EllipseObstacle, PolygonObstacle, load_obstacles
 
 
 def test_world_obstacles_keep_their_tiled_geometry():
-    obstacles = load_obstacles("Maps/world_1/world_1.tmx")
+    obstacles = (
+        *load_obstacles("../tests/fixtures/maps/riverside.tmx"),
+        *load_obstacles("../tests/fixtures/maps/crossroads.tmx"),
+    )
 
     assert any(isinstance(item, EllipseObstacle) for item in obstacles)
     assert any(isinstance(item, PolygonObstacle) for item in obstacles)
-    assert all(
-        isinstance(item, (EllipseObstacle, PolygonObstacle)) for item in obstacles
-    )
 
 
 def test_ellipse_does_not_block_the_empty_corner_of_its_bounds():

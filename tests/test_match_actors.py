@@ -16,11 +16,17 @@ from shooter.match_configuration import (
 )
 from shooter.spawn_selection import PlacementConstraints, SpawnQuery
 from shooter.spawn_service import SpawnActorRequest
+from shooter.world_collision import Aabb
 
 
-def match():
+def match(collision=()):
     definition = MapDefinition(
-        "arena", "Arena", "unused.tmx", (400, 300), capabilities=frozenset(("bounds",))
+        "arena",
+        "Arena",
+        "unused.tmx",
+        (400, 300),
+        collision=collision,
+        capabilities=frozenset(("bounds",)),
     )
     mode = ModeDescriptor("test", "Test", "")
     resolved = MatchConfigurationResolver(
@@ -74,3 +80,39 @@ def test_match_actor_utilities_are_pygame_and_mode_independent():
     assert not any(
         name == "pygame" or name.startswith("shooter.modes") for name in imports
     )
+
+
+def test_shared_movement_stops_flush_against_authored_collision():
+    owner = match((Aabb(75, 0, 20, 300),))
+    definition = ActorDefinition("runner", "soldier", "green", 100, (20, 20), 80)
+    registered = spawn_match_actors(
+        owner,
+        SpawnActorRequest(definition, SpawnQuery(), PlacementConstraints(), 1),
+        (SpawnPoint("start", (30, 40)),),
+        "collision-runner",
+    )
+    actor_id = registered.actor_ids[0]
+
+    move_match_actor(owner, actor_id, (1, 0), 1.0)
+
+    stopped = owner.spatial.get(actor_id).transform
+    assert 64.99 < stopped.x <= 65
+    assert stopped.y == 40
+
+
+def test_shared_movement_slides_along_collision_on_the_unblocked_axis():
+    owner = match((Aabb(75, 0, 20, 300),))
+    definition = ActorDefinition("runner", "soldier", "green", 100, (20, 20), 80)
+    registered = spawn_match_actors(
+        owner,
+        SpawnActorRequest(definition, SpawnQuery(), PlacementConstraints(), 1),
+        (SpawnPoint("start", (65, 40)),),
+        "sliding-runner",
+    )
+    actor_id = registered.actor_ids[0]
+
+    move_match_actor(owner, actor_id, (1, 1), 0.5)
+
+    moved = owner.spatial.get(actor_id).transform
+    assert moved.x == 65
+    assert moved.y > 40

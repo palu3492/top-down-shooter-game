@@ -136,3 +136,46 @@ class WeaponOperationService:
         runtime.reserve -= taken
         runtime.reload_remaining = definition.reload_seconds
         return taken
+
+
+class EquippedWeapon:
+    """One owner-independent weapon definition plus its mutable runtime."""
+
+    def __init__(self, definition, runtime=None, operations=None):
+        self.definition = definition
+        self.runtime = runtime or WeaponRuntime.fresh(definition)
+        self.operations = operations or WeaponOperationService()
+
+    @property
+    def ready(self):
+        return self.operations.ready(self.definition, self.runtime)
+
+    @property
+    def status(self):
+        return self.operations.status(self.definition, self.runtime)
+
+    def advance(self, elapsed):
+        return self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(ADVANCE, elapsed),
+        )
+
+    def fire(self):
+        begun = self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(BEGIN_ATTACK),
+        )
+        if not begun.accepted:
+            return begun
+        return self.operations.apply(
+            self.definition, self.runtime, WeaponOperationRequest(FIRE)
+        )
+
+    def reload(self):
+        return self.operations.apply(
+            self.definition,
+            self.runtime,
+            WeaponOperationRequest(MANUAL_RELOAD),
+        )

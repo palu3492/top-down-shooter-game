@@ -6,6 +6,7 @@ from shooter import config, game
 from shooter.application import MatchHost
 from shooter.commands import ControlFrame
 from shooter.gameplay import GameplayScene, SurvivalGameplayScene
+from shooter.match import DISPOSED
 from shooter.settings import Settings
 from shooter.scenes import SceneStack
 from shooter.ui import menu, title
@@ -39,12 +40,22 @@ def test_shared_survival_moves_kills_and_returns_to_menu(display):
     player = scene.mode.player_id
     first_enemy = scene.mode.enemy_ids[0]
     before = scene.match.spatial.get(player).transform
+    scene.match.spatial.move_to(first_enemy, before.x + 200, before.y)
+    for enemy_id in scene.mode.enemy_ids[1:]:
+        scene.match.spatial.move_to(enemy_id, before.x, before.y + 400)
 
     scene.update(ControlFrame((1, 0)), config.SIM_DT)
-    for _ in range(3):
+    for _ in range(5):
+        target = scene.match.spatial.get(first_enemy).transform
+        camera_x, camera_y = scene.camera
         scene.handle(
-            pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=(0, 0))
+            pygame.event.Event(
+                pygame.MOUSEBUTTONDOWN,
+                button=1,
+                pos=(target.x + camera_x, target.y + camera_y),
+            )
         )
+        scene.update(ControlFrame(), 1 / 6)
 
     assert scene.match.spatial.get(player).transform.x > before.x
     assert scene.match.snapshot().entity(first_enemy).vitality.alive is False
@@ -64,3 +75,35 @@ def test_direct_legacy_start_remains_only_as_a_temporary_test_harness(display):
     game.route(title.START, stack, window, Settings())
 
     assert isinstance(stack.top, GameplayScene)
+
+
+def test_shared_survival_defeat_opens_result_and_retry_starts_fresh_match(display):
+    window = Viewport(WINDOW)
+    stack = SceneStack(window)
+    host = MatchHost()
+    stack.push(title.MainMenuScene(window, stack.manager))
+    game.route(title.START, stack, window, Settings(), match_host=host)
+    defeated_scene = stack.top
+    defeated_match = defeated_scene.match
+    defeated_match.combat.deplete(
+        defeated_scene.mode.player_id, config.PLAYER_HEALTH
+    )
+
+    outcome = defeated_scene.tick(0.0)
+    assert outcome == "LOST"
+    assert defeated_scene.tick(0.0) is None
+    game.route(outcome, stack, window, Settings(), match_host=host)
+
+    assert isinstance(stack.top, menu.ResultScreen)
+    assert stack.top.title == "YOU DIED"
+
+    game.route(menu.RETRY, stack, window, Settings(), match_host=host)
+
+    restarted = stack.top
+    assert isinstance(restarted, SurvivalGameplayScene)
+    assert restarted.match is host.active_match
+    assert restarted.match is not defeated_match
+    assert defeated_match.state == DISPOSED
+    assert restarted.match.combat.get(restarted.mode.player_id).health == 100
+    assert restarted.match.mode_status.wave == 1
+    assert restarted.match.mode_status.cash == 0

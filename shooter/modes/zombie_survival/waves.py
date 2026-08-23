@@ -34,8 +34,7 @@ class WaveSystem:
         )
         self.spawn_sources = tuple(spawn_sources)
         self.last_spawn_result = None
-        if config.ZOMBIE_SPAWNING_ENABLED:
-            self._spawn_actors(window, zombie_group, visible, config.WAVE_BASE)
+        self._spawn_actors(window, zombie_group, visible, config.WAVE_BASE)
 
     def advance(
         self, window, zombie_group, player_cash, dt=config.SIM_DT, visible=None
@@ -44,13 +43,12 @@ class WaveSystem:
             self.wave_seconds = config.WAVE_INTERVAL_SECONDS
         if self.wave_seconds >= config.WAVE_INTERVAL_SECONDS:
             self.wave_count += 1
-            if config.ZOMBIE_SPAWNING_ENABLED:
-                self._spawn_actors(
-                    window,
-                    zombie_group,
-                    visible,
-                    config.WAVE_BASE + pow(self.wave_count, 2),
-                )
+            self._spawn_actors(
+                window,
+                zombie_group,
+                visible,
+                config.WAVE_BASE + pow(self.wave_count, 2),
+            )
             self.wave_seconds = 0.0
         else:
             self.wave_seconds += dt

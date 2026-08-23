@@ -50,6 +50,8 @@ def test_registries_are_match_scoped_and_share_no_state():
 
 def test_session_bridges_player_and_enemy_lifecycle(display, cash):
     session = Session(Viewport(WINDOW))
+    session.zombies.empty()
+    session._sync_enemy_registry()
     enemy = Zombie(WINDOW, cash)
     session.zombies.add(enemy)
 

@@ -50,6 +50,13 @@ class Polygon:
 
 
 def actor_box(transform, shape):
+    if hasattr(shape, "radius"):
+        return Aabb(
+            transform.x + shape.offset_x - shape.radius,
+            transform.y + shape.offset_y - shape.radius,
+            shape.radius * 2,
+            shape.radius * 2,
+        )
     return Aabb(
         transform.x + shape.offset_x - shape.width / 2,
         transform.y + shape.offset_y - shape.height / 2,

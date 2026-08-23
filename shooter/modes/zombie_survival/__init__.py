@@ -2,15 +2,17 @@
 
 from shooter.modes.zombie_survival.consequences import SurvivalConsequences
 from shooter.modes.zombie_survival.mode import (
-    DamageEnemy,
+    FireSurvivorWeapon,
     MoveSurvivor,
+    ReloadSurvivorWeapon,
     SurvivalMode,
 )
 from shooter.modes.zombie_survival.waves import WaveSystem
 
 __all__ = (
-    "DamageEnemy",
+    "FireSurvivorWeapon",
     "MoveSurvivor",
+    "ReloadSurvivorWeapon",
     "SurvivalConsequences",
     "SurvivalMode",
     "WaveSystem",
