@@ -21,7 +21,7 @@ from shooter.match_configuration import (
 )
 from shooter.spawn_selection import PlacementConstraints, SpawnQuery
 from shooter.spawn_service import SpawnActorRequest
-from shooter.world_collision import Aabb
+from shooter.world_collision import Aabb, Polygon
 
 
 def match(collision=()):
@@ -93,7 +93,7 @@ def test_shared_removal_clears_every_actor_capability_and_emits_reason():
     registered = spawn_match_actors(
         owner,
         SpawnActorRequest(definition, SpawnQuery(), PlacementConstraints(), 1),
-        (SpawnPoint("start", (30, 40)),),
+        (SpawnPoint("start", (30, 20)),),
         "removal-runner",
     )
     actor_id = registered.actor_ids[0]
@@ -144,6 +144,22 @@ def test_shared_movement_slides_along_collision_on_the_unblocked_axis():
     moved = owner.spatial.get(actor_id).transform
     assert moved.x == 65
     assert moved.y > 40
+
+
+def test_cardinal_input_slides_along_an_angled_authored_collider():
+    owner = match((Polygon(((80, 0), (100, 0), (20, 100), (0, 100))),))
+    definition = ActorDefinition("runner", "soldier", "green", 100, (20, 20), 80)
+    actor_id = spawn_match_actors(
+        owner,
+        SpawnActorRequest(definition, SpawnQuery(), PlacementConstraints(), 1),
+        (SpawnPoint("start", (30, 20)),),
+        "angled-sliding-runner",
+    ).actor_ids[0]
+
+    move_match_actor(owner, actor_id, (1, 0), 1.0)
+
+    moved = owner.spatial.get(actor_id).transform
+    assert moved.y != 20
 
 
 def test_dynamic_actor_occupancy_is_explicit_and_configurable():

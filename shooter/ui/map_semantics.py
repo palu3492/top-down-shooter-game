@@ -12,6 +12,7 @@ from shooter.world_collision import Aabb, Ellipse, Polygon
 INTERACTION_COLOUR = (80, 150, 255)
 HARVESTABLE_COLOUR = (90, 220, 110)
 CONSTRUCTION_COLOUR = (255, 180, 65)
+COLLISION_COLOUR = (255, 70, 160)
 
 
 class MapSemanticsRenderer:
@@ -22,6 +23,12 @@ class MapSemanticsRenderer:
 
     def draw(self, surface, definition, camera=(0, 0)):
         self._ensure_font()
+        for collider in definition.collision:
+            centre = self._draw_area(surface, collider, COLLISION_COLOUR, camera)
+            text = self.font.render("COLLIDER", True, COLLISION_COLOUR)
+            surface.blit(
+                text, (centre[0] + 8, centre[1] - text.get_height() // 2)
+            )
         for interaction in definition.interactions:
             self._draw_item(
                 surface,

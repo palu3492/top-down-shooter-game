@@ -344,6 +344,8 @@ The shared combat model owns:
 - collision and impact resolution;
 - damage requests and results;
 - health, armor, death, and status effects;
+- mode-configured recovery policies, including no passive recovery for Survival
+  and delayed passive regeneration for modes such as Team Deathmatch;
 - source, instigator, weapon, team, and damage-type attribution.
 
 A representative damage request may contain:

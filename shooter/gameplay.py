@@ -19,7 +19,9 @@ import pygame
 from shooter import config
 from shooter.background import TiledBackground
 from shooter.camera import FollowCamera
-from shooter.commands import FIRE, INTERACT, RELOAD, SELECT_SLOT, USE_TOOL
+from shooter.commands import (
+    FIRE, INTERACT, RELOAD, SELECT_SLOT, USE_HEALTH_PACK, USE_TOOL,
+)
 from shooter.input_adapter import PygameInputAdapter
 from shooter.map_definition import SpawnPoint, SpawnRegion, current_map_definition
 from shooter.modes.sandbox import AttackActor, MoveActor
@@ -31,6 +33,7 @@ from shooter.modes.zombie_survival import (
     ReloadSurvivorWeapon,
     SelectSurvivorWeapon,
     UseSurvivorTool,
+    UseHealthPack,
 )
 from shooter.scenes import Scene
 from shooter.session import Session
@@ -239,6 +242,8 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             self.match.advance(0.0, (InteractSurvivor(),))
         elif command is not None and command.action == USE_TOOL:
             self.match.advance(0.0, (UseSurvivorTool(),))
+        elif command is not None and command.action == USE_HEALTH_PACK:
+            self.match.advance(0.0, (UseHealthPack(),))
         elif (
             command is not None
             and command.action == SELECT_SLOT
@@ -254,14 +259,17 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
 
     def update(self, inputs, dt=config.SIM_DT):
         commands = [MoveSurvivor(inputs.move)]
-        if inputs.trigger:
-            player = self.match.spatial.get(self.mode.player_id).transform
-            camera_x, camera_y = self.camera
-            pointer = inputs.pointer
-            aim = (
-                pointer[0] - camera_x - player.x,
-                pointer[1] - camera_y - player.y,
-            )
+        if getattr(inputs, "trigger_held", getattr(inputs, "trigger", False)):
+            pointer = getattr(inputs, "pointer", None)
+            if pointer is None:
+                aim = inputs.aim
+            else:
+                player = self.match.spatial.get(self.mode.player_id).transform
+                camera_x, camera_y = self.camera
+                aim = (
+                    pointer[0] - camera_x - player.x,
+                    pointer[1] - camera_y - player.y,
+                )
             commands.append(HoldSurvivorWeapon(aim))
         self.match.advance(dt, commands)
 

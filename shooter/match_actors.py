@@ -6,7 +6,7 @@ import math
 from shooter.actor_creation import NeutralActorFactory
 from shooter.spatial import Bounds, Box, Transform
 from shooter.spawn_service import SpawnService
-from shooter.world_collision import actor_box, overlaps
+from shooter.world_collision import Polygon, actor_box, overlaps
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,11 +90,24 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
         next_x = bounds.clamp(
             Transform(position.x + delta_x / steps, position.y)
         )
+        blocked_x = _blocked(next_x, collision, obstacles)
         position = _resolve_step(position, next_x, collision, obstacles)
         next_y = bounds.clamp(
             Transform(position.x, position.y + delta_y / steps)
         )
+        blocked_y = _blocked(next_y, collision, obstacles)
         position = _resolve_step(position, next_y, collision, obstacles)
+        if blocked_x or blocked_y:
+            slid = _slide_step(
+                position,
+                delta_x / steps,
+                delta_y / steps,
+                bounds,
+                collision,
+                obstacles,
+            )
+            if slid != position:
+                position = slid
     return match.spatial.move_to(actor_id, position.x, position.y)
 
 
@@ -117,3 +130,58 @@ def _resolve_step(start, target, collision, obstacles):
 def _blocked(transform, collision, obstacles):
     box = actor_box(transform, collision)
     return any(overlaps(box, obstacle) for obstacle in obstacles)
+
+
+def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles):
+    """Try either tangent when movement directly into a collider is blocked."""
+    distance = math.hypot(delta_x, delta_y)
+    if distance == 0:
+        return start
+    forward = Transform(start.x + delta_x, start.y + delta_y)
+    offsets = [
+        offset
+        for obstacle in obstacles
+        if overlaps(actor_box(forward, collision), obstacle)
+        for offset in _polygon_tangents(start, obstacle, distance)
+    ]
+    offsets.sort(
+        key=lambda offset: offset[0] * delta_x + offset[1] * delta_y,
+        reverse=True,
+    )
+    for offset in offsets:
+        candidate = bounds.clamp(Transform(start.x + offset[0], start.y + offset[1]))
+        if candidate != start and not _blocked(candidate, collision, obstacles):
+            return candidate
+    return start
+
+
+def _polygon_tangents(position, obstacle, distance):
+    if not isinstance(obstacle, Polygon):
+        return ()
+    edges = tuple(
+        zip(obstacle.points, (*obstacle.points[1:], obstacle.points[0]), strict=True)
+    )
+    start, end = min(edges, key=lambda edge: _segment_distance(position, *edge))
+    length = math.dist(start, end)
+    if length == 0:
+        return ()
+    tangent = (
+        (end[0] - start[0]) / length * distance,
+        (end[1] - start[1]) / length * distance,
+    )
+    return (tangent, (-tangent[0], -tangent[1]))
+
+
+def _segment_distance(point, start, end):
+    dx, dy = end[0] - start[0], end[1] - start[1]
+    length_squared = dx * dx + dy * dy
+    if length_squared == 0:
+        return math.dist(point, start)
+    projection = (
+        (point.x - start[0]) * dx + (point.y - start[1]) * dy
+    ) / length_squared
+    progress = min(1, max(0, projection))
+    return math.dist(
+        (point.x, point.y),
+        (start[0] + dx * progress, start[1] + dy * progress),
+    )

@@ -9,6 +9,7 @@ import pytest
 from shooter.presentation_status import SessionPresentationStatus
 from shooter.session import Session
 from shooter.ui.debug_overlay import BACKGROUND, DebugOverlay, PANEL
+from shooter.ui.equipment_overlay import EquipmentDebugOverlay
 from shooter.viewport import Viewport
 
 WINDOW = (1080, 720)
@@ -23,7 +24,9 @@ def test_overlay_lines_report_match_player_weapon_and_survival_state(display):
     assert f"SEED {session.match.configuration.seed}" in text
     assert f"PLAYER id={session.player_id}" in text
     assert "faction=survivors" in text
-    assert f"WEAPON {session.equipped.definition.definition_id}" in text
+    assert f"WEAPON {session.equipped.definition.definition_id}" not in text
+    equipment = "\n".join(EquipmentDebugOverlay().lines(session.snapshot))
+    assert session.equipped.definition.definition_id in equipment
     assert "CASH 0" in text
     assert "EQUIPMENT grenade=" in text
 

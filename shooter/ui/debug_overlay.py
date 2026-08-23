@@ -17,19 +17,12 @@ class DebugOverlay:
             (entity for entity in snapshot.entities if "player" in entity.tags), None
         )
         mode = snapshot.mode_status
-        weapon = None
-        if player is not None:
-            weapon = next((item for item in player.weapons if item.selected), None)
-
         match_line = (
             f"MATCH {snapshot.mode_id} | MAP {snapshot.map_id} | "
             f"SEED {snapshot.seed} | TICK {snapshot.tick} | {snapshot.state.upper()}"
         )
         mode_line = self._mode_line(mode, snapshot.result)
         player_line = self._player_line(player)
-        weapon_line = self._weapon_line(weapon)
-        loadout_line = self._loadout_line(player)
-        tool_line = self._tool_line(player)
         equipment_line = (
             f"EQUIPMENT grenade={presentation.grenades} "
             f"stun={presentation.stun_grenades} "
@@ -40,6 +33,8 @@ class DebugOverlay:
         interaction_result = getattr(mode, "interaction_result", None)
         purchase_result = getattr(mode, "purchase_result", None)
         station_result = getattr(mode, "station_result", None)
+        consumable_purchase_result = getattr(mode, "consumable_purchase_result", None)
+        health_pack_result = getattr(mode, "health_pack_result", None)
         harvest_result = getattr(mode, "harvest_result", None)
         harvest_context = getattr(mode, "harvest_context", None)
         construction_result = getattr(mode, "construction_result", None)
@@ -62,6 +57,19 @@ class DebugOverlay:
                 f"STATION {station_result.kind} {station_result.reason} "
                 f"amount={station_result.amount:g} "
                 f"balance={station_result.balance}"
+            )
+        if consumable_purchase_result is not None:
+            neutral_context = (
+                f"CONSUMABLE {consumable_purchase_result.reason} "
+                f"{consumable_purchase_result.item_id or '-'}x"
+                f"{consumable_purchase_result.amount} "
+                f"balance={consumable_purchase_result.balance}"
+            )
+        if health_pack_result is not None:
+            neutral_context = (
+                f"HEALTH PACK {health_pack_result.reason} "
+                f"restored={health_pack_result.restored:g} "
+                f"remaining={health_pack_result.remaining}"
             )
         if harvest_result is not None:
             neutral_context = (
@@ -88,9 +96,6 @@ class DebugOverlay:
             match_line,
             mode_line,
             player_line,
-            weapon_line,
-            loadout_line,
-            tool_line,
             equipment_line,
             context_line,
         )
@@ -136,6 +141,9 @@ class DebugOverlay:
             resources = ",".join(
                 f"{kind}:{count}" for kind, count in mode.resources
             ) or "-"
+            consumables = ",".join(
+                f"{kind}:{count}" for kind, count in mode.consumables
+            ) or "-"
             return (
                 f"MODE {mode.phase} | WAVE {mode.wave}/{target} | "
                 f"NEXT {mode.preparation_remaining:.1f}s | "
@@ -143,6 +151,8 @@ class DebugOverlay:
                 f"| PENDING {mode.pending_enemies} "
                 f"| TYPES {composition} | CASH {mode.cash} "
                 f"| RESOURCES {resources} "
+                f"| CONSUMABLES {consumables} "
+                f"| ACTIVE {mode.active_equipment or '-'} "
                 f"| RESULT {result or mode.outcome or '-'}"
             )
         title = getattr(mode, "title", type(mode).__name__)
@@ -179,6 +189,8 @@ class DebugOverlay:
         return (
             f"WEAPON {weapon.weapon_id} ammo={weapon.loaded}/{weapon.reserve} "
             f"status={weapon.status or 'ready'} "
+            f"range={weapon.effective_range or '-'}-{weapon.max_range or '-'} "
+            f"spread={weapon.spread:g} "
             f"cooldown={weapon.cooldown_remaining:.2f}s "
             f"reload={weapon.reload_remaining:.2f}s"
         )

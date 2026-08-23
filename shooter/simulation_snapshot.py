@@ -35,6 +35,9 @@ class WeaponSnapshot:
     ready: bool
     status: str | None
     selected: bool
+    max_range: float | None = None
+    effective_range: float | None = None
+    spread: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,6 +155,9 @@ def _weapon_snapshots(loadout):
             ready=held.ready,
             status=held.status,
             selected=index == selected,
+            max_range=held.definition.max_range,
+            effective_range=held.definition.effective_range,
+            spread=held.definition.spread,
         )
         for index, held in enumerate(loadout)
     )
@@ -171,6 +177,9 @@ def _tool_snapshot(tool_slot):
         ready=held.ready,
         status=held.status,
         selected=True,
+        max_range=held.definition.max_range,
+        effective_range=held.definition.effective_range,
+        spread=held.definition.spread,
     )
 
 

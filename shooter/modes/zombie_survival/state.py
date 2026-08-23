@@ -7,6 +7,7 @@ from shooter.harvesting import HarvestContext, HarvestResult
 from shooter.construction import ConstructionResult
 from shooter.weapon_purchases import WeaponPurchaseResult
 from shooter.station_purchases import StationPurchaseResult
+from shooter.consumables import ConsumablePurchaseResult, ConsumableUseResult
 
 LOST = "LOST"
 
@@ -18,6 +19,8 @@ class SurvivalStatus:
     preparation_remaining: float
     cash: int
     enemies_remaining: int
+    active_equipment: str | None = None
+    consumables: tuple[tuple[str, int], ...] = ()
     pending_enemies: int = 0
     outcome: str | None = None
     wave_target: int | None = None
@@ -27,6 +30,8 @@ class SurvivalStatus:
     interaction_result: InteractionIntentResult | None = None
     purchase_result: WeaponPurchaseResult | None = None
     station_result: StationPurchaseResult | None = None
+    consumable_purchase_result: ConsumablePurchaseResult | None = None
+    health_pack_result: ConsumableUseResult | None = None
     harvest_result: HarvestResult | None = None
     harvest_context: HarvestContext | None = None
     resources: tuple[tuple[str, int], ...] = ()

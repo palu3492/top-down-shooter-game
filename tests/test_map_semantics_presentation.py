@@ -10,6 +10,7 @@ from shooter.map_definition import (
 )
 from shooter.ui.map_semantics import (
     CONSTRUCTION_COLOUR,
+    COLLISION_COLOUR,
     HARVESTABLE_COLOUR,
     INTERACTION_COLOUR,
     MapSemanticsRenderer,
@@ -23,6 +24,7 @@ def test_renderer_outlines_authored_map_semantics_at_world_positions(display):
         "Test",
         "unused.tmx",
         (400, 300),
+        collision=(Aabb(20, 20, 20, 20),),
         interactions=(MapInteraction("station", "weapon_station", position=(50, 60)),),
         harvestables=(
             MapHarvestable("tree", "tree", area=Aabb(100, 100, 40, 50)),
@@ -36,6 +38,7 @@ def test_renderer_outlines_authored_map_semantics_at_world_positions(display):
     MapSemanticsRenderer().draw(surface, definition)
 
     assert surface.get_at((50, 48))[:3] == INTERACTION_COLOUR
+    assert surface.get_at((20, 20))[:3] == COLLISION_COLOUR
     assert surface.get_at((100, 100))[:3] == HARVESTABLE_COLOUR
     assert surface.get_at((200, 160))[:3] == CONSTRUCTION_COLOUR
 

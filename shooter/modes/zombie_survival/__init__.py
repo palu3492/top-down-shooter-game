@@ -10,6 +10,7 @@ from shooter.modes.zombie_survival.mode import (
     SelectSurvivorWeapon,
     SurvivalMode,
     UseSurvivorTool,
+    UseHealthPack,
 )
 from shooter.modes.zombie_survival.waves import WaveSystem
 from shooter.modes.zombie_survival.wave_config import (
@@ -28,6 +29,7 @@ __all__ = (
     "SurvivalConsequences",
     "SurvivalMode",
     "SurvivalWavePlan",
+    "UseHealthPack",
     "UseSurvivorTool",
     "WaveSystem",
 )

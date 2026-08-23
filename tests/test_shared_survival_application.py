@@ -7,7 +7,9 @@ from shooter.application import MatchHost
 from shooter.commands import ControlFrame
 from shooter.gameplay import GameplayScene, SurvivalGameplayScene
 from shooter.match import DISPOSED
+from shooter.modes.zombie_survival.mode import PISTOL
 from shooter.settings import Settings
+from shooter.weapon_state import EquippedWeapon
 from shooter.scenes import SceneStack
 from shooter.ui import menu, title
 from shooter.viewport import Viewport
@@ -26,8 +28,28 @@ def test_production_start_route_opens_visible_shared_survival(display):
 
     assert isinstance(scene, SurvivalGameplayScene)
     assert scene.mode.player_id is not None
-    assert len(scene.mode.enemy_ids) == config.WAVE_BASE
+    assert scene.match.snapshot().entity(scene.mode.player_id).weapons == ()
+    assert scene.match.mode_status.phase == "preparation"
+    assert scene.match.mode_status.preparation_remaining == 10
+    assert scene.mode.enemy_ids == ()
+    scene.match.advance(scene.mode.initial_preparation_seconds)
+    assert len(scene.mode.enemy_ids) == 2
+    assert scene.match.mode_status.pending_enemies == config.WAVE_BASE - 2
     scene.draw(pygame.Surface(WINDOW), 0.0)
+
+
+def test_survival_scene_accepts_the_normal_control_frame_without_trigger_alias(display):
+    window = Viewport(WINDOW)
+    stack = SceneStack(window)
+    host = MatchHost()
+    stack.push(title.MainMenuScene(window, stack.manager))
+    game.route(title.START, stack, window, Settings(), match_host=host)
+
+    game.advance_simulation(
+        stack,
+        ControlFrame((0, 0), (100, 0), trigger_held=True),
+        config.SIM_DT,
+    )
 
 
 def test_shared_survival_moves_kills_and_returns_to_menu(display):
@@ -38,6 +60,9 @@ def test_shared_survival_moves_kills_and_returns_to_menu(display):
     game.route(title.START, stack, window, Settings(), match_host=host)
     scene = stack.top
     player = scene.mode.player_id
+    scene.mode.loadouts[player].add(EquippedWeapon(PISTOL), select=True)
+    scene.mode._select_weapon(0)
+    scene.match.advance(scene.mode.initial_preparation_seconds)
     first_enemy = scene.mode.enemy_ids[0]
     before = scene.match.spatial.get(player).transform
     scene.match.spatial.move_to(first_enemy, before.x + 800, before.y)
@@ -46,7 +71,7 @@ def test_shared_survival_moves_kills_and_returns_to_menu(display):
 
     scene.update(ControlFrame((1, 0)), config.SIM_DT)
     assert scene.camera[0] < window[0] / 2 - before.x
-    for _ in range(5):
+    for _ in range(18):
         target = scene.match.spatial.get(first_enemy).transform
         camera_x, camera_y = scene.camera
         scene.handle(
@@ -60,7 +85,8 @@ def test_shared_survival_moves_kills_and_returns_to_menu(display):
 
     assert scene.match.spatial.get(player).transform.x > before.x
     assert scene.match.snapshot().entity(first_enemy).vitality.alive is False
-    assert scene.match.mode_status.enemies_remaining == config.WAVE_BASE - 1
+    assert scene.match.mode_status.enemies_remaining == 4
+    assert scene.match.mode_status.pending_enemies == 0
 
     game.route(game.PAUSE, stack, window, Settings(), match_host=host)
     game.route(menu.END_GAME, stack, window, Settings(), match_host=host)

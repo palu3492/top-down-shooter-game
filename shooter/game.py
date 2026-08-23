@@ -25,6 +25,7 @@ from shooter.input_adapter import PygameInputAdapter
 from shooter.match_configuration import SANDBOX, ZOMBIE_SURVIVAL, MatchConfiguration
 from shooter.modes.sandbox import SandboxMode
 from shooter.modes.zombie_survival import SurvivalMode
+from shooter.survival_balance import load_survival_balance
 from shooter.preload import preload
 from shooter.progress import Progress
 from shooter.scenes import SceneStack
@@ -166,8 +167,12 @@ def start_shared_survival(scenes, window, replacing=0, match_host=None):
         match_host.configuration.seed,
     )
     resolved = match_host.select(selected)
+    survival_balance = load_survival_balance()
     mode = SurvivalMode(
-        spawn_sources=survival_spawn_sources(resolved.map_definition)
+        spawn_sources=survival_spawn_sources(resolved.map_definition),
+        starting_firearm=None,
+        balance=survival_balance,
+        initial_preparation_seconds=survival_balance.initial_preparation_seconds,
     )
     match_owner = match_host.start(selected, mode)
     open_scene(

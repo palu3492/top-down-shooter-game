@@ -32,10 +32,11 @@ from shooter.modes.zombie_survival import (
     ReloadSurvivorWeapon,
     SelectSurvivorWeapon,
     SurvivalMode,
+    UseHealthPack,
     SurvivalWavePlan,
     UseSurvivorTool,
 )
-from shooter.modes.zombie_survival.mode import BREAKER, RIFLE, SMG
+from shooter.modes.zombie_survival.mode import BREAKER, PICKAXE, RIFLE, SMG
 from shooter.weapon_state import EquippedWeapon
 from shooter.world_collision import Aabb, actor_box, overlaps
 
@@ -102,6 +103,24 @@ def test_survival_spawns_player_and_initial_horde_into_match_stores():
     )
     assert snapshot.mode_status.enemies_remaining == 5
     assert snapshot.mode_status.enemy_composition == (("walker", 5),)
+
+
+def test_survival_initial_preparation_defers_the_first_wave_without_skipping_it():
+    match = Match(resolved())
+    mode = SurvivalMode(
+        sources(), enemy_count=1, initial_preparation_seconds=3.0
+    )
+    match.start(mode)
+
+    assert (match.mode_status.phase, match.mode_status.wave) == ("preparation", 1)
+    assert match.mode_status.preparation_remaining == 3.0
+    assert mode.enemy_ids == ()
+    match.advance(2.0)
+    assert match.mode_status.preparation_remaining == 1.0
+    match.advance(1.0)
+
+    assert (match.mode_status.phase, match.mode_status.wave) == ("combat", 1)
+    assert len(mode.enemy_ids) == 1
 
 
 def test_survival_snapshots_nearby_interaction_and_routes_explicit_intent():
@@ -182,6 +201,63 @@ def test_survival_routes_an_authored_ammo_station_through_shared_purchase_policy
     )
 
 
+def test_survival_health_pack_station_sells_a_carried_pack_that_can_be_used_later():
+    station = MapInteraction(
+        "health-pack-station",
+        "health_pack_station",
+        position=(500, 400),
+        properties=(
+            ("price", "50"),
+            ("item_id", "health_pack"),
+            ("amount", "1"),
+        ),
+    )
+    match = Match(resolved((station,)))
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    mode.cash.increase_cash(50)
+
+    match.advance(0.0, (InteractSurvivor(),))
+
+    bought = match.mode_status.consumable_purchase_result
+    assert (bought.success, bought.item_id, bought.balance) == (
+        True,
+        "health_pack",
+        0,
+    )
+    assert match.mode_status.consumables == (("health_pack", 1),)
+    match.combat.deplete(mode.player_id, 50)
+
+    match.advance(0.0, (UseHealthPack(),))
+
+    used = match.mode_status.health_pack_result
+    assert (used.success, used.reason, used.restored, used.remaining) == (
+        True,
+        "used",
+        50,
+        0,
+    )
+    assert match.combat.get(mode.player_id).health == 100
+
+
+def test_survival_health_pack_is_not_consumed_when_full_or_unowned():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+
+    match.advance(0.0, (UseHealthPack(),))
+    assert match.mode_status.health_pack_result.reason == "none_owned"
+    mode.consumables.add("health_pack")
+    match.advance(0.0, (UseHealthPack(),))
+
+    result = match.mode_status.health_pack_result
+    assert (result.success, result.reason, result.remaining) == (
+        False,
+        "full_health",
+        1,
+    )
+
+
 def test_selection_keeps_each_survival_firearm_runtime_state_while_stowed():
     match = Match(resolved())
     mode = SurvivalMode(sources(), enemy_count=1)
@@ -199,6 +275,34 @@ def test_selection_keeps_each_survival_firearm_runtime_state_while_stowed():
     assert loadout.selected is smg
     assert (smg.runtime.loaded, smg.runtime.reserve) == (17, 88)
     assert loadout.select(2) is False
+
+
+def test_depleted_firearm_selects_another_loaded_weapon_then_the_tool():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    rifle = mode.loadouts[mode.player_id].selected
+    smg = mode.loadouts[mode.player_id].add(EquippedWeapon(SMG))
+    rifle.runtime.loaded = rifle.runtime.reserve = 0
+
+    match.advance(0.0, (FireSurvivorWeapon((1, 0)),))
+
+    assert mode.loadouts[mode.player_id].selected is smg
+    assert mode.tool_equipped is False
+    smg.runtime.loaded = smg.runtime.reserve = 0
+    match.advance(0.0, (FireSurvivorWeapon((1, 0)),))
+
+    assert mode.tool_equipped is True
+    assert match.mode_status.active_equipment == "survivor_pickaxe"
+
+
+def test_tool_is_active_at_the_start_of_a_tool_only_survival_run():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1, starting_firearm=None)
+    match.start(mode)
+
+    assert mode.tool_equipped is True
+    assert match.mode_status.active_equipment == "survivor_pickaxe"
 
 
 def test_held_trigger_only_operates_automatic_firearms():
@@ -227,10 +331,13 @@ def test_survival_pickaxe_is_a_separate_configured_tool_role_that_can_melee():
 
     match.advance(0.0, (UseSurvivorTool(), FireSurvivorWeapon((1, 0))))
 
+    assert match.mode_status.active_equipment == "survivor_pickaxe"
+
     snapshot = match.snapshot().entity(mode.player_id)
     assert snapshot.tool.weapon_id == "survivor_pickaxe"
     assert len(snapshot.weapons) == 1
     assert match.combat.get(enemy_id).health == before - 75
+    assert PICKAXE.rate == 3.0
 
 
 def test_survival_can_explicitly_omit_the_tool_role_without_affecting_firearms():
@@ -587,6 +694,24 @@ def test_enemy_crowding_avoids_other_enemies_but_allows_player_contact():
         actor_box(second_state.transform, second_state.collision),
     )
     assert match.combat.get(mode.player_id).health < config.PLAYER_HEALTH
+
+
+def test_overlapping_enemies_are_separated_before_pursuit():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=2)
+    match.start(mode)
+    first, second = mode.enemy_ids
+    position = match.spatial.get(first).transform
+    match.spatial.move_to(second, position.x, position.y)
+
+    match.advance(0.0)
+
+    first_state = match.spatial.get(first)
+    second_state = match.spatial.get(second)
+    assert not overlaps(
+        actor_box(first_state.transform, first_state.collision),
+        actor_box(second_state.transform, second_state.collision),
+    )
 
 
 def test_lethal_contact_damage_ends_survival_and_stops_progression():

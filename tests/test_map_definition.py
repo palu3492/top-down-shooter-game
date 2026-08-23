@@ -67,10 +67,11 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
         "breaker",
     }
     assert definition.capabilities >= {
+        "collision",
         "interactions",
         "interaction:weapon_station",
         "interaction:ammo_station",
-        "interaction:health_station",
+        "interaction:health_pack_station",
         "interaction:armor_station",
         "harvestables",
         "harvestable:tree",
@@ -82,7 +83,7 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
     assert {item.kind for item in definition.interactions} >= {
         "weapon_station",
         "ammo_station",
-        "health_station",
+        "health_pack_station",
         "armor_station",
     }
     assert {item.harvestable_id for item in definition.harvestables} == {
@@ -90,6 +91,13 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
         "camp-truck",
     }
     assert definition.construction_anchors[0].anchor_id == "camp-gate"
+    assert len(definition.collision) == 2
+    assert {
+        tag
+        for spawn in definition.spawns
+        if spawn.role == "enemy"
+        for tag in spawn.tags
+    } >= {"entry", "west", "east", "north", "south", "southwest"}
 
 
 def test_spawn_points_and_regions_normalize_without_map_identity_branches():

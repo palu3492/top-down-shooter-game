@@ -16,6 +16,7 @@ class SurvivalBalance:
     starting_magazine: int = 30
     starting_reserve: int = 30
     kill_reward: int = 50
+    initial_preparation_seconds: float = 10
     preparation_seconds: float = 25
 
     def __post_init__(self):
@@ -23,8 +24,8 @@ class SurvivalBalance:
             raise ValueError("enemy speeds must be positive")
         if min(self.starting_magazine, self.starting_reserve, self.kill_reward) < 0:
             raise ValueError("ammo and rewards cannot be negative")
-        if self.preparation_seconds < 0:
-            raise ValueError("preparation_seconds cannot be negative")
+        if min(self.initial_preparation_seconds, self.preparation_seconds) < 0:
+            raise ValueError("preparation times cannot be negative")
 
 
 def load_survival_balance(path=BALANCE_PATH):
@@ -45,6 +46,7 @@ def save_survival_balance(balance, path=BALANCE_PATH):
         f"starting_magazine = {balance.starting_magazine}\n",
         f"starting_reserve = {balance.starting_reserve}\n",
         f"kill_reward = {balance.kill_reward}\n",
+        f"initial_preparation_seconds = {balance.initial_preparation_seconds:g}\n",
         f"preparation_seconds = {balance.preparation_seconds:g}\n",
     )
     Path(path).write_text("".join(lines))

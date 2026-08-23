@@ -6,6 +6,7 @@ import math
 from shooter import config
 from shooter.actor_creation import ActorDefinition
 from shooter.construction import ConstructionService
+from shooter.consumables import ConsumableInventory, ConsumablePurchaseService
 from shooter.damage import DamageRequest
 from shooter.equipment_roles import ToolSlot
 from shooter.harvesting import HarvestingService
@@ -27,11 +28,11 @@ from shooter.modes.zombie_survival.wave_config import (
 )
 from shooter.spawn_selection import PlacementConstraints, SpawnQuery
 from shooter.spawn_service import SpawnActorRequest
-from shooter.steering import pursue_match_actor
+from shooter.steering import pursue_match_actor, separate_overlapping_actors
 from shooter.targeting import first_box_target_on_ray
 from shooter.weapon_attacks import AttackDescriptionService
 from shooter.weapon_purchases import WeaponCatalog, WeaponPurchaseService
-from shooter.weapon_state import EquippedWeapon, WeaponDefinition
+from shooter.weapon_state import NO_AMMO, EquippedWeapon, WeaponDefinition
 from shooter.world_collision import Aabb, actor_box, overlaps
 
 SURVIVOR = ActorDefinition(
@@ -61,6 +62,10 @@ RIFLE = WeaponDefinition(
     effective_range=800,
     minimum_damage_fraction=0.7,
 )
+PISTOL = WeaponDefinition(
+    "survivor_pistol", "ballistic", 18, 4.0, 12, 48, 1.0, "9mm",
+    max_range=800, effective_range=500, minimum_damage_fraction=0.65,
+)
 SMG = WeaponDefinition(
     "survivor_smg",
     "ballistic",
@@ -80,12 +85,12 @@ PICKAXE = WeaponDefinition(
     "survivor_pickaxe",
     "melee",
     75,
-    1.5,
+    3.0,
     reach=85,
     arc=70,
     capabilities=frozenset(("melee_attack", "harvest")),
 )
-SURVIVAL_WEAPONS = WeaponCatalog((RIFLE, SMG))
+SURVIVAL_WEAPONS = WeaponCatalog((PISTOL, RIFLE, SMG))
 DEFAULT_WAVE_PLAN = SurvivalWavePlan(
     (
         EnemyWaveRule(WALKER, 5, growth=2),
@@ -131,6 +136,11 @@ class UseSurvivorTool:
 
 
 @dataclass(frozen=True, slots=True)
+class UseHealthPack:
+    pass
+
+
+@dataclass(frozen=True, slots=True)
 class InteractSurvivor:
     pass
 
@@ -143,10 +153,12 @@ class SurvivalMode:
         spawn_sources=(),
         enemy_count=None,
         preparation_seconds=None,
+        initial_preparation_seconds=0,
         wave_plan=None,
         firearm_slots=2,
         tool_definition=PICKAXE,
         balance=None,
+        starting_firearm=RIFLE,
     ):
         self.balance = load_survival_balance() if balance is None else balance
         self.walker = ActorDefinition(
@@ -198,6 +210,9 @@ class SurvivalMode:
             if preparation_seconds is None
             else preparation_seconds,
         )
+        if initial_preparation_seconds < 0:
+            raise ValueError("initial_preparation_seconds cannot be negative")
+        self.initial_preparation_seconds = initial_preparation_seconds
         if firearm_slots < 1:
             raise ValueError("firearm_slots must be at least one")
         self.firearm_slots = firearm_slots
@@ -211,6 +226,7 @@ class SurvivalMode:
         self.loadouts = {}
         self.tool_slots = {}
         self.tool_definition = tool_definition
+        self.starting_firearm = starting_firearm
         self.tool_equipped = False
         self.attacks = AttackDescriptionService()
         self.cash = SurvivalWallet()
@@ -221,17 +237,22 @@ class SurvivalMode:
         self.weapon_purchases = WeaponPurchaseService()
         self.station_purchases = StationPurchaseService()
         self.station_result = None
+        self.consumable_purchases = ConsumablePurchaseService()
+        self.consumable_purchase_result = None
         self.harvesting = HarvestingService()
         self.harvestables = {}
         self.harvest_result = None
         self.harvest_context = None
         self.resources = ResourceInventory()
+        self.consumables = ConsumableInventory()
+        self.health_pack_result = None
         self.construction = ConstructionService()
         self.barricades = {}
         self.construction_result = None
         self.wave = 1
         self.phase = "combat"
         self.preparation_remaining = 0.0
+        self.first_wave_pending = False
         self.disposed = False
 
     def start(self, match):
@@ -259,15 +280,27 @@ class SurvivalMode:
         )
         self.player_id = player.actor_ids[0] if player.actor_ids else None
         if self.player_id is not None:
+            entries = (
+                ()
+                if self.starting_firearm is None
+                else (EquippedWeapon(self.starting_firearm),)
+            )
             self.loadouts[self.player_id] = Loadout(
-                (EquippedWeapon(self.rifle),), capacity=self.firearm_slots
+                entries, capacity=self.firearm_slots
             )
             self.tool_slots[self.player_id] = ToolSlot(
                 None
                 if self.tool_definition is None
                 else EquippedWeapon(self.tool_definition)
             )
-        enemy_batches = self._spawn_wave(match)
+            self.tool_equipped = (
+                self.tool_slots[self.player_id].equipped is not None
+                and self.starting_firearm is None
+            )
+        self.first_wave_pending = self.initial_preparation_seconds > 0
+        self.phase = "preparation" if self.first_wave_pending else "combat"
+        self.preparation_remaining = self.initial_preparation_seconds
+        enemy_batches = () if self.first_wave_pending else self._spawn_wave(match)
         self.harvestables = self.harvesting.create_states(
             match.map_definition.harvestables
         )
@@ -373,18 +406,25 @@ class SurvivalMode:
             elif isinstance(command, FireSurvivorWeapon):
                 self._fire_weapon(match, command.aim)
             elif isinstance(command, HoldSurvivorWeapon):
-                automatic = self._selected_weapon().definition.automatic
+                selected = self._selected_weapon()
+                automatic = selected is not None and selected.definition.automatic
                 if not self.tool_equipped and automatic:
                     self._fire_weapon(match, command.aim)
             elif isinstance(command, ReloadSurvivorWeapon):
-                if not self.tool_equipped:
-                    self._selected_weapon().reload()
+                selected = self._selected_weapon()
+                if not self.tool_equipped and selected is not None:
+                    selected.reload()
             elif isinstance(command, SelectSurvivorWeapon):
                 self._select_weapon(command.slot)
             elif isinstance(command, UseSurvivorTool):
                 self.tool_equipped = (
                     self.tool_slots[self.player_id].equipped is not None
                 )
+            elif isinstance(command, UseHealthPack):
+                if self.player_id is not None:
+                    self.health_pack_result = self.consumables.use_health_pack(
+                        "health_pack", 50, match.combat, self.player_id
+                    )
             elif isinstance(command, InteractSurvivor):
                 interaction_requested = True
         self._refresh_interaction(match)
@@ -406,6 +446,8 @@ class SurvivalMode:
             preparation_remaining=self.preparation_remaining,
             cash=self.cash.balance,
             enemies_remaining=self.enemies_remaining(match),
+            active_equipment=self._active_equipment(),
+            consumables=self.consumables.snapshot(),
             pending_enemies=sum(count for _, count in self.pending_spawns),
             outcome=self.result(match),
             enemy_composition=self._living_composition(match),
@@ -413,6 +455,8 @@ class SurvivalMode:
             interaction_result=self.interaction_result,
             purchase_result=self.purchase_result,
             station_result=self.station_result,
+            consumable_purchase_result=self.consumable_purchase_result,
+            health_pack_result=self.health_pack_result,
             harvest_result=self.harvest_result,
             harvest_context=self.harvest_context,
             resources=self.resources.snapshot(),
@@ -442,6 +486,11 @@ class SurvivalMode:
             for enemy_id in self.enemy_ids
             if enemy_id in match.combat and match.combat.get(enemy_id).alive
         )
+        separate_overlapping_actors(
+            match,
+            living,
+            self.construction.collision_obstacles(self.barricades),
+        )
         for enemy_id in self.enemy_ids:
             if enemy_id not in match.spatial or not match.combat.get(enemy_id).alive:
                 continue
@@ -460,6 +509,15 @@ class SurvivalMode:
     def _selected_weapon(self):
         return self.loadouts[self.player_id].selected
 
+    def _active_equipment(self):
+        if self.player_id is None:
+            return None
+        if self.tool_equipped:
+            tool = self.tool_slots[self.player_id].equipped
+            return None if tool is None else tool.definition.definition_id
+        weapon = self._selected_weapon()
+        return None if weapon is None else weapon.definition.definition_id
+
     def _select_weapon(self, slot):
         if self.player_id is None:
             return False
@@ -467,6 +525,19 @@ class SurvivalMode:
         if selected:
             self.tool_equipped = False
         return selected
+
+    def _select_fallback_equipment(self):
+        if self.player_id is None:
+            return
+        alternate = self.loadouts[self.player_id].find(
+            lambda weapon: weapon is not self._selected_weapon()
+            and (weapon.runtime.loaded or 0) + (weapon.runtime.reserve or 0) > 0
+        )
+        if alternate is not None:
+            self.loadouts[self.player_id].select_entry(alternate)
+            self.tool_equipped = False
+            return
+        self.tool_equipped = self.tool_slots[self.player_id].equipped is not None
 
     def _advance_weapons(self, dt):
         if self.player_id is None:
@@ -484,8 +555,12 @@ class SurvivalMode:
             self._use_tool(match, aim)
             return
         weapon = self._selected_weapon()
+        if weapon is None:
+            return
         fired = weapon.fire()
         if not fired.accepted:
+            if fired.status == NO_AMMO:
+                self._select_fallback_equipment()
             return
         origin = match.spatial.get(self.player_id).transform
         attacks = self.attacks.create(
@@ -522,6 +597,8 @@ class SurvivalMode:
                 )
             )
             self._award_kill(result)
+        if fired.status == NO_AMMO:
+            self._select_fallback_equipment()
 
     @staticmethod
     def _damage_at_range(match, definition, attack, target_id):
@@ -681,6 +758,10 @@ class SurvivalMode:
         self._cleanup_defeated_enemies(match)
         self.preparation_remaining = max(0.0, self.preparation_remaining - dt)
         if self.preparation_remaining == 0:
+            if self.first_wave_pending:
+                self.first_wave_pending = False
+                self._spawn_wave(match)
+                return
             self.wave += 1
             self._spawn_wave(match)
 
@@ -768,6 +849,10 @@ class SurvivalMode:
                 match.combat,
                 self.player_id,
                 self.cash,
+            )
+        elif self.interaction_context.kind == "health_pack_station":
+            self.consumable_purchase_result = self.consumable_purchases.purchase(
+                self.interaction_context.properties, self.consumables, self.cash
             )
         elif self.interaction_context.kind == "construction_anchor":
             state = self.barricades[self.interaction_context.interaction_id]

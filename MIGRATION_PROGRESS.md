@@ -26,7 +26,7 @@ package.
 |---|---|
 | Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M11.6 — Add a paced, player-aware Survival spawn director |
+| Active work package | M11.5 — First-five-wave playtest and tuning |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
 | Next integration checkpoint | End of M11.10 — Combat-feel baseline playable run |
 | Last updated | 2026-08-23 |
@@ -72,7 +72,7 @@ package.
 | 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
 | 10 | Resume Zombie Survival feature development | Complete | Barricade integration verified |
-| 11 | Survival playable-run milestone | Ready to begin | Product review recorded; M11.1 next |
+| 11 | Survival playable-run milestone | In progress | M11.1–M11.9 complete; M11.10 map combat-structure pass active |
 
 ## Phase 10 Product Review
 
@@ -119,7 +119,12 @@ price/count/speed tuning is deferred until this baseline is complete:
 | M11.6 | Paced, player-aware Survival spawn director | Release wave budgets in timed bursts through weighted authored lanes; prevent visible/too-close/blocked spawns and avoid one immediate blob. |
 | M11.7 | Weapon handling baseline | Implement held automatic, semi-auto, and burst trigger behavior plus data-defined per-weapon range, spread/recoil, and optional falloff. |
 | M11.8 | Active equipment baseline | Finish explicit firearm/tool active selection, snapshot/debug feedback, and input behavior so the pickaxe behaves as an equipped Fortnite-style primary tool. |
-| M11.9 | Consumable health-pack loop | Replace instant health restoration with purchasable, carried, selectable, and usable health packs; retain optional station policies for modes that want direct restoration. |
+| M11.9 | Consumable health-pack loop | Complete — Survival's TMX station sells carried health packs; `H` uses one only when wounded; inventory and outcomes appear in the debug overlay. Direct-restoration station policy remains available for modes that opt into it. |
+| M11.10 | Map combat-structure first pass | Complete — Production TMX labels separate enemy entry lanes and adapts collision matching two existing camp buildings. Map bounds remain authoritative; future boundaries and collision stay additive and provisional until the level layout is authored. |
+
+Survival now begins with a configurable initial preparation countdown (10 seconds
+in the shipped balance profile). The player can move and use stations during it;
+wave 1 is queued only when the countdown reaches zero.
 | M11.10 | Map combat-structure first pass | Author intended spawn entrances/lanes and initial boundaries/collision without guessing the unfinished level's final layout. |
 
 Only after M11.6–M11.10 will M11.5 resume full numerical tuning of reward,
@@ -139,6 +144,17 @@ baseline: allow an empty firearm loadout, make fire/reload harmless without a
 selected firearm, add a pistol definition and first weapon-station offer, and
 retune early-wave rewards/spawn pressure around tool-only survival. It must not
 reintroduce a Survival-specific assumption into shared loadout mechanics.
+
+### Confirmed mode-owned health recovery policy
+
+Health regeneration is not a universal player rule. Shared combat/vitality owns
+only bounded health and explicit restoration; each mode supplies its recovery
+policy. Survival disables passive regeneration and relies on consumables,
+stations, and other explicit mode rewards. Team Deathmatch and future modes may
+enable a configurable delayed, slow health regeneration policy. Damage,
+recovery delay, rate, maximum health, and regeneration eligibility must remain
+authoritative simulation values—not UI effects or a Zombie Survival branch in
+shared combat code.
 
 ### Planned reusable weapon-system continuation
 
