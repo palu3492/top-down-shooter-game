@@ -2,6 +2,9 @@
 
 from dataclasses import dataclass, field
 
+from shooter.interactions import InteractionContext, InteractionIntentResult
+from shooter.weapon_purchases import WeaponPurchaseResult
+
 LOST = "LOST"
 
 
@@ -16,6 +19,9 @@ class SurvivalStatus:
     wave_target: int | None = None
     title: str = "Zombie Survival"
     enemy_composition: tuple[tuple[str, int], ...] = ()
+    interaction_context: InteractionContext | None = None
+    interaction_result: InteractionIntentResult | None = None
+    purchase_result: WeaponPurchaseResult | None = None
 
 
 class SurvivalWallet:

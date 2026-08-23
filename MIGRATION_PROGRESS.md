@@ -26,9 +26,9 @@ package.
 |---|---|
 | Migration phase | Phase 10 — Resume Zombie Survival feature development |
 | Phase status | In progress |
-| Active work package | M10.11 — Add neutral interaction context and intent |
+| Active work package | M10.13 — Enable multi-slot Survival loadouts |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
-| Next integration checkpoint | End of M10.11 — Reusable proximity interaction loop |
+| Next integration checkpoint | End of M10.13 — Purchasable selectable weapon loop |
 | Last updated | 2026-08-23 |
 
 ## Confirmed Project Constraints
@@ -49,6 +49,13 @@ package.
   semantic objects as those mechanics are implemented.
 - Allow mode and compatible-map selection between matches without restarting the
   application.
+- Model firearm slots separately from an optional mode-configured tool/melee role.
+  Zombie Survival starts with a pickaxe-like melee/harvesting tool; another mode
+  may use a knife, another tool, or no tool/melee slot.
+- Plan Survival harvesting around TMX-authored trees/vehicles, match-owned wood
+  and metal, and authored-anchor barricade construction. Keep harvesting,
+  construction, dynamic collision, and navigation response reusable and separate
+  from weapon, presentation, and map parsing policy.
 
 ## Phase Overview
 
@@ -64,13 +71,66 @@ package.
 | 7 | Neutral Match and game-mode boundary | Complete | Match/mode boundary and integration checkpoint 2 verified |
 | 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
-| 10 | Resume Zombie Survival feature development | In progress | M10.11 active |
+| 10 | Resume Zombie Survival feature development | In progress | M10.13 active |
 
 ## Active Work Package
 
-### M10.11 — Add neutral interaction context and intent
+### M10.13 — Enable multi-slot Survival loadouts
 
 **Status:** In progress
+
+**Objective:** Let purchased weapons occupy reusable loadout slots and preserve
+their independent runtime state while neutral selection commands choose which
+weapon fires, reloads, and appears in snapshots.
+
+**Planned scope:**
+
+- Expand Survival from the temporary one-slot loadout to configurable firearm
+  slots, initially two.
+- Route numeric selection intent through the neutral mode boundary.
+- Preserve ammo/cooldown/reload state for stowed weapons.
+- Define deterministic full-loadout replacement policy for later purchases.
+- Keep the future tool/melee role outside firearm replacement and selection;
+  Survival will configure a pickaxe-like tool while other modes may configure a
+  knife or omit the role.
+
+## Most Recently Completed Work Package
+
+### M10.12 — Execute neutral weapon-station purchases
+
+**Status:** Complete
+
+**Objective:** Give `weapon_station` interactions an explicit Survival policy
+that converts map properties, wallet balance, and reusable loadout operations
+into deterministic purchase outcomes.
+
+**Planned scope:**
+
+- Define neutral weapon offers/catalog lookup independent of UI assets.
+- Validate authored weapon ID and price properties before mutation.
+- Spend Survival cash and add/replace/refill loadout state transactionally.
+- Snapshot purchase feedback while leaving non-weapon interactions unhandled.
+
+**Acceptance criteria:**
+
+- [x] Authored weapon IDs and prices are validated before mutation.
+- [x] Insufficient, malformed, unknown, and full-reserve offers are non-mutating.
+- [x] Valid offers purchase/replace/refill neutral loadout runtime transactionally.
+- [x] Immutable feedback and balance/loadout snapshots reflect each outcome.
+
+**Verification evidence:**
+
+M10.12 closes with 1126 passing tests and focused Ruff clean. The pygame-free
+purchase service validates authored properties and catalog identity before
+touching wallet or loadout. Survival assigns policy only to `weapon_station`,
+uses its mode wallet and neutral weapon catalog, and snapshots transactional
+success/failure feedback. Other interaction kinds remain available but unhandled.
+
+## Earlier Completed Work Package
+
+### M10.11 — Add neutral interaction context and intent
+
+**Status:** Complete
 
 **Objective:** Turn map interaction discovery into a reusable gameplay seam that
 reports nearby context and accepts explicit interaction intent without embedding
@@ -83,7 +143,22 @@ purchase or door behavior in input, presentation, or the map adapter.
 - Snapshot immutable prompt/context and structured interaction outcomes.
 - Keep behavior absent and harmless on maps with no authored interactions.
 
-## Most Recently Completed Work Package
+**Acceptance criteria:**
+
+- [x] Authoritative actor position produces immutable nearest-interaction context.
+- [x] E routes a neutral intent through the application and mode boundary.
+- [x] Available and out-of-range results are explicit and snapshot-visible.
+- [x] Maps without interactions remain harmless and require no fallback object.
+
+**Verification evidence:**
+
+M10.11 closes with 1121 passing tests and focused Ruff clean. The neutral service
+discovers prompts and routes intent separately from effect execution. Survival
+refreshes context from Match spatial state, snapshots frozen context/results,
+and accepts E through the existing input adapter. The debug overlay reports the
+neutral prompt or latest result; no purchase or door policy is implied yet.
+
+## Earlier Completed Work Package
 
 ### M10.10 — Define neutral TMX interactables
 
@@ -522,7 +597,14 @@ start remains only as an isolated compatibility harness, not the production rout
 | M10.8 | Add reusable actor crowding policy | Complete | M10.7 |
 | M10.9 | Make Survival waves data-driven | Complete | M10.8 |
 | M10.10 | Define neutral TMX interactables | Complete | M10.9 |
-| M10.11 | Add neutral interaction context and intent | In progress | M10.10 |
+| M10.11 | Add neutral interaction context and intent | Complete | M10.10 |
+| M10.12 | Execute neutral weapon-station purchases | Complete | M10.11 |
+| M10.13 | Enable multi-slot Survival loadouts | In progress | M10.12 |
+| M10.14 | Add configurable tool/melee equipment roles | Not started | M10.13 |
+| M10.15 | Adapt TMX harvestables and neutral harvesting | Not started | M10.14 |
+| M10.16 | Add match-owned wood/metal resource inventory | Not started | M10.15 |
+| M10.17 | Add authored-anchor barricade construction and repair | Not started | M10.16 |
+| M10.18 | Integrate barricade damage, collision, AI targeting, and navigation changes | Not started | M10.17 |
 
 ## Phase 9 Exit Review
 
@@ -705,6 +787,8 @@ start remains only as an isolated compatibility harness, not the production rout
 | 2026-08-23 | `uv run pytest` after M10.8 | 1109 passed in 31.32s | Explicit dynamic occupancy, enemy-only avoidance, preserved player contact, crowd separation, and pursuit distance capping pass |
 | 2026-08-23 | `uv run pytest` after M10.9 | 1113 passed in 38.90s | Immutable wave plans, validated growth, multiple neutral enemy definitions, per-entry seeded spawning, configurable preparation, and composition snapshots pass |
 | 2026-08-23 | `uv run pytest` after M10.10 | 1117 passed in 47.93s | Neutral TMX point/region interactions, semantic metadata, capability reporting, offsets, filtered proximity, range, stable tie-breaking, and incomplete-map behavior pass |
+| 2026-08-23 | `uv run pytest` after M10.11 | 1121 passed in 100.33s | Neutral context discovery, explicit available/out-of-range intent, E routing, immutable snapshot/debug reporting, and no-interaction map behavior pass |
+| 2026-08-23 | `uv run pytest` after M10.12 | 1126 passed in 143.66s | Transactional authored offers, validation failures, affordability, purchase/replacement/refill, wallet/loadout mutation, immutable feedback, and dependency boundaries pass |
 
 ### Static checks
 
@@ -829,18 +913,23 @@ behavior, not merely a legacy class or file.
 - Temporary untracked art-generation scripts and artifacts as part of the supported
   product/lint surface, unless separately promoted into maintained tooling.
 
-### Unresolved product behavior
+### Confirmed and unresolved product behavior
 
 These existing features are not architectural foundations and are not protected
 until their product role is confirmed:
 
-- harvesting world props and collecting crafting resources;
 - random arcade power-ups such as nuke, max health, max ammo, and instakill;
 - the current finite numbered-level/campaign progression alongside endless
   Survival.
 
 They may later be implemented as reusable mechanisms or mode-specific policies, but
 their current implementations and tests must not constrain the rewrite by default.
+
+Harvesting/crafting is now confirmed product direction, but its legacy
+implementation remains non-binding. Survival will use a configurable pickaxe-like
+tool to harvest TMX-authored trees and vehicles for match-owned wood and metal,
+then construct/repair barricades at authored anchors. Shared equipment must also
+support modes that choose a melee-only knife or omit the tool/melee role entirely.
 
 ## Test Intent Audit
 
@@ -869,7 +958,7 @@ the legacy test unchanged.
 | Progress/save files | Delete legacy compatibility | Exact save schema and numbered-level persistence do not constrain the rewrite; future progression receives a new external-to-match model |
 | Instance implementation shape | Delete | Tests asserting fields in `vars()`, class structure, imports, or constructor shapes are not behavioral contracts |
 | Startup, display, smoke, shutdown | Preserve and adapt | Retain application lifecycle and clean shutdown; extend smoke coverage to consecutive mode/map selections |
-| Harvesting/crafting | Deferred | Do not characterize further until its future product role is confirmed |
+| Harvesting/crafting | Redesign later | Product role confirmed in M10 planning: configurable tool/melee capability, neutral harvestables, wood/metal inventory, transactional authored-anchor barricades, and dynamic collision/navigation; legacy implementation does not constrain the boundary |
 
 ### Obsolete test expectations already identified
 
@@ -1024,8 +1113,11 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-23 | Completed M10.8 reusable actor crowding | Dynamic actor occupancy is configurable at shared movement; Survival separates living enemies while retaining player overlap/contact and capped pursuit; full suite is 1109 passed |
 | 2026-08-23 | Completed M10.9 data-driven Survival waves | Immutable plans configure archetypes, counts, growth, and preparation; shared spawning supports multiple enemy definitions and debug status exposes live composition; full suite is 1113 passed |
 | 2026-08-23 | Completed M10.10 neutral TMX interactables | Map-authored interaction values and deterministic proximity queries establish reusable weapon-box, ammo, door, and objective data without changing the production TMX; full suite is 1117 passed |
+| 2026-08-23 | Completed M10.11 neutral interaction context | Authoritative proximity produces immutable prompts and E routes explicit intent results without assigning effects; empty production-map interaction data remains harmless; full suite is 1121 passed |
+| 2026-08-23 | Completed M10.12 neutral weapon-station purchases | Survival maps weapon-station intent to a reusable transactional catalog/wallet/loadout service with immutable outcome feedback; full suite is 1126 passed |
+| 2026-08-23 | Confirmed configurable tools, harvesting, and barricade direction | Plans now separate firearm slots from optional tool/melee roles; Survival selects a pickaxe-like melee/harvest tool while other modes may select a knife or none; M10.14–M10.18 cover harvestables, resources, construction, and dynamic barricades |
 
 ## Next Action
 
-Begin M10.11 by tracking nearby neutral interaction context for the survivor and
-routing explicit interact intent without yet assigning weapon-box purchase policy.
+Begin M10.13 by expanding the Survival loadout, routing numeric selection, and
+preserving independent runtime state for equipped and stowed purchased weapons.

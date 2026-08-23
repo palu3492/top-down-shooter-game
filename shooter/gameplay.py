@@ -18,12 +18,13 @@ import pygame
 
 from shooter import config
 from shooter.background import TiledBackground
-from shooter.commands import FIRE, RELOAD
+from shooter.commands import FIRE, INTERACT, RELOAD
 from shooter.input_adapter import PygameInputAdapter
 from shooter.map_definition import SpawnPoint, SpawnRegion, current_map_definition
 from shooter.modes.sandbox import AttackActor, MoveActor
 from shooter.modes.zombie_survival import (
     FireSurvivorWeapon,
+    InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
 )
@@ -208,6 +209,8 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             self.match.advance(0.0, (FireSurvivorWeapon(aim),))
         elif command is not None and command.action == RELOAD:
             self.match.advance(0.0, (ReloadSurvivorWeapon(),))
+        elif command is not None and command.action == INTERACT:
+            self.match.advance(0.0, (InteractSurvivor(),))
         return None
 
     def update(self, inputs, dt=config.SIM_DT):

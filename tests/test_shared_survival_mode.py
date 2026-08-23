@@ -7,7 +7,12 @@ from pathlib import Path
 from shooter import config
 from shooter.actor_creation import ActorDefinition
 from shooter.domain_events import DamageApplied, EntityKilled
-from shooter.map_definition import MapDefinition, SpawnPoint, SpawnRegion
+from shooter.map_definition import (
+    MapDefinition,
+    MapInteraction,
+    SpawnPoint,
+    SpawnRegion,
+)
 from shooter.match import Match
 from shooter.match_configuration import (
     ZOMBIE_SURVIVAL,
@@ -19,6 +24,7 @@ from shooter.match_configuration import (
 from shooter.modes.zombie_survival import (
     EnemyWaveRule,
     FireSurvivorWeapon,
+    InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
     SurvivalMode,
@@ -27,13 +33,14 @@ from shooter.modes.zombie_survival import (
 from shooter.world_collision import Aabb, actor_box, overlaps
 
 
-def resolved():
+def resolved(interactions=()):
     definition = MapDefinition(
         "arena",
         "Arena",
         "unused.tmx",
         (1000, 800),
         capabilities=frozenset(("bounds",)),
+        interactions=interactions,
     )
     return MatchConfigurationResolver(
         default_mode_catalog(), MapCatalog((definition,))
@@ -81,6 +88,57 @@ def test_survival_spawns_player_and_initial_horde_into_match_stores():
     )
     assert snapshot.mode_status.enemies_remaining == 5
     assert snapshot.mode_status.enemy_composition == (("walker", 5),)
+
+
+def test_survival_snapshots_nearby_interaction_and_routes_explicit_intent():
+    station = MapInteraction(
+        "test-station",
+        "weapon_station",
+        position=(500, 400),
+        properties=(
+            ("kind", "weapon_station"),
+            ("prompt", "PRESS E: TEST STATION"),
+        ),
+    )
+    match = Match(resolved((station,)))
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+
+    assert match.mode_status.interaction_context.prompt == "PRESS E: TEST STATION"
+    match.advance(0.0, (InteractSurvivor(),))
+    assert match.mode_status.interaction_result.available is True
+    assert match.mode_status.interaction_result.interaction_id == "test-station"
+
+    match.advance(1.0, (MoveSurvivor((1, 0)), InteractSurvivor()))
+    assert match.mode_status.interaction_context is None
+    assert match.mode_status.interaction_result.reason == "out_of_range"
+
+
+def test_weapon_station_spends_survival_cash_and_replaces_loadout():
+    station = MapInteraction(
+        "smg-station",
+        "weapon_station",
+        position=(500, 400),
+        properties=(
+            ("kind", "weapon_station"),
+            ("price", "50"),
+            ("weapon_id", "survivor_smg"),
+        ),
+    )
+    match = Match(resolved((station,)))
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    mode.cash.increase_cash(50)
+
+    match.advance(0.0, (InteractSurvivor(),))
+
+    status = match.mode_status
+    assert status.purchase_result.success is True
+    assert status.purchase_result.action == "replaced"
+    assert status.cash == 0
+    weapon = match.snapshot().entity(mode.player_id).weapons[0]
+    assert weapon.weapon_id == "survivor_smg"
+    assert (weapon.loaded, weapon.reserve) == (40, 200)
 
 
 def test_wave_plan_spawns_multiple_neutral_enemy_definitions():

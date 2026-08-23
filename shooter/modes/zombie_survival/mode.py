@@ -6,6 +6,7 @@ import math
 from shooter import config
 from shooter.actor_creation import ActorDefinition
 from shooter.damage import DamageRequest
+from shooter.interactions import InteractionService
 from shooter.loadout import Loadout
 from shooter.match_actors import (
     move_match_actor,
@@ -22,6 +23,7 @@ from shooter.spawn_service import SpawnActorRequest
 from shooter.steering import pursue_match_actor
 from shooter.targeting import first_box_target_on_ray
 from shooter.weapon_attacks import AttackDescriptionService
+from shooter.weapon_purchases import WeaponCatalog, WeaponPurchaseService
 from shooter.weapon_state import EquippedWeapon, WeaponDefinition
 from shooter.world_collision import Aabb, actor_box, overlaps
 
@@ -46,6 +48,19 @@ RIFLE = WeaponDefinition(
     config.RELOAD_SECONDS,
     "556",
 )
+SMG = WeaponDefinition(
+    "survivor_smg",
+    "ballistic",
+    12,
+    12.0,
+    40,
+    200,
+    1.2,
+    "9mm",
+    spread=5.0,
+    automatic=True,
+)
+SURVIVAL_WEAPONS = WeaponCatalog((RIFLE, SMG))
 DEFAULT_WAVE_PLAN = SurvivalWavePlan(
     (EnemyWaveRule(WALKER, config.WAVE_BASE, growth=1, exponent=2),),
     config.WAVE_INTERVAL_SECONDS,
@@ -64,6 +79,11 @@ class FireSurvivorWeapon:
 
 @dataclass(frozen=True, slots=True)
 class ReloadSurvivorWeapon:
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class InteractSurvivor:
     pass
 
 
@@ -95,6 +115,11 @@ class SurvivalMode:
         self.loadouts = {}
         self.attacks = AttackDescriptionService()
         self.cash = SurvivalWallet()
+        self.interactions = InteractionService()
+        self.interaction_context = None
+        self.interaction_result = None
+        self.purchase_result = None
+        self.weapon_purchases = WeaponPurchaseService()
         self.wave = 1
         self.phase = "combat"
         self.preparation_remaining = 0.0
@@ -129,6 +154,7 @@ class SurvivalMode:
             self.loadouts[self.player_id] = Loadout(
                 (EquippedWeapon(RIFLE),), capacity=1
             )
+            self._refresh_interaction(match)
         self.spawn_results = (
             player.spawn_result,
             *(batch.spawn_result for batch in enemy_batches),
@@ -176,6 +202,7 @@ class SurvivalMode:
         if self.result(match) is not None:
             return
         self._advance_weapons(dt)
+        interaction_requested = False
         for command in commands:
             if isinstance(command, MoveSurvivor) and self.player_id is not None:
                 move_match_actor(match, self.player_id, command.direction, dt)
@@ -183,6 +210,14 @@ class SurvivalMode:
                 self._fire_weapon(match, command.aim)
             elif isinstance(command, ReloadSurvivorWeapon):
                 self._selected_weapon().reload()
+            elif isinstance(command, InteractSurvivor):
+                interaction_requested = True
+        self._refresh_interaction(match)
+        if interaction_requested:
+            self.interaction_result = self.interactions.route_intent(
+                self.player_id, self.interaction_context
+            )
+            self._execute_interaction()
         if self.phase == "combat":
             self._advance_enemies(match, dt)
             self._apply_contact_damage(match, dt)
@@ -197,6 +232,9 @@ class SurvivalMode:
             enemies_remaining=self.enemies_remaining(match),
             outcome=self.result(match),
             enemy_composition=self._living_composition(match),
+            interaction_context=self.interaction_context,
+            interaction_result=self.interaction_result,
+            purchase_result=self.purchase_result,
         )
 
     def result(self, match):
@@ -357,3 +395,29 @@ class SurvivalMode:
             definition_id = match.entities.get(enemy_id).definition_id
             counts[definition_id] = counts.get(definition_id, 0) + 1
         return tuple(sorted(counts.items()))
+
+    def _refresh_interaction(self, match):
+        if self.player_id is None or self.player_id not in match.spatial:
+            self.interaction_context = None
+            return
+        position = match.spatial.get(self.player_id).transform
+        self.interaction_context = self.interactions.discover(
+            self.player_id,
+            (position.x, position.y),
+            match.map_definition.interactions,
+            120,
+        )
+
+    def _execute_interaction(self):
+        if (
+            self.interaction_result is None
+            or not self.interaction_result.available
+            or self.interaction_context.kind != "weapon_station"
+        ):
+            return
+        self.purchase_result = self.weapon_purchases.purchase(
+            self.interaction_context.properties,
+            SURVIVAL_WEAPONS,
+            self.loadouts[self.player_id],
+            self.cash,
+        )

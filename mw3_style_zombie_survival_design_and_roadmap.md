@@ -24,7 +24,7 @@ The current game already has a useful foundation:
 - a top-down 2D world
 - zombies
 - player movement and combat
-- a knife
+- melee/tool combat (Survival will use a pickaxe-like harvesting tool)
 - a small number of purchasable weapons
 - a large map
 - collision / map work moving toward Tiled
@@ -39,7 +39,7 @@ The player should begin a run weak and gradually become more capable.
 
 A typical run should feel like this:
 
-1. Start with a knife and possibly a weak pistol.
+1. Start with a pickaxe-like melee/harvesting tool and possibly a weak pistol.
 2. Fight a small number of basic zombies.
 3. Earn cash for kills.
 4. Finish the wave.
@@ -117,7 +117,7 @@ The player earns cash from:
 
 - kills
 - headshots
-- melee kills
+- melee/tool kills
 - special enemy kills
 - boss kills
 - possibly wave completion bonuses
@@ -129,7 +129,7 @@ Example:
 |---|---:|
 | Normal kill | $100 |
 | Headshot | $125 |
-| Knife kill | $150 |
+| Risky melee/tool kill | $150 |
 | Runner kill | $125 |
 | Special zombie | $200–$400 |
 | Brute / boss | $500+ |
@@ -140,7 +140,7 @@ Early design principle:
 
 > Riskier or more skillful kills may reward slightly more money.
 
-This makes the knife useful even after guns exist.
+This keeps the equipped melee/tool option useful even after guns exist.
 
 ---
 
@@ -212,7 +212,7 @@ The player should begin weak.
 Recommended eventual starting state:
 
 ```text
-Knife
+Pickaxe-like melee/harvesting tool
 +
 Weak pistol
 +
@@ -223,13 +223,15 @@ No deployables
 No support
 ```
 
-The existing knife should remain important.
+Zombie Survival's tool should remain important for both risky melee combat and
+resource harvesting. The shared equipment role is configurable: another mode may
+equip a knife, another tool, or no tool/melee item at all.
 
 Early waves should be easy enough that experienced players can safely melee some enemies to conserve ammunition and gain bonus cash.
 
 That creates an early risk/reward decision:
 
-> Shoot safely, or knife for more money?
+> Shoot safely, strike for more money, or preserve time to harvest resources?
 
 ---
 
@@ -245,7 +247,7 @@ Weapons should solve different combat problems rather than simply having larger 
 
 ### Starting
 
-- Knife
+- Pickaxe-like tool (separate configurable tool/melee slot)
 - Weak pistol
 
 ### Cheap Tier
@@ -360,6 +362,41 @@ Purchases:
 The stations should be spatially separated.
 
 If every useful purchase is available from one safe room, the player has little reason to move around the map.
+
+---
+
+# 6.4 Harvesting and Barricade Construction
+
+Zombie Survival should eventually start the player with a pickaxe-like tool in a
+dedicated configurable tool/melee slot. It serves two capabilities:
+
+- a close-range melee strike against damageable actors;
+- a harvesting strike against compatible resource-bearing world objects.
+
+Trees can yield wood and vehicles can yield metal. These are match-owned resources
+used for barricade construction and repair rather than firearm ammunition or cash.
+Exact yields, swing counts, and repair costs are balancing decisions for later.
+
+The shared architecture must not assume every mode has a pickaxe. Equipment roles
+are mode configuration:
+
+```text
+Zombie Survival: pickaxe-like tool with melee + harvest
+Team Deathmatch: knife with melee only
+Battle Royale: configured starting tool, lootable tool, or no tool
+Other mode: no tool/melee slot if its rules do not need one
+```
+
+TMX will eventually author harvestable tree/vehicle placements and barricade build
+anchors or permitted regions. Runtime systems own durability, yields, resource
+inventory, construction transactions, barricade health/collision, repair,
+destruction, and navigation updates. Map data supplies semantic definitions and
+placement; it does not execute harvesting or building rules.
+
+Initial construction should use authored anchors rather than unrestricted free
+placement. This is easier to validate, keeps collision/navigation deterministic,
+and lets map design control doors, windows, and chokepoints. Free placement can be
+evaluated later if it materially improves play.
 
 ---
 
@@ -942,7 +979,7 @@ Do not redesign gameplay yet.
 ## Verify
 
 - player movement works
-- knife works
+- configured tool/melee attack works (pickaxe-like tool in Survival)
 - existing guns work
 - zombies spawn
 - zombies navigate to the player
@@ -2211,7 +2248,7 @@ The first meaningful prototype should contain only:
 
 - movement
 - health
-- knife
+- pickaxe-like tool/melee slot
 - pistol
 - shotgun
 - SMG
@@ -2251,7 +2288,7 @@ After the first prototype is proven:
 
 ## Player
 
-- knife
+- pickaxe-like tool/melee slot
 - pistol
 - SMG
 - shotgun

@@ -3,6 +3,7 @@
 from shooter.modes.zombie_survival.consequences import SurvivalConsequences
 from shooter.modes.zombie_survival.mode import (
     FireSurvivorWeapon,
+    InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
     SurvivalMode,
@@ -15,6 +16,7 @@ from shooter.modes.zombie_survival.wave_config import (
 
 __all__ = (
     "FireSurvivorWeapon",
+    "InteractSurvivor",
     "EnemyWaveRule",
     "MoveSurvivor",
     "ReloadSurvivorWeapon",

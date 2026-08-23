@@ -34,7 +34,27 @@ class DebugOverlay:
             f"instakill={presentation.instakill_remaining:.1f}s"
         )
         cargo = ", ".join(f"{item}x{count}" for item, count in presentation.cargo)
-        context = presentation.notice or presentation.interaction or "-"
+        interaction = getattr(mode, "interaction_context", None)
+        interaction_result = getattr(mode, "interaction_result", None)
+        purchase_result = getattr(mode, "purchase_result", None)
+        neutral_context = None if interaction is None else interaction.prompt
+        if interaction_result is not None:
+            neutral_context = (
+                f"INTERACT {interaction_result.reason} "
+                f"{interaction_result.interaction_id or '-'}"
+            )
+        if purchase_result is not None:
+            neutral_context = (
+                f"PURCHASE {purchase_result.reason} "
+                f"{purchase_result.weapon_id or '-'} "
+                f"balance={purchase_result.balance}"
+            )
+        context = (
+            presentation.notice
+            or presentation.interaction
+            or neutral_context
+            or "-"
+        )
         context_line = f"CARGO {cargo or '-'} | STATUS {context}"
         lines = (
             match_line,

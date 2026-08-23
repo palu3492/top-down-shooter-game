@@ -53,6 +53,12 @@ These decisions were confirmed before implementation began.
    mode and map can be selected and started without restarting the process. A
    switch disposes of the old match and constructs a fresh one; an active match is
    not mutated into a different mode or map.
+10. **Role-based equipment:** firearm, tool/melee, throwable, deployable, and
+    cargo roles are explicit configuration rather than one universal slot list.
+    Zombie Survival initially equips a pickaxe-like tool that can both strike
+    enemies and harvest authored objects. Other modes may configure a knife,
+    another tool, or no tool/melee slot without changing shared combat,
+    inventory, or input mechanisms.
 
 ## Product Direction
 
@@ -387,6 +393,8 @@ The map adapter converts Tiled data into simulation-level map data:
 - tagged spawn points;
 - interaction points;
 - authored object placements and destructible-object definitions;
+- authored harvestable placements, resource-yield metadata, and construction
+  anchors or permitted build regions;
 - map metadata;
 - presentation layers and asset references.
 
@@ -414,6 +422,10 @@ be documented and validated, and may include:
   or hazards;
 - destructible object placements with stable definition IDs, initial state, and
   optional mode-specific tags;
+- harvestable definitions with stable resource IDs, durability, compatible tool
+  tags, and yield policy inputs;
+- construction anchors/regions with recipe or placement tags for temporary
+  barricades and other mode-created world objects;
 - named tactical regions and semantic tags such as indoor, outdoor, high ground,
   chokepoint, or restricted;
 - optional camera, audio, lighting, and presentation metadata.
@@ -451,6 +463,21 @@ prices, rewards, and stock are mode policy.
 
 Match cash belongs to Zombie Survival match state. Persistent progression belongs
 outside the live match. Neither belongs in the HUD.
+
+Equipment roles are configured per mode. A loadout may contain firearm slots,
+an optional tool/melee slot, throwable/equipment slots, deployables, and stackable
+cargo without treating them as interchangeable. Zombie Survival's initial
+tool/melee definition is a pickaxe-like tool with both melee-attack and harvesting
+capabilities. A Team Deathmatch ruleset may substitute a knife, and another mode
+may omit that role entirely. Shared code dispatches explicit capabilities such as
+`melee_attack`, `harvest`, `repair`, or `build`; it does not branch on the names
+`pickaxe`, `knife`, `tree`, or `vehicle`.
+
+Harvested wood and metal are match-owned resource inventory values. Harvestable
+durability/yield, construction recipes, transactional resource spending,
+barricade creation/repair/destruction, collision, and navigation invalidation are
+separate reusable mechanisms. Zombie Survival decides which resources, recipes,
+build phases, and rewards are enabled.
 
 ### Presentation
 
@@ -838,6 +865,16 @@ Initial product milestone:
 - a deliberately tuned first five waves;
 - several distinct enemy roles using shared actor/combat/spawn systems;
 - clear mode-specific HUD state and outcomes.
+
+Subsequent Survival product packages include:
+
+- a configurable tool/melee role, with Survival starting with a pickaxe-like
+  tool while other modes may select a knife or none;
+- TMX-authored harvestable trees, vehicles, and future resource-bearing props;
+- match-owned wood/metal inventory and deterministic yield rules;
+- authored construction anchors/regions and transactional barricade recipes;
+- barricade health, repair, destruction, collision, enemy targeting, and dynamic
+  navigation response.
 
 Detailed design and balancing remain in the Survival roadmap.
 

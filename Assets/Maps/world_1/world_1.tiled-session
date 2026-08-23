@@ -8,12 +8,15 @@
             "scaleInDock": 1
         },
         "world_1.tmx": {
-            "scale": 0.1434,
-            "selectedLayer": 4,
+            "scale": 0.3363,
+            "selectedLayer": 5,
             "viewCenter": {
-                "x": 4567.642956764295,
-                "y": 4023.7099023709898
+                "x": 4864.704133214393,
+                "y": 3910.1992268807617
             }
+        },
+        "world_1.tmx#trees": {
+            "scaleInDock": 1
         },
         "world_1.tmx#vehicles": {
             "scaleInDock": 1
