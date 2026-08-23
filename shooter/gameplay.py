@@ -34,6 +34,7 @@ from shooter.modes.zombie_survival import (
 from shooter.scenes import Scene
 from shooter.session import Session
 from shooter.ui.snapshot_presentation import SnapshotPresentation
+from shooter.ui.map_semantics import MapSemanticsRenderer
 from shooter.world_collision import Aabb
 
 PAUSE = "PAUSE"
@@ -125,6 +126,7 @@ class SnapshotGameplayScene(Scene):
         self.mode = match_owner.mode
         self.match_host = match_host
         self.presenter = SnapshotPresentation()
+        self.map_semantics = MapSemanticsRenderer()
         self.reported = False
         self.background = TiledBackground(
             self.match.map_definition.presentation_source
@@ -166,6 +168,7 @@ class SnapshotGameplayScene(Scene):
     def draw(self, surface, alpha):
         camera = self.camera
         self.background.draw(surface, *camera)
+        self.map_semantics.draw(surface, self.match.map_definition, camera)
         self.presenter.draw(surface, self.match.snapshot(), camera)
 
     def tick(self, seconds):

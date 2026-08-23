@@ -26,7 +26,7 @@ package.
 |---|---|
 | Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M11.3 — Author the first Survival map semantic pass in TMX |
+| Active work package | M11.4 — Add ammunition and health/armor station policies |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
 | Next integration checkpoint | End of M11.4 — First authored playable Survival run |
 | Last updated | 2026-08-23 |
@@ -107,6 +107,32 @@ package.
 | M11.4 | Add ammunition and health/armor station policies | Completes the short preparation decision loop. |
 | M11.5 | Playtest and tune the first five waves | Validates the actual run: fight, earn, buy/build, then survive a harder wave. |
 
+### Planned reusable weapon-system continuation
+
+The current weapon boundary already owns definitions, individual runtime ammo,
+cadence, reloads, spread, and a basic `automatic` flag. The following remains
+explicit planned work; the present Survival click-to-fire adapter and shared hit
+range are deliberately temporary:
+
+- Model a weapon's firing mode as a reusable policy: semi-automatic,
+  automatic-held-trigger, and burst. The pygame input adapter supplies trigger
+  state; shared weapon operation controls cadence and ammunition consumption.
+- Give every ballistic weapon its own maximum range and an optional effective
+  range / damage-falloff policy. Rifle and SMG balance must be data-defined, not
+  hard-coded in Survival target selection.
+- Resolve range and damage before shared damage application, so every future
+  mode uses the same weapon result while remaining free to choose its own weapon
+  catalog and balance values.
+- Keep spread/recoil/movement penalties as separate optional policies. They must
+  be deterministic from match-owned random sources and must not be required by
+  modes that prefer simpler weapons.
+
+Acceptance criteria for that future package: a held automatic trigger fires at
+the authored cadence without frame-rate dependence; a semi-automatic trigger
+fires once per press; burst count is data-defined; and tests show different
+weapons applying their configured maximum range and falloff without
+Survival-specific branches.
+
 ### M11.1 — First-five-wave roster and plan
 
 **Status:** Complete
@@ -145,19 +171,22 @@ roster, dynamic barricades, steering, and Survival integration.
 
 ### M11.3 — First Survival map semantic pass
 
-**Status:** In progress
+**Status:** Complete
 
 - Added authored survivor, walker, runner, and breaker spawn data around the
   existing camp area.
 - Added one physical SMG purchase station, a wood-yielding tree, a metal-yielding
   vehicle, and a buildable barricade gate.
-- The visual TMX tile layers were not modified.
-- Static collision routes are deliberately still pending: they require intentional
-  level-layout choices, rather than adding invisible barriers that could make the
-  authored camp or player start feel wrong.
+- The visual TMX tile layers were not modified. A presentation-only debug layer
+  now outlines and labels authored stations, harvestables, and anchors over the
+  existing map art, so these temporary gameplay targets are testable in-game.
+- Static-collision support is already shared and TMX-backed (`Collision` and
+  `Obstacles` layers). Authoring production collision routes remains deliberately
+  deferred until the map layout calls for them; no guessed invisible barriers were
+  added around the camp or player start.
 
-**Verification evidence:** Focused Ruff passes and 66 TMX, map-configuration,
-Survival, and tracker tests pass.
+**Verification evidence:** Focused Ruff passes and 35 TMX, Survival, and
+presentation tests pass, including marker placement and camera-offset coverage.
 
 ### Corrective migration fix — Shared-mode follow camera
 
@@ -1233,5 +1262,5 @@ decision has meaningful alternatives and is expensive to reverse.
 
 ## Next Action
 
-Begin M11.1 by defining the intended first-five-wave enemy roster, counts,
-preparation timing, and milestone introductions before implementing new actors.
+Begin M11.4 by adding reusable ammunition and health/armor station policies,
+then author their first Survival instances in the TMX map.
