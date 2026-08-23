@@ -20,6 +20,7 @@ from shooter.weapon_state import EquippedWeapon, WeaponDefinition
 
 RIFLE = WeaponDefinition("rifle", "ballistic", 20, 6, 30, 90, 1, "556")
 SMG = WeaponDefinition("smg", "ballistic", 12, 12, 40, 200, 1, "9mm")
+PISTOL = WeaponDefinition("pistol", "ballistic", 10, 4, 12, 60, 1, "45")
 
 
 def test_purchase_replaces_selected_weapon_only_after_affordability_validation():
@@ -42,6 +43,23 @@ def test_purchase_replaces_selected_weapon_only_after_affordability_validation()
     assert (bought.success, bought.action) == (True, REPLACED)
     assert loadout.selected.definition.definition_id == "smg"
     assert wallet.balance == 0
+
+
+def test_full_multi_slot_loadout_replaces_only_the_selected_firearm():
+    service = WeaponPurchaseService()
+    catalog = WeaponCatalog((RIFLE, SMG, PISTOL))
+    loadout = Loadout((EquippedWeapon(RIFLE), EquippedWeapon(SMG)), capacity=2)
+    wallet = SurvivalWallet(100)
+    loadout.select(0)
+
+    result = service.purchase(
+        (("weapon_id", "pistol"), ("price", "25")), catalog, loadout, wallet
+    )
+
+    assert (result.success, result.action) == (True, REPLACED)
+    assert [held.definition.definition_id for held in loadout] == ["pistol", "smg"]
+    assert loadout.selected_index == 0
+    assert wallet.balance == 75
 
 
 def test_owned_weapon_refills_or_rejects_full_reserve_without_charging():

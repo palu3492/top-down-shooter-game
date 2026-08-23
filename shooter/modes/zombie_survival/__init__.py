@@ -6,7 +6,9 @@ from shooter.modes.zombie_survival.mode import (
     InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
+    SelectSurvivorWeapon,
     SurvivalMode,
+    UseSurvivorTool,
 )
 from shooter.modes.zombie_survival.waves import WaveSystem
 from shooter.modes.zombie_survival.wave_config import (
@@ -15,13 +17,15 @@ from shooter.modes.zombie_survival.wave_config import (
 )
 
 __all__ = (
+    "EnemyWaveRule",
     "FireSurvivorWeapon",
     "InteractSurvivor",
-    "EnemyWaveRule",
     "MoveSurvivor",
     "ReloadSurvivorWeapon",
+    "SelectSurvivorWeapon",
     "SurvivalConsequences",
     "SurvivalMode",
     "SurvivalWavePlan",
+    "UseSurvivorTool",
     "WaveSystem",
 )

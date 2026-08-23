@@ -48,6 +48,14 @@ def test_discrete_actions_carry_only_neutral_values():
     assert json.dumps(asdict(slot_command))
 
 
+def test_q_routes_to_the_optional_tool_role():
+    command = PygameInputAdapter().action_for(
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_q)
+    )
+
+    assert command == commands.ActionCommand(commands.USE_TOOL)
+
+
 def test_gameplay_moves_from_neutral_controls(display):
     scene = GameplayScene(Viewport(WINDOW))
     controls = PygameInputAdapter().sample(

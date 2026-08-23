@@ -24,11 +24,11 @@ package.
 
 | Field | Current value |
 |---|---|
-| Migration phase | Phase 10 — Resume Zombie Survival feature development |
+| Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M10.13 — Enable multi-slot Survival loadouts |
+| Active work package | M11.3 — Author the first Survival map semantic pass in TMX |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
-| Next integration checkpoint | End of M10.13 — Purchasable selectable weapon loop |
+| Next integration checkpoint | End of M11.4 — First authored playable Survival run |
 | Last updated | 2026-08-23 |
 
 ## Confirmed Project Constraints
@@ -71,28 +71,136 @@ package.
 | 7 | Neutral Match and game-mode boundary | Complete | Match/mode boundary and integration checkpoint 2 verified |
 | 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
-| 10 | Resume Zombie Survival feature development | In progress | M10.13 active |
+| 10 | Resume Zombie Survival feature development | Complete | Barricade integration verified |
+| 11 | Survival playable-run milestone | Ready to begin | Product review recorded; M11.1 next |
 
-## Active Work Package
+## Phase 10 Product Review
 
-### M10.13 — Enable multi-slot Survival loadouts
+### What is now complete
+
+- The reusable Match, mode, map, combat, weapon, loadout, economy, interaction,
+  snapshot, and placeholder-presentation boundaries are in place.
+- Survival has waves, kill cash, weapon purchases, firearm switching, a configured
+  pickaxe tool, optional harvesting, wood/metal resources, and barricade lifecycle
+  mechanics.
+- Sandbox proves those shared mechanics are not Survival-only.
+
+### What still prevents a representative playable Survival run
+
+1. The current wave plan still uses one walker archetype and is not deliberately
+   tuned as a first-five-wave experience.
+2. The production TMX remains deliberately incomplete: it has no authored weapon
+   stations, harvestables, construction anchors, collision routes, or spawn sets
+   for the new systems to exercise in-game.
+3. There are no distinct enemy roles yet to pressure firearms, movement, and
+   barricades differently.
+4. The preparation economy lacks the next set of meaningful choices: ammunition,
+   health/armor, and equipment stations.
+
+### Recommended Phase 11 order
+
+| ID | Work package | Reason |
+|---|---|---|
+| M11.1 | Define a first-five-wave roster and data plan | Establish the exact playable pacing and balancing targets before adding enemies. |
+| M11.2 | Add runner and barricade-breaker enemy archetypes | Proves tactical variation using existing shared spawn, movement, combat, and barricade mechanisms. |
+| M11.3 | Author the first Survival map semantic pass in TMX | Makes stations, harvestables, anchors, collision, and spawns visible in the production map. |
+| M11.4 | Add ammunition and health/armor station policies | Completes the short preparation decision loop. |
+| M11.5 | Playtest and tune the first five waves | Validates the actual run: fight, earn, buy/build, then survive a harder wave. |
+
+### M11.1 — First-five-wave roster and plan
+
+**Status:** Complete
+
+The initial plan is deliberately small and readable in debug status:
+
+| Wave | Walker | Runner | Breaker | Preparation |
+|---:|---:|---:|---:|---:|
+| 1 | 5 | 0 | 0 | 25 seconds after completion |
+| 2 | 7 | 0 | 0 | 25 seconds after completion |
+| 3 | 9 | 2 | 0 | 25 seconds after completion |
+| 4 | 11 | 3 | 0 | 25 seconds after completion |
+| 5 | 13 | 4 | 1 | 25 seconds after completion |
+
+The wave rules now own each archetype's introduction wave and post-introduction
+growth. Runner and breaker definitions are present so the schedule is executable;
+M11.2 gives those archetypes their differentiated combat and barricade behavior.
+
+**Verification evidence:** Focused Ruff passes and 33 focused wave, simulation,
+and determinism tests pass.
+
+### M11.2 — Runner and barricade-breaker enemy archetypes
+
+**Status:** Complete
+
+- Runners are smaller and substantially faster than walkers, creating pressure on
+  player movement beginning at wave 3.
+- Breakers are larger, slower, and far more durable; they begin at wave 5.
+- Breakers deal four times normal barricade damage when they make contact, making
+  barricades a tactical resource rather than a permanent wall.
+- All roles still reuse the same neutral spawn, movement, collision, pursuit,
+  combat, snapshot, and death mechanisms.
+
+**Verification evidence:** Focused Ruff passes and 30 focused tests cover the
+roster, dynamic barricades, steering, and Survival integration.
+
+### M11.3 — First Survival map semantic pass
 
 **Status:** In progress
 
-**Objective:** Let purchased weapons occupy reusable loadout slots and preserve
-their independent runtime state while neutral selection commands choose which
-weapon fires, reloads, and appears in snapshots.
+- Added authored survivor, walker, runner, and breaker spawn data around the
+  existing camp area.
+- Added one physical SMG purchase station, a wood-yielding tree, a metal-yielding
+  vehicle, and a buildable barricade gate.
+- The visual TMX tile layers were not modified.
+- Static collision routes are deliberately still pending: they require intentional
+  level-layout choices, rather than adding invisible barriers that could make the
+  authored camp or player start feel wrong.
 
-**Planned scope:**
+**Verification evidence:** Focused Ruff passes and 66 TMX, map-configuration,
+Survival, and tracker tests pass.
 
-- Expand Survival from the temporary one-slot loadout to configurable firearm
-  slots, initially two.
-- Route numeric selection intent through the neutral mode boundary.
-- Preserve ammo/cooldown/reload state for stowed weapons.
-- Define deterministic full-loadout replacement policy for later purchases.
-- Keep the future tool/melee role outside firearm replacement and selection;
-  Survival will configure a pickaxe-like tool while other modes may configure a
-  knife or omit the role.
+### Corrective migration fix — Shared-mode follow camera
+
+The snapshot-based Survival/Sandbox scene now uses the presentation-only
+`FollowCamera` against the actor tagged `player`. This closes an omission where
+the scene had temporarily centered the whole map instead of following the player.
+No simulation or TMX semantics changed, and M11.3 remains the active product work.
+
+**Verification evidence:** Focused Ruff passes and 13 camera, Survival, and
+Sandbox presentation tests pass.
+
+### Corrective presentation fix — Debug overlay width
+
+The text-only debug panel now measures its longest line and expands horizontally
+up to the window's available width, so current Survival status fields are not
+clipped by the former fixed-width rectangle. M11.3 remains active.
+
+**Verification evidence:** Focused Ruff passes and 7 debug-overlay tests pass.
+
+## Active Work Package
+
+## Most Recently Completed Work Package
+
+### M10.18 — Integrate barricade damage, collision, AI targeting, and navigation changes
+
+**Status:** Complete
+
+**Objective:** Make built barricades affect collision, enemy targeting, damage,
+destruction, and navigation while preserving their neutral construction state.
+
+**Delivered scope:**
+
+- Built barricade areas are supplied as dynamic obstacles to shared actor movement
+  and obstacle-aware pursuit.
+- Enemies that contact a barricade damage it rather than passing through it.
+- Destroyed barricades leave the dynamic obstacle set, reopening navigation.
+- Existing build/repair transactions can rebuild a destroyed barricade at its
+  authored anchor.
+- Static TMX collision and dynamic barricade collision remain distinct.
+
+**Verification evidence:** Focused Ruff passes and 31 focused tests pass,
+covering barricade state, resource transactions, dynamic collision, enemy damage,
+destruction, steering, and Survival integration.
 
 ## Most Recently Completed Work Package
 
@@ -599,12 +707,12 @@ start remains only as an isolated compatibility harness, not the production rout
 | M10.10 | Define neutral TMX interactables | Complete | M10.9 |
 | M10.11 | Add neutral interaction context and intent | Complete | M10.10 |
 | M10.12 | Execute neutral weapon-station purchases | Complete | M10.11 |
-| M10.13 | Enable multi-slot Survival loadouts | In progress | M10.12 |
-| M10.14 | Add configurable tool/melee equipment roles | Not started | M10.13 |
-| M10.15 | Adapt TMX harvestables and neutral harvesting | Not started | M10.14 |
-| M10.16 | Add match-owned wood/metal resource inventory | Not started | M10.15 |
-| M10.17 | Add authored-anchor barricade construction and repair | Not started | M10.16 |
-| M10.18 | Integrate barricade damage, collision, AI targeting, and navigation changes | Not started | M10.17 |
+| M10.13 | Enable multi-slot Survival loadouts | Complete | M10.12 |
+| M10.14 | Add configurable tool/melee equipment roles | Complete | M10.13 |
+| M10.15 | Adapt TMX harvestables and neutral harvesting | Complete | M10.14 |
+| M10.16 | Add match-owned wood/metal resource inventory | Complete | M10.15 |
+| M10.17 | Add authored-anchor barricade construction and repair | Complete | M10.16 |
+| M10.18 | Integrate barricade damage, collision, AI targeting, and navigation changes | Complete | M10.17 |
 
 ## Phase 9 Exit Review
 
@@ -1115,9 +1223,15 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-23 | Completed M10.10 neutral TMX interactables | Map-authored interaction values and deterministic proximity queries establish reusable weapon-box, ammo, door, and objective data without changing the production TMX; full suite is 1117 passed |
 | 2026-08-23 | Completed M10.11 neutral interaction context | Authoritative proximity produces immutable prompts and E routes explicit intent results without assigning effects; empty production-map interaction data remains harmless; full suite is 1121 passed |
 | 2026-08-23 | Completed M10.12 neutral weapon-station purchases | Survival maps weapon-station intent to a reusable transactional catalog/wallet/loadout service with immutable outcome feedback; full suite is 1126 passed |
+| 2026-08-23 | Completed M10.13 multi-slot Survival loadouts | Survival configures two firearm slots, numeric neutral selection, independent stowed runtime state, selected-slot replacement, and snapshot-visible diagnostics; full suite is 1128 passed |
+| 2026-08-23 | Completed M10.14 configurable tool/melee roles | Survival's pickaxe-like tool occupies an optional role outside firearm slots; Q uses shared melee combat while snapshots expose it independently; focused Ruff and 62 tests pass |
+| 2026-08-23 | Completed M10.15 TMX harvestables and neutral harvesting | Tiled `Harvestables` objects adapt into neutral values; shared durability/capability rules and Survival pickaxe integration work without adding resource rewards; focused Ruff and 42 tests pass |
+| 2026-08-23 | Completed M10.16 match-owned harvest resources | Harvestable yields accrue deterministic wood/metal values in reusable match resource inventory, separate from cash, ammunition, backpacks, and UI; focused Ruff and 38 tests pass |
+| 2026-08-23 | Completed M10.17 authored barricade construction | Construction anchors, resource recipes, all-or-nothing build/repair transactions, immutable feedback, and Survival E interaction are complete; focused Ruff and 30 tests pass |
+| 2026-08-23 | Completed M10.18 dynamic barricade integration | Built barricades participate in shared movement collision and pursuit; enemy contact damages/destroys them and reopens routes; focused Ruff and 31 tests pass |
 | 2026-08-23 | Confirmed configurable tools, harvesting, and barricade direction | Plans now separate firearm slots from optional tool/melee roles; Survival selects a pickaxe-like melee/harvest tool while other modes may select a knife or none; M10.14–M10.18 cover harvestables, resources, construction, and dynamic barricades |
 
 ## Next Action
 
-Begin M10.13 by expanding the Survival loadout, routing numeric selection, and
-preserving independent runtime state for equipped and stowed purchased weapons.
+Begin M11.1 by defining the intended first-five-wave enemy roster, counts,
+preparation timing, and milestone introductions before implementing new actors.

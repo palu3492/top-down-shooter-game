@@ -46,6 +46,7 @@ class EntitySnapshot:
     collision: CollisionSnapshot | None
     vitality: VitalSnapshot | None
     weapons: tuple[WeaponSnapshot, ...] = ()
+    tool: WeaponSnapshot | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,13 +64,18 @@ class MatchSnapshot:
         return next(item for item in self.entities if item.entity_id == entity_id)
 
 
-def build_match_snapshot(match, *, loadouts=None, mode_status=None, result=None):
+def build_match_snapshot(
+    match, *, loadouts=None, tools=None, mode_status=None, result=None
+):
     """Copy one coherent presentation view without exposing mutable stores."""
     _require_immutable(mode_status, "mode_status")
     _require_immutable(result, "result")
     loadouts = {} if loadouts is None else loadouts
+    tools = {} if tools is None else tools
     entities = tuple(
-        _entity_snapshot(match, entity_id, loadouts.get(entity_id))
+        _entity_snapshot(
+            match, entity_id, loadouts.get(entity_id), tools.get(entity_id)
+        )
         for entity_id in match.entities.ids()
     )
     return MatchSnapshot(
@@ -84,7 +90,7 @@ def build_match_snapshot(match, *, loadouts=None, mode_status=None, result=None)
     )
 
 
-def _entity_snapshot(match, entity_id, loadout):
+def _entity_snapshot(match, entity_id, loadout, tool_slot):
     spatial = match.spatial.get(entity_id) if entity_id in match.spatial else None
     vital = match.combat.get(entity_id) if entity_id in match.combat else None
     return EntitySnapshot(
@@ -109,6 +115,7 @@ def _entity_snapshot(match, entity_id, loadout):
             )
         ),
         weapons=() if loadout is None else _weapon_snapshots(loadout),
+        tool=None if tool_slot is None else _tool_snapshot(tool_slot),
     )
 
 
@@ -147,6 +154,23 @@ def _weapon_snapshots(loadout):
             selected=index == selected,
         )
         for index, held in enumerate(loadout)
+    )
+
+
+def _tool_snapshot(tool_slot):
+    held = tool_slot.equipped
+    if held is None:
+        return None
+    return WeaponSnapshot(
+        weapon_id=held.definition.definition_id,
+        attack_kind=held.definition.attack_kind,
+        loaded=held.runtime.loaded,
+        reserve=held.runtime.reserve,
+        cooldown_remaining=held.runtime.cooldown_remaining,
+        reload_remaining=held.runtime.reload_remaining,
+        ready=held.ready,
+        status=held.status,
+        selected=True,
     )
 
 

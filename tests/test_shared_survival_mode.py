@@ -9,6 +9,8 @@ from shooter.actor_creation import ActorDefinition
 from shooter.domain_events import DamageApplied, EntityKilled
 from shooter.map_definition import (
     MapDefinition,
+    MapConstructionAnchor,
+    MapHarvestable,
     MapInteraction,
     SpawnPoint,
     SpawnRegion,
@@ -27,13 +29,17 @@ from shooter.modes.zombie_survival import (
     InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
+    SelectSurvivorWeapon,
     SurvivalMode,
     SurvivalWavePlan,
+    UseSurvivorTool,
 )
+from shooter.modes.zombie_survival.mode import BREAKER, SMG
+from shooter.weapon_state import EquippedWeapon
 from shooter.world_collision import Aabb, actor_box, overlaps
 
 
-def resolved(interactions=()):
+def resolved(interactions=(), harvestables=(), construction_anchors=()):
     definition = MapDefinition(
         "arena",
         "Arena",
@@ -41,6 +47,8 @@ def resolved(interactions=()):
         (1000, 800),
         capabilities=frozenset(("bounds",)),
         interactions=interactions,
+        harvestables=harvestables,
+        construction_anchors=construction_anchors,
     )
     return MatchConfigurationResolver(
         default_mode_catalog(), MapCatalog((definition,))
@@ -114,7 +122,7 @@ def test_survival_snapshots_nearby_interaction_and_routes_explicit_intent():
     assert match.mode_status.interaction_result.reason == "out_of_range"
 
 
-def test_weapon_station_spends_survival_cash_and_replaces_loadout():
+def test_weapon_station_fills_the_second_survival_firearm_slot():
     station = MapInteraction(
         "smg-station",
         "weapon_station",
@@ -134,11 +142,177 @@ def test_weapon_station_spends_survival_cash_and_replaces_loadout():
 
     status = match.mode_status
     assert status.purchase_result.success is True
-    assert status.purchase_result.action == "replaced"
+    assert status.purchase_result.action == "purchased"
     assert status.cash == 0
-    weapon = match.snapshot().entity(mode.player_id).weapons[0]
-    assert weapon.weapon_id == "survivor_smg"
-    assert (weapon.loaded, weapon.reserve) == (40, 200)
+    weapons = match.snapshot().entity(mode.player_id).weapons
+    assert [weapon.weapon_id for weapon in weapons] == [
+        "survivor_rifle",
+        "survivor_smg",
+    ]
+    assert weapons[1].selected is True
+    assert (weapons[1].loaded, weapons[1].reserve) == (40, 200)
+
+
+def test_selection_keeps_each_survival_firearm_runtime_state_while_stowed():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    loadout = mode.loadouts[mode.player_id]
+    smg = EquippedWeapon(SMG)
+    smg.runtime.loaded = 17
+    smg.runtime.reserve = 88
+    loadout.add(smg, select=True)
+
+    match.advance(0.0, (SelectSurvivorWeapon(0),))
+    assert loadout.selected.definition.definition_id == "survivor_rifle"
+    match.advance(0.0, (SelectSurvivorWeapon(1),))
+
+    assert loadout.selected is smg
+    assert (smg.runtime.loaded, smg.runtime.reserve) == (17, 88)
+    assert loadout.select(2) is False
+
+
+def test_survival_pickaxe_is_a_separate_configured_tool_role_that_can_melee():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    enemy_id = mode.enemy_ids[0]
+    player = match.spatial.get(mode.player_id).transform
+    match.spatial.move_to(enemy_id, player.x + 70, player.y)
+    before = match.combat.get(enemy_id).health
+
+    match.advance(0.0, (UseSurvivorTool((1, 0)),))
+
+    snapshot = match.snapshot().entity(mode.player_id)
+    assert snapshot.tool.weapon_id == "survivor_pickaxe"
+    assert len(snapshot.weapons) == 1
+    assert match.combat.get(enemy_id).health == before - 75
+
+
+def test_survival_can_explicitly_omit_the_tool_role_without_affecting_firearms():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1, tool_definition=None)
+    match.start(mode)
+
+    snapshot = match.snapshot().entity(mode.player_id)
+    assert snapshot.tool is None
+    assert snapshot.weapons[0].weapon_id == "survivor_rifle"
+
+
+def test_pickaxe_harvesting_adds_map_authored_resources_to_match_state():
+    tree = MapHarvestable(
+        "tree-1",
+        "tree",
+        position=(540, 400),
+        properties=(
+            ("durability", "150"),
+            ("resource_id", "wood"),
+            ("resource_yield", "12"),
+        ),
+    )
+    match = Match(resolved(harvestables=(tree,)))
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+
+    match.advance(0.0, (UseSurvivorTool((1, 0)),))
+
+    result = match.mode_status.harvest_result
+    assert (result.success, result.harvestable_id) == (True, "tree-1")
+    assert result.remaining_durability == 75
+    assert (result.resource_id, result.resource_amount) == ("wood", 6)
+    assert match.mode_status.resources == (("wood", 6),)
+    assert mode.cash.balance == 0
+
+
+def test_construction_anchor_builds_with_resources_and_repairs_transactionally():
+    anchor = MapConstructionAnchor(
+        "gate",
+        "barricade",
+        position=(500, 400),
+        properties=(
+            ("build_cost", "wood:4"),
+            ("max_health", "100"),
+            ("repair_cost", "wood:1"),
+        ),
+    )
+    match = Match(resolved(construction_anchors=(anchor,)))
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    mode.resources.add("wood", 5)
+
+    match.advance(0.0, (InteractSurvivor(),))
+    built = match.mode_status.construction_result
+    mode.barricades["gate"].health = 25
+    match.advance(0.0, (InteractSurvivor(),))
+    repaired = match.mode_status.construction_result
+
+    assert (built.reason, built.health) == ("built", 100)
+    assert (repaired.reason, repaired.health) == ("repaired", 100)
+    assert match.mode_status.resources == (("wood", 0),)
+
+
+def test_built_barricade_stops_and_is_damaged_by_an_enemy_contact():
+    anchor = MapConstructionAnchor(
+        "gate",
+        "barricade",
+        area=Aabb(450, 350, 20, 100),
+        properties=(("build_cost", "wood:1"), ("max_health", "100")),
+    )
+    match = Match(resolved(construction_anchors=(anchor,)))
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    mode.resources.add("wood", 1)
+    match.advance(0.0, (InteractSurvivor(),))
+    enemy_id = mode.enemy_ids[0]
+    match.spatial.move_to(enemy_id, 430, 400)
+
+    match.advance(1.0, ())
+
+    assert mode.barricades["gate"].health < 100
+    assert match.spatial.get(enemy_id).transform.x < 450
+
+
+def test_breaker_applies_heavy_damage_to_a_barricade():
+    anchor = MapConstructionAnchor(
+        "gate",
+        "barricade",
+        area=Aabb(450, 350, 20, 100),
+        properties=(("build_cost", "wood:1"), ("max_health", "100")),
+    )
+    match = Match(resolved(construction_anchors=(anchor,)))
+    spawn_sources = (
+        *sources(),
+        SpawnRegion(
+            "runners",
+            Aabb(100, 100, 220, 500),
+            role="enemy",
+            faction="horde",
+            actor_kind="runner",
+        ),
+        SpawnRegion(
+            "breakers",
+            Aabb(100, 100, 220, 500),
+            role="enemy",
+            faction="horde",
+            actor_kind="breaker",
+        ),
+    )
+    mode = SurvivalMode(spawn_sources)
+    match.start(mode)
+    mode.resources.add("wood", 1)
+    match.advance(0.0, (InteractSurvivor(),))
+    mode.wave = 5
+    batch = mode._spawn_wave(match)
+    breaker_id = next(
+        entity_id
+        for entity_id in batch[-1].actor_ids
+        if match.entities.get(entity_id).definition_id == BREAKER.definition_id
+    )
+    match.spatial.move_to(breaker_id, 430, 400)
+
+    match.advance(1.0, ())
+
+    assert mode.barricades["gate"].health <= 100 - config.ZOMBIE_DAMAGE * 4
 
 
 def test_wave_plan_spawns_multiple_neutral_enemy_definitions():

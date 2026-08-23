@@ -11,15 +11,23 @@ class EnemyWaveRule:
     base_count: int
     growth: int = 0
     exponent: int = 1
+    starts_at: int = 1
 
     def __post_init__(self):
-        if self.base_count < 0 or self.growth < 0 or self.exponent < 1:
+        if (
+            self.base_count < 0
+            or self.growth < 0
+            or self.exponent < 1
+            or self.starts_at < 1
+        ):
             raise ValueError("wave counts and growth must be non-negative")
 
     def count_for(self, wave):
         if wave < 1:
             raise ValueError("wave numbers start at one")
-        return self.base_count + self.growth * (wave - 1) ** self.exponent
+        if wave < self.starts_at:
+            return 0
+        return self.base_count + self.growth * (wave - self.starts_at) ** self.exponent
 
 
 @dataclass(frozen=True, slots=True)

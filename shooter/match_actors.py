@@ -47,7 +47,7 @@ def remove_match_actor(match, actor_id, reason="removed"):
     return match.entities.remove(actor_id, reason=reason)
 
 
-def move_match_actor(match, actor_id, direction, dt, occupied_ids=()):
+def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=()):
     if actor_id not in match.spatial:
         return None
     actor = match.entities.get(actor_id)
@@ -67,6 +67,7 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=()):
     collision = match.spatial.get(actor_id).collision
     obstacles = (
         *match.map_definition.collision,
+        *tuple(obstacles),
         *(
             actor_box(
                 match.spatial.get(occupied_id).transform,

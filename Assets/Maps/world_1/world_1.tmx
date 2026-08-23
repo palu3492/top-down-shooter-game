@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="19" nextobjectid="304">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="23" nextobjectid="312">
  <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="547" tilecount="25" columns="0" objectalignment="topleft">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="vehicle">
@@ -777,5 +777,27 @@
   <object id="178" x="4357" y="6977.57">
    <polygon points="0,0 116.587,94.5063 272.92,-58.2936 250.839,-121.887 146.617,-219.043 -2.64971,-88.3236"/>
   </object>
+ </objectgroup>
+ <objectgroup id="19" name="Spawns">
+  <object id="304" name="survival-player" x="4800" y="7800" point="1">
+   <properties>
+    <property name="role" value="player"/>
+    <property name="faction" value="survivors"/>
+    <property name="actor_kind" value="soldier"/>
+   </properties>
+  </object>
+  <object id="305" name="walker-horde" x="4200" y="7200" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="walker"/></properties></object>
+  <object id="306" name="runner-horde" x="5300" y="7200" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="runner"/></properties></object>
+  <object id="307" name="breaker-horde" x="4500" y="8400" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="breaker"/></properties></object>
+ </objectgroup>
+ <objectgroup id="20" name="Interactions">
+  <object id="308" name="camp-smg" x="4950" y="7800" point="1"><properties><property name="kind" value="weapon_station"/><property name="weapon_id" value="survivor_smg"/><property name="price" value="500"/><property name="prompt" value="PRESS E: BUY SMG $500"/></properties></object>
+ </objectgroup>
+ <objectgroup id="21" name="Harvestables">
+  <object id="309" name="camp-oak" x="4580" y="7680" width="120" height="150"><properties><property name="kind" value="tree"/><property name="durability" value="150"/><property name="resource_id" value="wood"/><property name="resource_yield" value="12"/></properties></object>
+  <object id="310" name="camp-truck" x="5100" y="7650" width="180" height="120"><properties><property name="kind" value="vehicle"/><property name="durability" value="200"/><property name="resource_id" value="metal"/><property name="resource_yield" value="8"/></properties></object>
+ </objectgroup>
+ <objectgroup id="22" name="ConstructionAnchors">
+  <object id="311" name="camp-gate" x="4680" y="7480" width="180" height="36"><properties><property name="kind" value="barricade"/><property name="build_cost" value="wood:8,metal:2"/><property name="repair_cost" value="wood:2"/><property name="max_health" value="180"/></properties></object>
  </objectgroup>
 </map>

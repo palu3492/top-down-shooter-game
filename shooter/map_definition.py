@@ -22,6 +22,8 @@ class MapDefinition:
     spawns: tuple["SpawnPoint | SpawnRegion", ...] = ()
     supported_modes: frozenset[str] = frozenset()
     interactions: tuple["MapInteraction", ...] = ()
+    harvestables: tuple["MapHarvestable", ...] = ()
+    construction_anchors: tuple["MapConstructionAnchor", ...] = ()
 
     def spawn_roles(self):
         return frozenset(spawn.role for spawn in self.spawns if spawn.role)
@@ -55,6 +57,26 @@ class SpawnRegion:
 @dataclass(frozen=True, slots=True)
 class MapInteraction:
     interaction_id: str
+    kind: str
+    position: tuple[float, float] | None = None
+    area: Aabb | Ellipse | Polygon | None = None
+    tags: frozenset[str] = frozenset()
+    properties: tuple[tuple[str, str], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MapHarvestable:
+    harvestable_id: str
+    kind: str
+    position: tuple[float, float] | None = None
+    area: Aabb | Ellipse | Polygon | None = None
+    tags: frozenset[str] = frozenset()
+    properties: tuple[tuple[str, str], ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MapConstructionAnchor:
+    anchor_id: str
     kind: str
     position: tuple[float, float] | None = None
     area: Aabb | Ellipse | Polygon | None = None
@@ -147,6 +169,42 @@ def _interaction(obj, offset_x, offset_y):
     return None if area is None else MapInteraction(area=area, **common)
 
 
+def _harvestable(obj, offset_x, offset_y):
+    properties = _properties(obj)
+    kind = properties.get("kind") or obj.get("type", "")
+    if not kind or kind == "harvestable":
+        return None
+    common = {
+        "harvestable_id": obj.get("name") or f"harvestable-{obj.get('id', 'unknown')}",
+        "kind": kind,
+        "tags": _csv(properties.get("tags", "")),
+        "properties": tuple(sorted(properties.items())),
+    }
+    x = float(obj.get("x", 0)) + offset_x
+    y = float(obj.get("y", 0)) + offset_y
+    if obj.get("point") == "1":
+        return MapHarvestable(position=(x, y), **common)
+    area = _shape(obj, offset_x, offset_y)
+    return None if area is None else MapHarvestable(area=area, **common)
+
+
+def _construction_anchor(obj, offset_x, offset_y):
+    properties = _properties(obj)
+    kind = properties.get("kind") or obj.get("type", "") or "barricade"
+    common = {
+        "anchor_id": obj.get("name") or f"anchor-{obj.get('id', 'unknown')}",
+        "kind": kind,
+        "tags": _csv(properties.get("tags", "")),
+        "properties": tuple(sorted(properties.items())),
+    }
+    x = float(obj.get("x", 0)) + offset_x
+    y = float(obj.get("y", 0)) + offset_y
+    if obj.get("point") == "1":
+        return MapConstructionAnchor(position=(x, y), **common)
+    area = _shape(obj, offset_x, offset_y)
+    return None if area is None else MapConstructionAnchor(area=area, **common)
+
+
 @cache
 def load_tmx_definition(source, presentation_source=None):
     """Adapt available TMX semantics without requiring a complete future schema."""
@@ -157,6 +215,8 @@ def load_tmx_definition(source, presentation_source=None):
     collisions = []
     spawns = []
     interactions = []
+    harvestables = []
+    construction_anchors = []
     for layer in root.findall("objectgroup"):
         layer_name = layer.get("name", "")
         include = layer_name in {"Collision", "Obstacles"}
@@ -172,6 +232,16 @@ def load_tmx_definition(source, presentation_source=None):
                 interaction = _interaction(obj, offset_x, offset_y)
                 if interaction is not None:
                     interactions.append(interaction)
+                continue
+            if layer_name == "Harvestables":
+                harvestable = _harvestable(obj, offset_x, offset_y)
+                if harvestable is not None:
+                    harvestables.append(harvestable)
+                continue
+            if layer_name == "ConstructionAnchors":
+                anchor = _construction_anchor(obj, offset_x, offset_y)
+                if anchor is not None:
+                    construction_anchors.append(anchor)
                 continue
             solid = _properties(obj).get("solid", "false").lower() == "true"
             if not include and not solid:
@@ -191,6 +261,16 @@ def load_tmx_definition(source, presentation_source=None):
         capabilities.update(
             f"interaction:{interaction.kind}" for interaction in interactions
         )
+    if harvestables:
+        capabilities.add("harvestables")
+        capabilities.update(
+            f"harvestable:{harvestable.kind}" for harvestable in harvestables
+        )
+    if construction_anchors:
+        capabilities.add("construction_anchors")
+        capabilities.update(
+            f"construction_anchor:{anchor.kind}" for anchor in construction_anchors
+        )
     return MapDefinition(
         map_id=map_id,
         display_name=metadata.get("display_name", map_id.replace("_", " ").title()),
@@ -204,6 +284,8 @@ def load_tmx_definition(source, presentation_source=None):
         spawns=tuple(spawns),
         supported_modes=_csv(metadata.get("supported_modes", "")),
         interactions=tuple(interactions),
+        harvestables=tuple(harvestables),
+        construction_anchors=tuple(construction_anchors),
     )
 
 

@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 
 from shooter.interactions import InteractionContext, InteractionIntentResult
+from shooter.harvesting import HarvestResult
+from shooter.construction import ConstructionResult
 from shooter.weapon_purchases import WeaponPurchaseResult
 
 LOST = "LOST"
@@ -22,6 +24,9 @@ class SurvivalStatus:
     interaction_context: InteractionContext | None = None
     interaction_result: InteractionIntentResult | None = None
     purchase_result: WeaponPurchaseResult | None = None
+    harvest_result: HarvestResult | None = None
+    resources: tuple[tuple[str, int], ...] = ()
+    construction_result: ConstructionResult | None = None
 
 
 class SurvivalWallet:

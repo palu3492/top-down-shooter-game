@@ -1,6 +1,6 @@
 """The gameplay HUD is text derived from immutable presentation values."""
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from pathlib import Path
 
 import pygame
@@ -76,6 +76,16 @@ def test_debug_overlay_uses_text_and_primitives_without_gameplay_assets(display)
     assert surface.get_at((PANEL[0] + 2, PANEL[1] + 2))[:3] == BACKGROUND[:3]
     assert "load_image" not in source
     assert "shooter.assets" not in source
+
+
+def test_debug_overlay_expands_to_fit_its_longest_status_line(display):
+    session = Session(Viewport(WINDOW))
+    status = replace(session.presentation_status, notice="X" * 100)
+    surface = pygame.Surface(WINDOW, pygame.SRCALPHA)
+
+    DebugOverlay().draw(surface, session.snapshot, status)
+
+    assert surface.get_at((700, PANEL[1] + 2))[:3] == BACKGROUND[:3]
 
 
 def test_status_type_can_be_constructed_without_pygame_values():

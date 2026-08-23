@@ -18,7 +18,8 @@ import pygame
 
 from shooter import config
 from shooter.background import TiledBackground
-from shooter.commands import FIRE, INTERACT, RELOAD
+from shooter.camera import FollowCamera
+from shooter.commands import FIRE, INTERACT, RELOAD, SELECT_SLOT, USE_TOOL
 from shooter.input_adapter import PygameInputAdapter
 from shooter.map_definition import SpawnPoint, SpawnRegion, current_map_definition
 from shooter.modes.sandbox import AttackActor, MoveActor
@@ -27,6 +28,8 @@ from shooter.modes.zombie_survival import (
     InteractSurvivor,
     MoveSurvivor,
     ReloadSurvivorWeapon,
+    SelectSurvivorWeapon,
+    UseSurvivorTool,
 )
 from shooter.scenes import Scene
 from shooter.session import Session
@@ -127,14 +130,21 @@ class SnapshotGameplayScene(Scene):
             self.match.map_definition.presentation_source
         )
         self.input_adapter = PygameInputAdapter()
+        target_id = next(
+            entity_id
+            for entity_id in self.match.entities.ids()
+            if "player" in self.match.entities.tags_for(entity_id)
+        )
+        self.presentation_camera = FollowCamera(
+            self.window,
+            self.match.map_definition.size,
+            self.match.spatial,
+            target_id,
+        )
 
     @property
     def camera(self):
-        world_width, world_height = self.match.map_definition.size
-        return (
-            self.window[0] / 2 - world_width / 2,
-            self.window[1] / 2 - world_height / 2,
-        )
+        return self.presentation_camera.resize(self.window)
 
     def open(self):
         pass
@@ -211,6 +221,19 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             self.match.advance(0.0, (ReloadSurvivorWeapon(),))
         elif command is not None and command.action == INTERACT:
             self.match.advance(0.0, (InteractSurvivor(),))
+        elif command is not None and command.action == USE_TOOL:
+            player = self.match.spatial.get(self.mode.player_id).transform
+            camera_x, camera_y = self.camera
+            pointer = pygame.mouse.get_pos()
+            world_pointer = (pointer[0] - camera_x, pointer[1] - camera_y)
+            aim = (world_pointer[0] - player.x, world_pointer[1] - player.y)
+            self.match.advance(0.0, (UseSurvivorTool(aim),))
+        elif (
+            command is not None
+            and command.action == SELECT_SLOT
+            and command.value is not None
+        ):
+            self.match.advance(0.0, (SelectSurvivorWeapon(command.value),))
         return None
 
     def update(self, inputs, dt=config.SIM_DT):

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from shooter.map_definition import (
     MapDefinition,
+    MapHarvestable,
     MapInteraction,
     MapRequirements,
     SpawnPoint,
@@ -53,6 +54,33 @@ def test_incomplete_tmx_maps_adapt_without_requiring_future_layers():
         ),
     )
     assert riverside.interactions == ()
+
+
+def test_production_map_has_first_survival_semantics_without_visual_map_changes():
+    definition = load_tmx_definition("Assets/Maps/world_1/world_1.tmx")
+
+    assert definition.spawn_roles() >= {"player", "enemy"}
+    assert {spawn.actor_kind for spawn in definition.spawns} >= {
+        "soldier",
+        "walker",
+        "runner",
+        "breaker",
+    }
+    assert definition.capabilities >= {
+        "interactions",
+        "interaction:weapon_station",
+        "harvestables",
+        "harvestable:tree",
+        "harvestable:vehicle",
+        "construction_anchors",
+        "construction_anchor:barricade",
+    }
+    assert definition.interactions[0].interaction_id == "camp-smg"
+    assert {item.harvestable_id for item in definition.harvestables} == {
+        "camp-oak",
+        "camp-truck",
+    }
+    assert definition.construction_anchors[0].anchor_id == "camp-gate"
 
 
 def test_spawn_points_and_regions_normalize_without_map_identity_branches():
@@ -140,6 +168,33 @@ def test_interaction_regions_preserve_semantics_properties_and_offsets(tmp_path)
     assert interaction.area == Aabb(15, 27, 40, 50)
     assert interaction.tags == {"survival", "outdoor"}
     assert dict(interaction.properties)["price"] == "250"
+
+
+def test_harvestable_regions_preserve_semantics_properties_and_offsets(tmp_path):
+    source = tmp_path / "semantic-harvestables.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Harvestables" offsetx="10" offsety="20">'
+        '<object id="1" name="oak-1" x="5" y="7" width="40" height="50">'
+        '<properties><property name="kind" value="tree"/>'
+        '<property name="durability" value="200"/>'
+        '<property name="required_tool_capability" value="harvest"/>'
+        '</properties></object></objectgroup></map>'
+    )
+
+    (harvestable,) = load_tmx_definition(source).harvestables
+
+    assert harvestable == MapHarvestable(
+        "oak-1",
+        "tree",
+        area=Aabb(15, 27, 40, 50),
+        properties=(
+            ("durability", "200"),
+            ("kind", "tree"),
+            ("required_tool_capability", "harvest"),
+        ),
+    )
+    assert "harvestable:tree" in load_tmx_definition(source).capabilities
 
 
 def test_world_creation_uses_explicit_map_data_without_identity_branches(display):

@@ -5,15 +5,20 @@ import math
 
 from shooter import config
 from shooter.actor_creation import ActorDefinition
+from shooter.construction import ConstructionService
 from shooter.damage import DamageRequest
+from shooter.equipment_roles import ToolSlot
+from shooter.harvesting import HarvestingService
 from shooter.interactions import InteractionService
 from shooter.loadout import Loadout
+from shooter.map_definition import MapInteraction
 from shooter.match_actors import (
     move_match_actor,
     remove_match_actor,
     spawn_match_actors,
 )
 from shooter.modes.zombie_survival.state import LOST, SurvivalStatus, SurvivalWallet
+from shooter.resources import ResourceInventory
 from shooter.modes.zombie_survival.wave_config import (
     EnemyWaveRule,
     SurvivalWavePlan,
@@ -38,6 +43,9 @@ SURVIVOR = ActorDefinition(
 WALKER = ActorDefinition(
     "walker", "walker", "horde", config.ZOMBIE_HEALTH, (56, 56), config.ZOMBIE_SPEED
 )
+RUNNER = ActorDefinition("runner", "runner", "horde", 70, (42, 42), 440)
+BREAKER = ActorDefinition("breaker", "breaker", "horde", 260, (64, 64), 250)
+ENEMY_BARRICADE_DAMAGE = {"walker": 1.0, "runner": 1.0, "breaker": 4.0}
 RIFLE = WeaponDefinition(
     "survivor_rifle",
     "ballistic",
@@ -60,10 +68,23 @@ SMG = WeaponDefinition(
     spread=5.0,
     automatic=True,
 )
+PICKAXE = WeaponDefinition(
+    "survivor_pickaxe",
+    "melee",
+    75,
+    1.5,
+    reach=85,
+    arc=70,
+    capabilities=frozenset(("melee_attack", "harvest")),
+)
 SURVIVAL_WEAPONS = WeaponCatalog((RIFLE, SMG))
 DEFAULT_WAVE_PLAN = SurvivalWavePlan(
-    (EnemyWaveRule(WALKER, config.WAVE_BASE, growth=1, exponent=2),),
-    config.WAVE_INTERVAL_SECONDS,
+    (
+        EnemyWaveRule(WALKER, 5, growth=2),
+        EnemyWaveRule(RUNNER, 2, growth=1, starts_at=3),
+        EnemyWaveRule(BREAKER, 1, starts_at=5),
+    ),
+    25,
 )
 
 
@@ -83,6 +104,18 @@ class ReloadSurvivorWeapon:
 
 
 @dataclass(frozen=True, slots=True)
+class SelectSurvivorWeapon:
+    """Select a zero-based firearm slot without exposing input details to rules."""
+
+    slot: int
+
+
+@dataclass(frozen=True, slots=True)
+class UseSurvivorTool:
+    aim: tuple[float, float]
+
+
+@dataclass(frozen=True, slots=True)
 class InteractSurvivor:
     pass
 
@@ -96,6 +129,8 @@ class SurvivalMode:
         enemy_count=None,
         preparation_seconds=None,
         wave_plan=None,
+        firearm_slots=2,
+        tool_definition=PICKAXE,
     ):
         self.spawn_sources = tuple(spawn_sources)
         selected_plan = DEFAULT_WAVE_PLAN if wave_plan is None else wave_plan
@@ -108,11 +143,16 @@ class SurvivalMode:
             if preparation_seconds is None
             else preparation_seconds,
         )
+        if firearm_slots < 1:
+            raise ValueError("firearm_slots must be at least one")
+        self.firearm_slots = firearm_slots
         self.player_id = None
         self.enemy_ids = ()
         self.retired_enemy_ids = ()
         self.spawn_results = ()
         self.loadouts = {}
+        self.tool_slots = {}
+        self.tool_definition = tool_definition
         self.attacks = AttackDescriptionService()
         self.cash = SurvivalWallet()
         self.interactions = InteractionService()
@@ -120,6 +160,13 @@ class SurvivalMode:
         self.interaction_result = None
         self.purchase_result = None
         self.weapon_purchases = WeaponPurchaseService()
+        self.harvesting = HarvestingService()
+        self.harvestables = {}
+        self.harvest_result = None
+        self.resources = ResourceInventory()
+        self.construction = ConstructionService()
+        self.barricades = {}
+        self.construction_result = None
         self.wave = 1
         self.phase = "combat"
         self.preparation_remaining = 0.0
@@ -152,9 +199,20 @@ class SurvivalMode:
         self.player_id = player.actor_ids[0] if player.actor_ids else None
         if self.player_id is not None:
             self.loadouts[self.player_id] = Loadout(
-                (EquippedWeapon(RIFLE),), capacity=1
+                (EquippedWeapon(RIFLE),), capacity=self.firearm_slots
+            )
+            self.tool_slots[self.player_id] = ToolSlot(
+                None
+                if self.tool_definition is None
+                else EquippedWeapon(self.tool_definition)
             )
             self._refresh_interaction(match)
+        self.harvestables = self.harvesting.create_states(
+            match.map_definition.harvestables
+        )
+        self.barricades = self.construction.create_states(
+            match.map_definition.construction_anchors
+        )
         self.spawn_results = (
             player.spawn_result,
             *(batch.spawn_result for batch in enemy_batches),
@@ -210,6 +268,10 @@ class SurvivalMode:
                 self._fire_weapon(match, command.aim)
             elif isinstance(command, ReloadSurvivorWeapon):
                 self._selected_weapon().reload()
+            elif isinstance(command, SelectSurvivorWeapon):
+                self._select_weapon(command.slot)
+            elif isinstance(command, UseSurvivorTool):
+                self._use_tool(match, command.aim)
             elif isinstance(command, InteractSurvivor):
                 interaction_requested = True
         self._refresh_interaction(match)
@@ -235,6 +297,9 @@ class SurvivalMode:
             interaction_context=self.interaction_context,
             interaction_result=self.interaction_result,
             purchase_result=self.purchase_result,
+            harvest_result=self.harvest_result,
+            resources=self.resources.snapshot(),
+            construction_result=self.construction_result,
         )
 
     def result(self, match):
@@ -269,16 +334,26 @@ class SurvivalMode:
                 self.player_id,
                 dt,
                 avoid_ids=(other for other in living if other != enemy_id),
+                obstacles=self.construction.collision_obstacles(self.barricades),
             )
+        self._apply_barricade_damage(match, dt)
 
     def _selected_weapon(self):
         return self.loadouts[self.player_id].selected
+
+    def _select_weapon(self, slot):
+        if self.player_id is None:
+            return False
+        return self.loadouts[self.player_id].select(slot)
 
     def _advance_weapons(self, dt):
         if self.player_id is None:
             return
         for weapon in self.loadouts[self.player_id]:
             weapon.advance(dt)
+        tool = self.tool_slots[self.player_id].equipped
+        if tool is not None:
+            tool.advance(dt)
 
     def _fire_weapon(self, match, aim):
         if self.player_id is None or math.hypot(*aim) == 0:
@@ -307,6 +382,65 @@ class SurvivalMode:
                     and match.combat.get(enemy_id).alive
                 ),
                 config.BULLET_RANGE,
+            )
+            if target_id is None:
+                continue
+            result = match.damage.apply(
+                DamageRequest(
+                    attack.instigator_id,
+                    self.player_id,
+                    target_id,
+                    attack.damage,
+                    attack.attack_kind,
+                    match.tick,
+                    attack.weapon_id,
+                )
+            )
+            self._award_kill(result)
+
+    def _use_tool(self, match, aim):
+        if self.player_id is None or math.hypot(*aim) == 0:
+            return
+        tool = self.tool_slots[self.player_id].equipped
+        if tool is None:
+            return
+        used = tool.fire()
+        if not used.accepted:
+            return
+        origin = match.spatial.get(self.player_id).transform
+        harvestable = self.harvesting.nearest(
+            self.harvestables, (origin.x, origin.y), tool.definition.reach or 0
+        )
+        if harvestable is not None:
+            self.harvest_result = self.harvesting.harvest(tool, harvestable)
+            if (
+                self.harvest_result.success
+                and self.harvest_result.resource_id is not None
+                and self.harvest_result.resource_amount
+            ):
+                self.resources.add(
+                    self.harvest_result.resource_id,
+                    self.harvest_result.resource_amount,
+                )
+            return
+        for attack in self.attacks.create(
+            tool.definition,
+            self.player_id,
+            (origin.x, origin.y),
+            aim,
+            match.random_stream("survival-tool-attacks"),
+        ):
+            target_id = first_box_target_on_ray(
+                match,
+                attack.origin,
+                attack.direction,
+                (
+                    enemy_id
+                    for enemy_id in self.enemy_ids
+                    if enemy_id in match.combat
+                    and match.combat.get(enemy_id).alive
+                ),
+                attack.reach or 0,
             )
             if target_id is None:
                 continue
@@ -358,6 +492,42 @@ class SurvivalMode:
                     )
                 )
 
+    def _apply_barricade_damage(self, match, dt):
+        if dt == 0:
+            return
+        for state in self.barricades.values():
+            if not state.built or state.anchor.area is None:
+                continue
+            for enemy_id in self.enemy_ids:
+                if (
+                    enemy_id not in match.spatial
+                    or not match.combat.get(enemy_id).alive
+                ):
+                    continue
+                enemy = match.spatial.get(enemy_id)
+                if enemy.collision is None:
+                    continue
+                enemy_box = actor_box(enemy.transform, enemy.collision)
+                obstacle = state.anchor.area
+                in_contact = overlaps(enemy_box, obstacle)
+                if isinstance(obstacle, Aabb):
+                    in_contact = in_contact or overlaps(
+                        enemy_box,
+                        Aabb(
+                            obstacle.x - 1,
+                            obstacle.y - 1,
+                            obstacle.width + 2,
+                            obstacle.height + 2,
+                        ),
+                    )
+                if not in_contact:
+                    continue
+                role = match.entities.get(enemy_id).definition_id
+                multiplier = ENEMY_BARRICADE_DAMAGE.get(role, 1.0)
+                self.construction.damage(
+                    state, config.ZOMBIE_DAMAGE * multiplier * dt
+                )
+
     def _advance_waves(self, match, dt):
         if self.result(match) is not None:
             return
@@ -404,20 +574,35 @@ class SurvivalMode:
         self.interaction_context = self.interactions.discover(
             self.player_id,
             (position.x, position.y),
-            match.map_definition.interactions,
+            (*match.map_definition.interactions, *self._anchor_interactions(match)),
             120,
         )
 
-    def _execute_interaction(self):
-        if (
-            self.interaction_result is None
-            or not self.interaction_result.available
-            or self.interaction_context.kind != "weapon_station"
-        ):
-            return
-        self.purchase_result = self.weapon_purchases.purchase(
-            self.interaction_context.properties,
-            SURVIVAL_WEAPONS,
-            self.loadouts[self.player_id],
-            self.cash,
+    def _anchor_interactions(self, match):
+        return tuple(
+            MapInteraction(
+                anchor.anchor_id,
+                "construction_anchor",
+                anchor.position,
+                anchor.area,
+                anchor.tags,
+                anchor.properties,
+            )
+            for anchor in match.map_definition.construction_anchors
         )
+
+    def _execute_interaction(self):
+        if self.interaction_result is None or not self.interaction_result.available:
+            return
+        if self.interaction_context.kind == "weapon_station":
+            self.purchase_result = self.weapon_purchases.purchase(
+                self.interaction_context.properties,
+                SURVIVAL_WEAPONS,
+                self.loadouts[self.player_id],
+                self.cash,
+            )
+        elif self.interaction_context.kind == "construction_anchor":
+            state = self.barricades[self.interaction_context.interaction_id]
+            self.construction_result = self.construction.build_or_repair(
+                state, self.resources
+            )

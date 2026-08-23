@@ -29,6 +29,7 @@ class WeaponDefinition:
     automatic: bool = False
     reach: float | None = None
     arc: float | None = None
+    capabilities: frozenset[str] = frozenset()
 
 
 @dataclass(slots=True)

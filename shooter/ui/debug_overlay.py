@@ -28,6 +28,8 @@ class DebugOverlay:
         mode_line = self._mode_line(mode, snapshot.result)
         player_line = self._player_line(player)
         weapon_line = self._weapon_line(weapon)
+        loadout_line = self._loadout_line(player)
+        tool_line = self._tool_line(player)
         equipment_line = (
             f"EQUIPMENT grenade={presentation.grenades} "
             f"stun={presentation.stun_grenades} "
@@ -37,6 +39,8 @@ class DebugOverlay:
         interaction = getattr(mode, "interaction_context", None)
         interaction_result = getattr(mode, "interaction_result", None)
         purchase_result = getattr(mode, "purchase_result", None)
+        harvest_result = getattr(mode, "harvest_result", None)
+        construction_result = getattr(mode, "construction_result", None)
         neutral_context = None if interaction is None else interaction.prompt
         if interaction_result is not None:
             neutral_context = (
@@ -48,6 +52,20 @@ class DebugOverlay:
                 f"PURCHASE {purchase_result.reason} "
                 f"{purchase_result.weapon_id or '-'} "
                 f"balance={purchase_result.balance}"
+            )
+        if harvest_result is not None:
+            neutral_context = (
+                f"HARVEST {harvest_result.reason} "
+                f"{harvest_result.harvestable_id or '-'} "
+                f"durability={harvest_result.remaining_durability} "
+                f"yield={harvest_result.resource_id or '-'}x"
+                f"{harvest_result.resource_amount}"
+            )
+        if construction_result is not None:
+            neutral_context = (
+                f"BARRICADE {construction_result.reason} "
+                f"{construction_result.anchor_id} "
+                f"hp={construction_result.health}/{construction_result.max_health}"
             )
         context = (
             presentation.notice
@@ -61,6 +79,8 @@ class DebugOverlay:
             mode_line,
             player_line,
             weapon_line,
+            loadout_line,
+            tool_line,
             equipment_line,
             context_line,
         )
@@ -78,11 +98,14 @@ class DebugOverlay:
 
     def draw(self, surface, snapshot, presentation):
         lines = self.lines(snapshot, presentation)
+        font = pygame.font.Font(None, 23)
+        available_width = max(1, surface.get_width() - PANEL[0] * 2)
+        content_width = max((font.size(line)[0] for line in lines), default=0)
+        width = min(available_width, max(PANEL[2], content_width + INSET * 2))
         height = max(PANEL[3], INSET * 2 + len(lines) * LINE_HEIGHT)
-        panel = pygame.Surface((PANEL[2], height), pygame.SRCALPHA)
+        panel = pygame.Surface((width, height), pygame.SRCALPHA)
         panel.fill(BACKGROUND)
         pygame.draw.rect(panel, BORDER, panel.get_rect(), 2)
-        font = pygame.font.Font(None, 23)
         for index, line in enumerate(lines):
             colour = TEXT if index < 5 else MUTED
             panel.blit(
@@ -100,11 +123,15 @@ class DebugOverlay:
             composition = ",".join(
                 f"{kind}:{count}" for kind, count in mode.enemy_composition
             ) or "-"
+            resources = ",".join(
+                f"{kind}:{count}" for kind, count in mode.resources
+            ) or "-"
             return (
                 f"MODE {mode.phase} | WAVE {mode.wave}/{target} | "
                 f"NEXT {mode.preparation_remaining:.1f}s | "
                 f"ENEMIES {mode.enemies_remaining} "
                 f"| TYPES {composition} | CASH {mode.cash} "
+                f"| RESOURCES {resources} "
                 f"| RESULT {result or mode.outcome or '-'}"
             )
         title = getattr(mode, "title", type(mode).__name__)
@@ -143,4 +170,26 @@ class DebugOverlay:
             f"status={weapon.status or 'ready'} "
             f"cooldown={weapon.cooldown_remaining:.2f}s "
             f"reload={weapon.reload_remaining:.2f}s"
+        )
+
+    @staticmethod
+    def _loadout_line(player):
+        if player is None or not player.weapons:
+            return "LOADOUT -"
+        slots = " | ".join(
+            f"{index + 1}:{weapon.weapon_id}"
+            f" {weapon.loaded}/{weapon.reserve}"
+            f"{' *' if weapon.selected else ''}"
+            for index, weapon in enumerate(player.weapons)
+        )
+        return f"LOADOUT {slots}"
+
+    @staticmethod
+    def _tool_line(player):
+        if player is None or player.tool is None:
+            return "TOOL -"
+        tool = player.tool
+        return (
+            f"TOOL Q:{tool.weapon_id} status={tool.status or 'ready'} "
+            f"cooldown={tool.cooldown_remaining:.2f}s"
         )

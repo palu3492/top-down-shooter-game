@@ -45,6 +45,7 @@ def test_shared_survival_moves_kills_and_returns_to_menu(display):
         scene.match.spatial.move_to(enemy_id, before.x, before.y + 400)
 
     scene.update(ControlFrame((1, 0)), config.SIM_DT)
+    assert scene.camera[0] < window[0] / 2 - before.x
     for _ in range(5):
         target = scene.match.spatial.get(first_enemy).transform
         camera_x, camera_y = scene.camera
