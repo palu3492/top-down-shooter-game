@@ -69,6 +69,9 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
     assert definition.capabilities >= {
         "interactions",
         "interaction:weapon_station",
+        "interaction:ammo_station",
+        "interaction:health_station",
+        "interaction:armor_station",
         "harvestables",
         "harvestable:tree",
         "harvestable:vehicle",
@@ -76,6 +79,12 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
         "construction_anchor:barricade",
     }
     assert definition.interactions[0].interaction_id == "camp-smg"
+    assert {item.kind for item in definition.interactions} >= {
+        "weapon_station",
+        "ammo_station",
+        "health_station",
+        "armor_station",
+    }
     assert {item.harvestable_id for item in definition.harvestables} == {
         "camp-oak",
         "camp-truck",

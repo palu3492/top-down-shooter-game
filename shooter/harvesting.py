@@ -35,6 +35,13 @@ class HarvestResult:
     resource_amount: int = 0
 
 
+@dataclass(frozen=True, slots=True)
+class HarvestContext:
+    harvestable_id: str
+    kind: str
+    prompt: str
+
+
 class HarvestingService:
     def create_states(self, definitions):
         states = {}
@@ -68,6 +75,21 @@ class HarvestingService:
         )
         eligible = [candidate for candidate in candidates if candidate[0] <= reach]
         return None if not eligible else min(eligible)[2]
+
+    def discover(self, states, position, reach, tool):
+        if tool is None:
+            return None
+        state = self.nearest(states, position, reach)
+        if state is None:
+            return None
+        values = dict(state.definition.properties)
+        resource = values.get("resource_id")
+        resource_text = "" if not resource else f" FOR {resource.upper()}"
+        return HarvestContext(
+            state.definition.harvestable_id,
+            state.definition.kind,
+            f"PRESS Q: HARVEST {state.definition.kind.upper()}{resource_text}",
+        )
 
     def harvest(self, tool, state):
         if state is None:

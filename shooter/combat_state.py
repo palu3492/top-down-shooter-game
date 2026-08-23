@@ -86,6 +86,20 @@ class CombatStateStore:
         self._states[entity_id] = after
         return after
 
+    def grant_armor(self, entity_id: EntityId, amount, capacity):
+        """Restore armor while allowing an authored source to establish its cap."""
+        if amount < 0 or capacity < 0:
+            raise ValueError("armor grant values cannot be negative")
+        before = self.get(entity_id)
+        maximum = max(before.max_armor, float(capacity))
+        after = replace(
+            before,
+            armor=min(maximum, before.armor + amount),
+            max_armor=maximum,
+        )
+        self._states[entity_id] = after
+        return after
+
     def synchronize(self, entity_id: EntityId, health, armor=None):
         """Temporary bridge from legacy actor-owned values during migration."""
         before = self.get(entity_id)

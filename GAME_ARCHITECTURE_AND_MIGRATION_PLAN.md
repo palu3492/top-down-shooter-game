@@ -338,6 +338,7 @@ simulation through the same conceptual command boundary.
 The shared combat model owns:
 
 - weapon definitions and equipped weapon state;
+- immutable weapon-upgrade definitions and per-instance owned modifications;
 - fire cadence, reload state, magazines, and reserves;
 - hitscan and projectile attacks;
 - collision and impact resolution;

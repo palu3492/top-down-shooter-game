@@ -318,8 +318,15 @@ Purchases:
 
 - weapons
 - ammunition
-- attachments later
-- possibly weapon upgrades much later
+- weapon upgrades through a separate, explicitly authored upgrade station
+
+Weapon upgrades are mode-configured offers, not properties hardcoded into a
+gun or Survival. Each offer targets a compatible owned weapon instance and can
+apply a named, non-duplicated modification such as an extended magazine or an
+SMG accuracy improvement (reduced spread). Future offers may adjust only
+declared attributes such as magazine capacity, spread, recoil, damage, reload
+time, or fire mode. The shared weapon system owns their effect; Survival owns
+availability, price, and map placement.
 
 ---
 

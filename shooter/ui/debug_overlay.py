@@ -39,9 +39,13 @@ class DebugOverlay:
         interaction = getattr(mode, "interaction_context", None)
         interaction_result = getattr(mode, "interaction_result", None)
         purchase_result = getattr(mode, "purchase_result", None)
+        station_result = getattr(mode, "station_result", None)
         harvest_result = getattr(mode, "harvest_result", None)
+        harvest_context = getattr(mode, "harvest_context", None)
         construction_result = getattr(mode, "construction_result", None)
         neutral_context = None if interaction is None else interaction.prompt
+        if neutral_context is None and harvest_context is not None:
+            neutral_context = harvest_context.prompt
         if interaction_result is not None:
             neutral_context = (
                 f"INTERACT {interaction_result.reason} "
@@ -52,6 +56,12 @@ class DebugOverlay:
                 f"PURCHASE {purchase_result.reason} "
                 f"{purchase_result.weapon_id or '-'} "
                 f"balance={purchase_result.balance}"
+            )
+        if station_result is not None:
+            neutral_context = (
+                f"STATION {station_result.kind} {station_result.reason} "
+                f"amount={station_result.amount:g} "
+                f"balance={station_result.balance}"
             )
         if harvest_result is not None:
             neutral_context = (
@@ -130,6 +140,7 @@ class DebugOverlay:
                 f"MODE {mode.phase} | WAVE {mode.wave}/{target} | "
                 f"NEXT {mode.preparation_remaining:.1f}s | "
                 f"ENEMIES {mode.enemies_remaining} "
+                f"| PENDING {mode.pending_enemies} "
                 f"| TYPES {composition} | CASH {mode.cash} "
                 f"| RESOURCES {resources} "
                 f"| RESULT {result or mode.outcome or '-'}"

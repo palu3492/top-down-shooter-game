@@ -26,9 +26,9 @@ package.
 |---|---|
 | Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M11.4 — Add ammunition and health/armor station policies |
+| Active work package | M11.6 — Add a paced, player-aware Survival spawn director |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
-| Next integration checkpoint | End of M11.4 — First authored playable Survival run |
+| Next integration checkpoint | End of M11.10 — Combat-feel baseline playable run |
 | Last updated | 2026-08-23 |
 
 ## Confirmed Project Constraints
@@ -107,6 +107,24 @@ package.
 | M11.4 | Add ammunition and health/armor station policies | Completes the short preparation decision loop. |
 | M11.5 | Playtest and tune the first five waves | Validates the actual run: fight, earn, buy/build, then survive a harder wave. |
 
+### Re-prioritised combat-feel baseline
+
+Playtesting established that balancing isolated numbers before the combat loop is
+structurally complete produces misleading feedback. M11.5 remains useful for
+recording observations and maintaining the editable tuning profile, but detailed
+price/count/speed tuning is deferred until this baseline is complete:
+
+| ID | Work package | Purpose |
+|---|---|---|
+| M11.6 | Paced, player-aware Survival spawn director | Release wave budgets in timed bursts through weighted authored lanes; prevent visible/too-close/blocked spawns and avoid one immediate blob. |
+| M11.7 | Weapon handling baseline | Implement held automatic, semi-auto, and burst trigger behavior plus data-defined per-weapon range, spread/recoil, and optional falloff. |
+| M11.8 | Active equipment baseline | Finish explicit firearm/tool active selection, snapshot/debug feedback, and input behavior so the pickaxe behaves as an equipped Fortnite-style primary tool. |
+| M11.9 | Consumable health-pack loop | Replace instant health restoration with purchasable, carried, selectable, and usable health packs; retain optional station policies for modes that want direct restoration. |
+| M11.10 | Map combat-structure first pass | Author intended spawn entrances/lanes and initial boundaries/collision without guessing the unfinished level's final layout. |
+
+Only after M11.6–M11.10 will M11.5 resume full numerical tuning of reward,
+station-price, ammo, enemy-pressure, and preparation-time values.
+
 ### Planned reusable weapon-system continuation
 
 The current weapon boundary already owns definitions, individual runtime ammo,
@@ -126,12 +144,28 @@ range are deliberately temporary:
 - Keep spread/recoil/movement penalties as separate optional policies. They must
   be deterministic from match-owned random sources and must not be required by
   modes that prefer simpler weapons.
+- Add a reusable weapon-modification system and a distinct TMX-authored
+  `weapon_upgrade_station`. An upgrade is an immutable definition plus
+  per-weapon owned state—not a Survival-only switch—and can alter magazine
+  capacity, spread/accuracy, recoil, damage, reload time, fire mode, or other
+  explicitly supported weapon attributes. Survival may sell upgrades such as
+  extended magazines and SMG accuracy improvements; other modes choose their
+  own offers or omit the station entirely.
+- Make upgrade purchases transactional and configuration-driven: validate the
+  target weapon and compatibility, charge mode-owned currency only on success,
+  prevent duplicate/non-stackable upgrades, preserve the upgraded weapon while
+  it is stowed, and expose the result through snapshots/debug presentation.
 
 Acceptance criteria for that future package: a held automatic trigger fires at
 the authored cadence without frame-rate dependence; a semi-automatic trigger
 fires once per press; burst count is data-defined; and tests show different
 weapons applying their configured maximum range and falloff without
 Survival-specific branches.
+
+The upgrade package additionally accepts only authored, compatible upgrades;
+keeps per-instance modifications isolated between weapons and matches; and
+proves that a larger magazine and lower spread affect shared weapon operation
+without changing the base weapon definition or requiring a graphical UI.
 
 ### M11.1 — First-five-wave roster and plan
 
@@ -187,6 +221,45 @@ roster, dynamic barricades, steering, and Survival integration.
 
 **Verification evidence:** Focused Ruff passes and 35 TMX, Survival, and
 presentation tests pass, including marker placement and camera-offset coverage.
+
+### M11.4 — Ammunition and health/armor station policies
+
+**Status:** Complete
+
+- Added a reusable, transactional station purchase service. Authored
+  `ammo_station`, `health_station`, and `armor_station` properties validate
+  price/effect values, reject full or unaffordable purchases without charging,
+  and report an immutable result for presentation.
+- Ammo refill applies to every eligible firearm in the loadout; health restores
+  up to the actor's maximum; armor can establish an authored armor capacity and
+  restore up to it. These policies remain independent of Survival's map, UI, and
+  wallet implementation.
+- Authored the first three station locations in the production TMX and exposed
+  their normal interaction prompts and temporary map markers.
+
+**Verification evidence:** Focused Ruff passes and 42 station, Survival, map,
+debug-overlay, and presentation tests pass.
+
+### M11.5 — First-five-wave initial tuning pass
+
+**Status:** Paused after initial observation
+
+- The current five-wave rewards are $250, $350, $550, $700, and $900. This
+  creates the intended first-run economy: wave one pays for one ammo refill;
+  wave-two savings enable an early choice between an SMG and recovery; armor is
+  achievable by wave three.
+- Nearby harvestables now expose a `PRESS Q` prompt and resource type in the
+  debug overlay, closing the discoverability gap found during the authored camp
+  walkthrough. `E` remains reserved for stations and barricade anchors.
+- Further numerical tuning remains playtest-driven: enemy speed/contact damage,
+  prices, and preparation duration will change only after observing actual runs.
+- `balance/survival.toml` is now the editable source of truth for a fresh
+  Survival match's enemy speeds, starting rifle ammunition, kill reward, and
+  preparation timing. The initial profile lowers walker speed from 360 to 240
+  and starting rifle ammunition from 180 total rounds to 60.
+- Further tuning is deliberately paused pending the M11.6–M11.10 combat-feel
+  baseline. The current all-at-once horde spawn is not accepted as a balance
+  target or representative Survival pacing.
 
 ### Corrective migration fix — Shared-mode follow camera
 
@@ -1262,5 +1335,5 @@ decision has meaningful alternatives and is expensive to reverse.
 
 ## Next Action
 
-Begin M11.4 by adding reusable ammunition and health/armor station policies,
-then author their first Survival instances in the TMX map.
+Begin M11.6 by defining a shared spawn-director contract and using it for
+Survival's paced, multi-lane, player-aware enemy arrivals.

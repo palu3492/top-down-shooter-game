@@ -42,6 +42,7 @@ class SpawnPoint:
     tags: frozenset[str] = frozenset()
     faction: str | None = None
     actor_kind: str | None = None
+    weight: float = 1.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +53,7 @@ class SpawnRegion:
     tags: frozenset[str] = frozenset()
     faction: str | None = None
     actor_kind: str | None = None
+    weight: float = 1.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,6 +143,7 @@ def _spawn(obj, offset_x, offset_y):
         "tags": _csv(properties.get("tags", "")),
         "faction": properties.get("faction") or None,
         "actor_kind": properties.get("actor_kind") or None,
+        "weight": max(0.0, float(properties.get("weight", 1))),
     }
     x = float(obj.get("x", 0)) + offset_x
     y = float(obj.get("y", 0)) + offset_y

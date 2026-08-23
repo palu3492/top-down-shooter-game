@@ -44,6 +44,20 @@ def test_harvesting_requires_the_authored_tool_capability():
     assert state.durability == 50
 
 
+def test_nearby_harvestable_exposes_a_tool_specific_prompt():
+    definition = MapHarvestable(
+        "truck-1",
+        "vehicle",
+        position=(20, 0),
+        properties=(("durability", "50"), ("resource_id", "metal")),
+    )
+    states = HarvestingService().create_states((definition,))
+
+    context = HarvestingService().discover(states, (0, 0), 80, PICKAXE)
+
+    assert context.prompt == "PRESS Q: HARVEST VEHICLE FOR METAL"
+
+
 def test_harvest_yields_are_deterministic_across_multiple_tool_hits():
     definition = MapHarvestable(
         "truck-1",

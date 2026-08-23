@@ -35,6 +35,7 @@ from shooter.scenes import Scene
 from shooter.session import Session
 from shooter.ui.snapshot_presentation import SnapshotPresentation
 from shooter.ui.map_semantics import MapSemanticsRenderer
+from shooter.ui.survival_tuner import SurvivalTuner
 from shooter.world_collision import Aabb
 
 PAUSE = "PAUSE"
@@ -209,10 +210,21 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
 
     title = "ZOMBIE SURVIVAL"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tuner = SurvivalTuner(self.mode.balance)
+        self.tuning = False
+
     def handle(self, event):
         routed = super().handle(event)
         if routed is not None:
             return routed
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
+            self.tuning = not self.tuning
+            return None
+        if self.tuning and event.type == pygame.KEYDOWN:
+            self.tuner.handle(event)
+            return None
         command = self.input_adapter.action_for(event)
         if command is not None and command.action == FIRE:
             player = self.match.spatial.get(self.mode.player_id).transform
@@ -225,12 +237,7 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
         elif command is not None and command.action == INTERACT:
             self.match.advance(0.0, (InteractSurvivor(),))
         elif command is not None and command.action == USE_TOOL:
-            player = self.match.spatial.get(self.mode.player_id).transform
-            camera_x, camera_y = self.camera
-            pointer = pygame.mouse.get_pos()
-            world_pointer = (pointer[0] - camera_x, pointer[1] - camera_y)
-            aim = (world_pointer[0] - player.x, world_pointer[1] - player.y)
-            self.match.advance(0.0, (UseSurvivorTool(aim),))
+            self.match.advance(0.0, (UseSurvivorTool(),))
         elif (
             command is not None
             and command.action == SELECT_SLOT
@@ -238,6 +245,11 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
         ):
             self.match.advance(0.0, (SelectSurvivorWeapon(command.value),))
         return None
+
+    def draw(self, surface, alpha):
+        super().draw(surface, alpha)
+        if self.tuning:
+            self.tuner.draw(surface)
 
     def update(self, inputs, dt=config.SIM_DT):
         self.match.advance(dt, (MoveSurvivor(inputs.move),))

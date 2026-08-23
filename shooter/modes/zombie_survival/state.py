@@ -3,9 +3,10 @@
 from dataclasses import dataclass, field
 
 from shooter.interactions import InteractionContext, InteractionIntentResult
-from shooter.harvesting import HarvestResult
+from shooter.harvesting import HarvestContext, HarvestResult
 from shooter.construction import ConstructionResult
 from shooter.weapon_purchases import WeaponPurchaseResult
+from shooter.station_purchases import StationPurchaseResult
 
 LOST = "LOST"
 
@@ -17,6 +18,7 @@ class SurvivalStatus:
     preparation_remaining: float
     cash: int
     enemies_remaining: int
+    pending_enemies: int = 0
     outcome: str | None = None
     wave_target: int | None = None
     title: str = "Zombie Survival"
@@ -24,7 +26,9 @@ class SurvivalStatus:
     interaction_context: InteractionContext | None = None
     interaction_result: InteractionIntentResult | None = None
     purchase_result: WeaponPurchaseResult | None = None
+    station_result: StationPurchaseResult | None = None
     harvest_result: HarvestResult | None = None
+    harvest_context: HarvestContext | None = None
     resources: tuple[tuple[str, int], ...] = ()
     construction_result: ConstructionResult | None = None
 

@@ -34,7 +34,7 @@ from shooter.modes.zombie_survival import (
     SurvivalWavePlan,
     UseSurvivorTool,
 )
-from shooter.modes.zombie_survival.mode import BREAKER, SMG
+from shooter.modes.zombie_survival.mode import BREAKER, RIFLE, SMG
 from shooter.weapon_state import EquippedWeapon
 from shooter.world_collision import Aabb, actor_box, overlaps
 
@@ -87,6 +87,11 @@ def test_survival_spawns_player_and_initial_horde_into_match_stores():
     snapshot = match.snapshot()
 
     assert mode.player_id is not None
+    assert len(mode.enemy_ids) == 2
+    assert sum(count for _, count in mode.pending_spawns) == 3
+    match.advance(1.0)
+    match.advance(1.0)
+    snapshot = match.snapshot()
     assert len(mode.enemy_ids) == 5
     assert len(snapshot.entities) == 6
     assert snapshot.entity(mode.player_id).tags >= {"actor", "player"}
@@ -153,6 +158,29 @@ def test_weapon_station_fills_the_second_survival_firearm_slot():
     assert (weapons[1].loaded, weapons[1].reserve) == (40, 200)
 
 
+def test_survival_routes_an_authored_ammo_station_through_shared_purchase_policy():
+    station = MapInteraction(
+        "ammo-station",
+        "ammo_station",
+        position=(500, 400),
+        properties=(("price", "50"),),
+    )
+    match = Match(resolved((station,)))
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    mode.cash.increase_cash(50)
+    mode.loadouts[mode.player_id].selected.runtime.reserve = 0
+
+    match.advance(0.0, (InteractSurvivor(),))
+
+    result = match.mode_status.station_result
+    assert (result.success, result.kind, result.balance) == (True, "ammo_station", 0)
+    assert (
+        mode.loadouts[mode.player_id].selected.runtime.reserve
+        == RIFLE.reserve_capacity
+    )
+
+
 def test_selection_keeps_each_survival_firearm_runtime_state_while_stowed():
     match = Match(resolved())
     mode = SurvivalMode(sources(), enemy_count=1)
@@ -181,7 +209,7 @@ def test_survival_pickaxe_is_a_separate_configured_tool_role_that_can_melee():
     match.spatial.move_to(enemy_id, player.x + 70, player.y)
     before = match.combat.get(enemy_id).health
 
-    match.advance(0.0, (UseSurvivorTool((1, 0)),))
+    match.advance(0.0, (UseSurvivorTool(), FireSurvivorWeapon((1, 0))))
 
     snapshot = match.snapshot().entity(mode.player_id)
     assert snapshot.tool.weapon_id == "survivor_pickaxe"
@@ -214,7 +242,9 @@ def test_pickaxe_harvesting_adds_map_authored_resources_to_match_state():
     mode = SurvivalMode(sources(), enemy_count=1)
     match.start(mode)
 
-    match.advance(0.0, (UseSurvivorTool((1, 0)),))
+    assert match.mode_status.harvest_context.prompt == "PRESS Q: HARVEST TREE FOR WOOD"
+
+    match.advance(0.0, (UseSurvivorTool(), FireSurvivorWeapon((1, 0))))
 
     result = match.mode_status.harvest_result
     assert (result.success, result.harvestable_id) == (True, "tree-1")
@@ -301,11 +331,19 @@ def test_breaker_applies_heavy_damage_to_a_barricade():
     match.start(mode)
     mode.resources.add("wood", 1)
     match.advance(0.0, (InteractSurvivor(),))
+    mode.pending_spawns.clear()
     mode.wave = 5
     batch = mode._spawn_wave(match)
+    while not any(
+        match.entities.get(entity_id).definition_id == BREAKER.definition_id
+        for spawned in batch
+        for entity_id in spawned.actor_ids
+    ):
+        batch = mode._release_spawn_burst(match)
     breaker_id = next(
         entity_id
-        for entity_id in batch[-1].actor_ids
+        for spawned in batch
+        for entity_id in spawned.actor_ids
         if match.entities.get(entity_id).definition_id == BREAKER.definition_id
     )
     match.spatial.move_to(breaker_id, 430, 400)
@@ -348,6 +386,7 @@ def test_survivor_and_enemies_move_in_authoritative_world_space():
     mode = SurvivalMode(sources(), enemy_count=1)
     match.start(mode)
     enemy = mode.enemy_ids[0]
+    mode.entry_remaining.clear()
     player_before = match.spatial.get(mode.player_id).transform
     enemy_before = match.spatial.get(enemy).transform
     match.advance(0.1, (MoveSurvivor((1, 0)),))
@@ -455,14 +494,14 @@ def test_survivor_rifle_ammo_cooldown_reload_and_snapshot_are_authoritative():
     match.advance(0.0, (FireSurvivorWeapon(aim),))
     match.advance(0.0, (FireSurvivorWeapon(aim),))
     weapon = match.snapshot().entity(mode.player_id).weapons[0]
-    assert weapon.loaded == 59
+    assert weapon.loaded == 29
     assert weapon.ready is False
 
     match.advance(1 / 6, (FireSurvivorWeapon(aim_at(match, mode, enemy)),))
-    assert match.snapshot().entity(mode.player_id).weapons[0].loaded == 58
+    assert match.snapshot().entity(mode.player_id).weapons[0].loaded == 28
     match.advance(0.0, (ReloadSurvivorWeapon(),))
     weapon = match.snapshot().entity(mode.player_id).weapons[0]
-    assert (weapon.loaded, weapon.reserve) == (60, 118)
+    assert (weapon.loaded, weapon.reserve) == (30, 28)
     assert weapon.status == "reload"
 
     match.advance(config.RELOAD_SECONDS)
@@ -483,7 +522,7 @@ def test_weapon_ray_hits_nearest_enemy_and_a_miss_still_spends_ammunition():
     assert match.combat.get(near).health == 80
     assert match.combat.get(far).health == 100
     match.advance(1 / 6, (FireSurvivorWeapon((0, -1)),))
-    assert match.snapshot().entity(mode.player_id).weapons[0].loaded == 58
+    assert match.snapshot().entity(mode.player_id).weapons[0].loaded == 28
     assert match.combat.get(near).health == 80
     assert match.combat.get(far).health == 100
 

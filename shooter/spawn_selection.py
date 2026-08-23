@@ -87,7 +87,13 @@ class SpawnSelector:
         if not candidates:
             return SpawnSelection(None, reason=NO_SOURCES)
 
-        for source in rng.sample(candidates, len(candidates)):
+        remaining = list(candidates)
+        while remaining:
+            weights = [max(0.0, getattr(source, "weight", 1.0)) for source in remaining]
+            if not any(weights):
+                weights = None
+            source = rng.choices(remaining, weights=weights, k=1)[0]
+            remaining.remove(source)
             attempts = 1 if isinstance(source, SpawnPoint) else attempts_per_region
             for _ in range(attempts):
                 position = _sample(source, rng)
