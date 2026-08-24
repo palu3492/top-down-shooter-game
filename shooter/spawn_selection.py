@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 
 from shooter.map_definition import SpawnPoint
-from shooter.world_collision import Aabb, Ellipse, Polygon, overlaps
+from shooter.world_collision import Aabb, Ellipse, Polygon, contains, overlaps
 
 NO_SOURCES = "no_sources"
 NO_VALID_POSITION = "no_valid_position"
@@ -38,10 +38,15 @@ class PlacementConstraints:
     minimum_occupant_distance: float = 0.0
     collision: tuple[Aabb | Ellipse | Polygon, ...] = ()
     footprint: tuple[float, float] = (0.0, 0.0)
+    playable_areas: tuple[Aabb | Ellipse | Polygon, ...] = ()
 
     def accepts(self, position):
         footprint = _footprint(position, self.footprint)
         if self.bounds is not None and not _contains(self.bounds, footprint):
+            return False
+        if self.playable_areas and not any(
+            contains(area, footprint) for area in self.playable_areas
+        ):
             return False
         if (
             self.exclude_visible

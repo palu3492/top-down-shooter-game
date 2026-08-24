@@ -6,7 +6,7 @@ import math
 from shooter.actor_creation import NeutralActorFactory
 from shooter.spatial import Bounds, Box, Transform
 from shooter.spawn_service import SpawnService
-from shooter.world_collision import Polygon, actor_box, overlaps
+from shooter.world_collision import Aabb, Polygon, actor_box, bounds_of, contains, overlaps
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +65,7 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
     delta_x = dx * actor.movement_speed * dt
     delta_y = dy * actor.movement_speed * dt
     collision = match.spatial.get(actor_id).collision
+    playable_areas = match.map_definition.playable_areas
     obstacles = (
         *match.map_definition.collision,
         *tuple(obstacles),
@@ -79,7 +80,16 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
             and match.spatial.get(occupied_id).collision is not None
         ),
     )
-    if collision is None or not obstacles:
+    travel_area = Aabb(
+        min(current.x, current.x + delta_x) - half_width,
+        min(current.y, current.y + delta_y) - half_height,
+        abs(delta_x) + actor.collision_size[0],
+        abs(delta_y) + actor.collision_size[1],
+    )
+    obstacles = tuple(
+        obstacle for obstacle in obstacles if overlaps(travel_area, bounds_of(obstacle))
+    )
+    if collision is None or (not obstacles and not playable_areas):
         target = bounds.clamp(Transform(current.x + delta_x, current.y + delta_y))
         return match.spatial.move_to(actor_id, target.x, target.y)
 
@@ -90,13 +100,13 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
         next_x = bounds.clamp(
             Transform(position.x + delta_x / steps, position.y)
         )
-        blocked_x = _blocked(next_x, collision, obstacles)
-        position = _resolve_step(position, next_x, collision, obstacles)
+        blocked_x = _blocked(next_x, collision, obstacles, playable_areas)
+        position = _resolve_step(position, next_x, collision, obstacles, playable_areas)
         next_y = bounds.clamp(
             Transform(position.x, position.y + delta_y / steps)
         )
-        blocked_y = _blocked(next_y, collision, obstacles)
-        position = _resolve_step(position, next_y, collision, obstacles)
+        blocked_y = _blocked(next_y, collision, obstacles, playable_areas)
+        position = _resolve_step(position, next_y, collision, obstacles, playable_areas)
         if blocked_x or blocked_y:
             slid = _slide_step(
                 position,
@@ -105,14 +115,15 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
                 bounds,
                 collision,
                 obstacles,
+                playable_areas,
             )
             if slid != position:
                 position = slid
     return match.spatial.move_to(actor_id, position.x, position.y)
 
 
-def _resolve_step(start, target, collision, obstacles):
-    if not _blocked(target, collision, obstacles):
+def _resolve_step(start, target, collision, obstacles, playable_areas=()):
+    if not _blocked(target, collision, obstacles, playable_areas):
         return target
     safe, blocked = start, target
     for _ in range(20):
@@ -120,28 +131,39 @@ def _resolve_step(start, target, collision, obstacles):
             (safe.x + blocked.x) / 2,
             (safe.y + blocked.y) / 2,
         )
-        if _blocked(midpoint, collision, obstacles):
+        if _blocked(midpoint, collision, obstacles, playable_areas):
             blocked = midpoint
         else:
             safe = midpoint
     return safe
 
 
-def _blocked(transform, collision, obstacles):
+def _blocked(transform, collision, obstacles, playable_areas=()):
     box = actor_box(transform, collision)
-    return any(overlaps(box, obstacle) for obstacle in obstacles)
+    return any(overlaps(box, obstacle) for obstacle in obstacles) or (
+        bool(playable_areas) and not any(contains(area, box) for area in playable_areas)
+    )
 
 
-def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles):
+def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles, playable_areas=()):
     """Try either tangent when movement directly into a collider is blocked."""
     distance = math.hypot(delta_x, delta_y)
     if distance == 0:
         return start
     forward = Transform(start.x + delta_x, start.y + delta_y)
-    offsets = [
-        offset
+    blocking_shapes = [
+        obstacle
         for obstacle in obstacles
         if overlaps(actor_box(forward, collision), obstacle)
+    ]
+    blocking_shapes.extend(
+        area
+        for area in playable_areas
+        if not contains(area, actor_box(forward, collision))
+    )
+    offsets = [
+        offset
+        for obstacle in blocking_shapes
         for offset in _polygon_tangents(start, obstacle, distance)
     ]
     offsets.sort(
@@ -150,7 +172,9 @@ def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles):
     )
     for offset in offsets:
         candidate = bounds.clamp(Transform(start.x + offset[0], start.y + offset[1]))
-        if candidate != start and not _blocked(candidate, collision, obstacles):
+        if candidate != start and not _blocked(
+            candidate, collision, obstacles, playable_areas
+        ):
             return candidate
     return start
 

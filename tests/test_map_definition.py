@@ -14,7 +14,7 @@ from shooter.map_definition import (
 )
 from shooter.session import Session
 from shooter.viewport import Viewport
-from shooter.world_collision import Aabb
+from shooter.world_collision import Aabb, Polygon
 
 WINDOW = (1080, 720)
 FIXTURES = Path(__file__).parent / "fixtures" / "maps"
@@ -78,6 +78,7 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
         "harvestable:vehicle",
         "construction_anchors",
         "construction_anchor:barricade",
+        "playable_area",
     }
     assert definition.interactions[0].interaction_id == "camp-smg"
     assert {item.kind for item in definition.interactions} >= {
@@ -90,7 +91,10 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
     assert {item.kind for item in definition.harvestables} == {"tree", "vehicle"}
     assert all("environment" in item.tags for item in definition.harvestables)
     assert definition.construction_anchors[0].anchor_id == "camp-gate"
-    assert len(definition.collision) >= 138
+    assert len(definition.collision) >= 134
+    assert any(isinstance(collider, Polygon) for collider in definition.collision)
+    assert len(definition.playable_areas) == 1
+    assert isinstance(definition.playable_areas[0], Polygon)
     assert {
         tag
         for spawn in definition.spawns
@@ -198,6 +202,51 @@ def test_zero_size_tiled_interaction_object_is_adapted_as_a_point(tmp_path):
     (interaction,) = load_tmx_definition(source).interactions
 
     assert interaction.position == (50, 70)
+
+
+def test_fence_polyline_adapts_to_a_solid_clearance_collider(tmp_path):
+    source = tmp_path / "fence.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Fence"><object id="1" x="10" y="20">'
+        '<polyline points="0,0 100,0"/></object></objectgroup></map>'
+    )
+
+    (fence,) = load_tmx_definition(source).collision
+
+    assert isinstance(fence, Polygon)
+    assert fence.points == ((10, 36), (110, 36), (110, 4), (10, 4))
+
+
+def test_tree_collider_layer_preserves_authored_non_rectangular_shapes(tmp_path):
+    source = tmp_path / "tree-colliders.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Tree Colliders"><object id="1" x="10" y="20">'
+        '<polygon points="0,0 30,0 15,25"/></object></objectgroup></map>'
+    )
+
+    (collider,) = load_tmx_definition(source).collision
+
+    assert collider == Polygon(((10, 20), (40, 20), (25, 45)))
+
+
+def test_placed_tree_inherits_and_scales_its_tileset_collision_shape(tmp_path):
+    source = tmp_path / "tile-collision.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<tileset firstgid="1" name="trees"><tile id="0">'
+        '<image source="tree.png" width="100" height="200"/>'
+        '<objectgroup><object x="20" y="100"><polygon '
+        'points="0,0 60,0 30,80"/></object></objectgroup>'
+        '</tile></tileset><objectgroup name="Placed Trees" '
+        'offsetx="5" offsety="7"><object id="1" type="tree" gid="1" '
+        'x="10" y="20" width="50" height="100"/></objectgroup></map>'
+    )
+
+    definition = load_tmx_definition(source)
+
+    assert definition.collision == (Polygon(((25, 77), (55, 77), (40, 117))),)
 
 
 def test_harvestable_regions_preserve_semantics_properties_and_offsets(tmp_path):

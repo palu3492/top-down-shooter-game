@@ -53,13 +53,13 @@ class TiledBackground:
                     # subtracting their height. This map's image-collection
                     # tileset is explicitly top-left aligned, so restore the
                     # authored Tiled position when drawing its image objects.
-                    screen.blit(
-                        self.object_images[id(obj)],
-                        (
-                            camera_x + offset_x + obj.x,
-                            camera_y + offset_y + obj.y + obj.height,
-                    ),
-                )
+                    image = self.object_images[id(obj)]
+                    position = (
+                        camera_x + offset_x + obj.x,
+                        camera_y + offset_y + obj.y + obj.height,
+                    )
+                    if screen.get_rect().colliderect((*position, *image.get_size())):
+                        screen.blit(image, position)
 
     @staticmethod
     def _scaled_object_image(obj):

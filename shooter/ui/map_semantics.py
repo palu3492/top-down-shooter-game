@@ -13,6 +13,7 @@ INTERACTION_COLOUR = (80, 150, 255)
 HARVESTABLE_COLOUR = (90, 220, 110)
 CONSTRUCTION_COLOUR = (255, 180, 65)
 COLLISION_COLOUR = (255, 70, 160)
+PLAYABLE_AREA_COLOUR = (255, 230, 80)
 
 
 class MapSemanticsRenderer:
@@ -24,12 +25,18 @@ class MapSemanticsRenderer:
     def draw(self, surface, definition, camera=(0, 0)):
         self._ensure_font()
         for collider in definition.collision:
-            centre = self._draw_area(surface, collider, COLLISION_COLOUR, camera)
-            text = self.font.render("COLLIDER", True, COLLISION_COLOUR)
-            surface.blit(
-                text, (centre[0] + 8, centre[1] - text.get_height() // 2)
-            )
+            if not self._visible(surface, collider, camera):
+                continue
+            self._draw_area(surface, collider, COLLISION_COLOUR, camera)
+        for area in definition.playable_areas:
+            if not self._visible(surface, area, camera):
+                continue
+            self._draw_area(surface, area, PLAYABLE_AREA_COLOUR, camera)
         for interaction in definition.interactions:
+            if not self._visible(
+                surface, interaction.position or interaction.area, camera
+            ):
+                continue
             self._draw_item(
                 surface,
                 interaction.position,
@@ -41,6 +48,10 @@ class MapSemanticsRenderer:
         for harvestable in definition.harvestables:
             if dict(harvestable.properties).get("debug_render") == "false":
                 continue
+            if not self._visible(
+                surface, harvestable.position or harvestable.area, camera
+            ):
+                continue
             self._draw_item(
                 surface,
                 harvestable.position,
@@ -50,6 +61,8 @@ class MapSemanticsRenderer:
                 camera,
             )
         for anchor in definition.construction_anchors:
+            if not self._visible(surface, anchor.position or anchor.area, camera):
+                continue
             self._draw_item(
                 surface,
                 anchor.position,
@@ -77,6 +90,29 @@ class MapSemanticsRenderer:
     @staticmethod
     def _screen_point(point, camera):
         return (round(point[0] + camera[0]), round(point[1] + camera[1]))
+
+    def _visible(self, surface, value, camera):
+        if value is None:
+            return False
+        if isinstance(value, tuple):
+            return surface.get_rect().collidepoint(self._screen_point(value, camera))
+        if isinstance(value, Aabb | Ellipse):
+            return surface.get_rect().colliderect(
+                value.x + camera[0],
+                value.y + camera[1],
+                value.width,
+                value.height,
+            )
+        if isinstance(value, Polygon):
+            points = tuple(self._screen_point(point, camera) for point in value.points)
+            left = min(point[0] for point in points)
+            right = max(point[0] for point in points)
+            top = min(point[1] for point in points)
+            bottom = max(point[1] for point in points)
+            return surface.get_rect().colliderect(
+                pygame.Rect(left, top, right - left, bottom - top)
+            )
+        raise TypeError(f"unsupported map semantic area: {type(value).__name__}")
 
     def _draw_area(self, surface, area, colour, camera):
         if isinstance(area, Aabb):

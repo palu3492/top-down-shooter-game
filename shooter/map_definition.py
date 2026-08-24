@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from functools import cache
+from itertools import pairwise
 from pathlib import Path
 from xml.etree import ElementTree
 
@@ -9,6 +10,7 @@ from shooter.asset_paths import asset_path
 from shooter.world_collision import Aabb, Ellipse, Polygon
 
 CURRENT_MAP_SOURCE = "Maps/world_1/world_1.tmx"
+FENCE_COLLISION_WIDTH = 32.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +26,7 @@ class MapDefinition:
     interactions: tuple["MapInteraction", ...] = ()
     harvestables: tuple["MapHarvestable", ...] = ()
     construction_anchors: tuple["MapConstructionAnchor", ...] = ()
+    playable_areas: tuple[Aabb | Ellipse | Polygon, ...] = ()
 
     def spawn_roles(self):
         return frozenset(spawn.role for spawn in self.spawns if spawn.role)
@@ -129,6 +132,101 @@ def _shape(obj, offset_x, offset_y):
     if width > 0 and height > 0:
         return Aabb(x, y, width, height)
     return None
+
+
+def _tile_collision_catalog(root):
+    """Return image dimensions and collision objects keyed by global tile ID."""
+    catalog = {}
+    for tileset in root.findall("tileset"):
+        first_gid = int(tileset.get("firstgid", 1))
+        for tile in tileset.findall("tile"):
+            collision_group = tile.find("objectgroup")
+            if collision_group is None:
+                continue
+            image = tile.find("image")
+            if image is None:
+                continue
+            image_width = float(image.get("width", 0))
+            image_height = float(image.get("height", 0))
+            if image_width <= 0 or image_height <= 0:
+                continue
+            catalog[first_gid + int(tile.get("id", 0))] = (
+                image_width,
+                image_height,
+                tuple(collision_group.findall("object")),
+            )
+    return catalog
+
+
+def _tile_collision_shapes(obj, offset_x, offset_y, catalog):
+    """Scale a tile's authored shapes to one object-layer tile instance."""
+    definition = catalog.get(int(obj.get("gid", 0)))
+    if definition is None:
+        return ()
+    image_width, image_height, collision_objects = definition
+    scale_x = float(obj.get("width", image_width)) / image_width
+    scale_y = float(obj.get("height", image_height)) / image_height
+    origin_x = float(obj.get("x", 0)) + offset_x
+    origin_y = float(obj.get("y", 0)) + offset_y
+    shapes = []
+    for collision_obj in collision_objects:
+        local_x = float(collision_obj.get("x", 0))
+        local_y = float(collision_obj.get("y", 0))
+        polygon = collision_obj.find("polygon")
+        if polygon is not None:
+            points = tuple(
+                (
+                    origin_x + (local_x + float(pair.split(",")[0])) * scale_x,
+                    origin_y + (local_y + float(pair.split(",")[1])) * scale_y,
+                )
+                for pair in polygon.get("points", "").split()
+            )
+            if len(points) >= 3:
+                shapes.append(Polygon(points))
+            continue
+        width = float(collision_obj.get("width", 0)) * scale_x
+        height = float(collision_obj.get("height", 0)) * scale_y
+        x = origin_x + local_x * scale_x
+        y = origin_y + local_y * scale_y
+        if collision_obj.find("ellipse") is not None:
+            shapes.append(Ellipse(x, y, width, height))
+        elif width > 0 and height > 0:
+            shapes.append(Aabb(x, y, width, height))
+    return tuple(shapes)
+
+
+def _polyline_shapes(obj, offset_x, offset_y, width=FENCE_COLLISION_WIDTH):
+    polyline = obj.find("polyline")
+    if polyline is None:
+        return ()
+    origin_x = float(obj.get("x", 0)) + offset_x
+    origin_y = float(obj.get("y", 0)) + offset_y
+    points = tuple(
+        (
+            origin_x + float(pair.split(",")[0]),
+            origin_y + float(pair.split(",")[1]),
+        )
+        for pair in polyline.get("points", "").split()
+    )
+    half_width = width / 2
+    shapes = []
+    for start, end in pairwise(points):
+        dx, dy = end[0] - start[0], end[1] - start[1]
+        length = (dx * dx + dy * dy) ** 0.5
+        if length == 0:
+            continue
+        offset = (-dy / length * half_width, dx / length * half_width)
+        shapes.append(
+            Polygon(
+                (
+                    (start[0] + offset[0], start[1] + offset[1]),
+                    (end[0] + offset[0], end[1] + offset[1]),
+                    (end[0] - offset[0], end[1] - offset[1]),
+                    (start[0] - offset[0], start[1] - offset[1]),
+                )
+            )
+        )
+    return tuple(shapes)
 
 
 def _is_point(obj):
@@ -245,12 +343,14 @@ def load_tmx_definition(source, presentation_source=None):
     given = Path(source)
     path = given if given.exists() else Path(asset_path(source))
     root = ElementTree.parse(path).getroot()
+    tile_collision_catalog = _tile_collision_catalog(root)
     metadata = _properties(root)
     collisions = []
     spawns = []
     interactions = []
     harvestables = []
     construction_anchors = []
+    playable_areas = []
     for layer in root.findall("objectgroup"):
         layer_name = layer.get("name", "")
         include = layer_name in {"Collision", "Obstacles"}
@@ -263,12 +363,30 @@ def load_tmx_definition(source, presentation_source=None):
                 )
                 if harvestable is not None:
                     harvestables.append(harvestable)
-                    collisions.append(harvestable.area)
+                if layer_name in {"Placed Trees", "Trees"}:
+                    collisions.extend(
+                        _tile_collision_shapes(
+                            obj, offset_x, offset_y, tile_collision_catalog
+                        )
+                    )
                 continue
             if layer_name == "Buildings":
                 shape = _shape(obj, offset_x, offset_y)
                 if shape is not None:
                     collisions.append(shape)
+                continue
+            if layer_name in {"Tree Colliders", "Vehicle Colliders"}:
+                shape = _shape(obj, offset_x, offset_y)
+                if shape is not None:
+                    collisions.append(shape)
+                continue
+            if layer_name == "Fence":
+                collisions.extend(_polyline_shapes(obj, offset_x, offset_y))
+                continue
+            if layer_name == "Playable Area":
+                shape = _shape(obj, offset_x, offset_y)
+                if shape is not None:
+                    playable_areas.append(shape)
                 continue
             if layer_name == "Spawns":
                 spawn = _spawn(obj, offset_x, offset_y)
@@ -318,6 +436,8 @@ def load_tmx_definition(source, presentation_source=None):
         capabilities.update(
             f"construction_anchor:{anchor.kind}" for anchor in construction_anchors
         )
+    if playable_areas:
+        capabilities.add("playable_area")
     return MapDefinition(
         map_id=map_id,
         display_name=metadata.get("display_name", map_id.replace("_", " ").title()),
@@ -333,6 +453,7 @@ def load_tmx_definition(source, presentation_source=None):
         interactions=tuple(interactions),
         harvestables=tuple(harvestables),
         construction_anchors=tuple(construction_anchors),
+        playable_areas=tuple(playable_areas),
     )
 
 

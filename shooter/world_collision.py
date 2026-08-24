@@ -92,6 +92,41 @@ def overlaps(box, obstacle):
     raise TypeError(f"unsupported collision obstacle: {type(obstacle).__name__}")
 
 
+def bounds_of(shape):
+    """Return a cheap axis-aligned broad-phase bound for any collision shape."""
+    if isinstance(shape, Aabb | Ellipse):
+        return Aabb(shape.x, shape.y, shape.width, shape.height)
+    if isinstance(shape, Polygon):
+        xs = tuple(point[0] for point in shape.points)
+        ys = tuple(point[1] for point in shape.points)
+        return Aabb(min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys))
+    raise TypeError(f"unsupported collision obstacle: {type(shape).__name__}")
+
+
+def contains(shape, box):
+    """Whether an actor box remains completely inside an authored area."""
+    if isinstance(shape, Aabb):
+        return (
+            box.left >= shape.left
+            and box.right <= shape.right
+            and box.top >= shape.top
+            and box.bottom <= shape.bottom
+        )
+    if isinstance(shape, Ellipse):
+        radius_x, radius_y = shape.width / 2, shape.height / 2
+        if radius_x <= 0 or radius_y <= 0:
+            return False
+        centre_x, centre_y = shape.x + radius_x, shape.y + radius_y
+        return all(
+            ((x - centre_x) / radius_x) ** 2 + ((y - centre_y) / radius_y) ** 2
+            <= 1
+            for x, y in box.corners
+        )
+    if isinstance(shape, Polygon):
+        return all(_point_in_polygon(corner, shape.points) for corner in box.corners)
+    raise TypeError(f"unsupported containment shape: {type(shape).__name__}")
+
+
 def _point_in_polygon(point, vertices):
     x, y = point
     inside = False

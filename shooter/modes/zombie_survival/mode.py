@@ -260,6 +260,7 @@ class SurvivalMode:
         common = {
             "bounds": Aabb(0, 0, width, height),
             "collision": match.map_definition.collision,
+            "playable_areas": match.map_definition.playable_areas,
         }
         player = spawn_match_actors(
             match,

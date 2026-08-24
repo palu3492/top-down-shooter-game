@@ -24,13 +24,14 @@ from shooter.spawn_service import SpawnActorRequest
 from shooter.world_collision import Aabb, Polygon
 
 
-def match(collision=()):
+def match(collision=(), playable_areas=()):
     definition = MapDefinition(
         "arena",
         "Arena",
         "unused.tmx",
         (400, 300),
         collision=collision,
+        playable_areas=playable_areas,
         capabilities=frozenset(("bounds",)),
     )
     mode = ModeDescriptor("test", "Test", "")
@@ -126,6 +127,40 @@ def test_shared_movement_stops_flush_against_authored_collision():
     stopped = owner.spatial.get(actor_id).transform
     assert 64.99 < stopped.x <= 65
     assert stopped.y == 40
+
+
+def test_shared_movement_keeps_actor_inside_authored_playable_area():
+    owner = match(playable_areas=(Polygon(((20, 20), (200, 20), (200, 180), (20, 180))),))
+    definition = ActorDefinition("runner", "soldier", "green", 100, (20, 20), 80)
+    actor_id = spawn_match_actors(
+        owner,
+        SpawnActorRequest(definition, SpawnQuery(), PlacementConstraints(), 1),
+        (SpawnPoint("start", (50, 50)),),
+        "playable-area-runner",
+    ).actor_ids[0]
+
+    move_match_actor(owner, actor_id, (-1, 0), 1.0)
+
+    assert 29.99 < owner.spatial.get(actor_id).transform.x <= 30
+
+
+def test_movement_filters_distant_collision_shapes_without_missing_nearby_ones():
+    collision = (
+        Aabb(75, 0, 20, 300),
+        *(Aabb(10_000 + index, 0, 1, 1) for index in range(100)),
+    )
+    owner = match(collision)
+    definition = ActorDefinition("runner", "soldier", "green", 100, (20, 20), 80)
+    actor_id = spawn_match_actors(
+        owner,
+        SpawnActorRequest(definition, SpawnQuery(), PlacementConstraints(), 1),
+        (SpawnPoint("start", (30, 40)),),
+        "broad-phase-runner",
+    ).actor_ids[0]
+
+    move_match_actor(owner, actor_id, (1, 0), 1.0)
+
+    assert owner.spatial.get(actor_id).transform.x <= 65
 
 
 def test_shared_movement_slides_along_collision_on_the_unblocked_axis():

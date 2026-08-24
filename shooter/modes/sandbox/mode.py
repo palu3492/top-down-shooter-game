@@ -73,6 +73,7 @@ class SandboxMode:
                     minimum_occupant_distance=definition.collision_size[0],
                     collision=match.map_definition.collision,
                     footprint=definition.collision_size,
+                    playable_areas=match.map_definition.playable_areas,
                 ),
                 count=1,
             )

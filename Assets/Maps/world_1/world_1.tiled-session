@@ -16,7 +16,9 @@
             }
         },
         "world_1.tmx#trees": {
-            "scaleInDock": 1
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 0.43
         },
         "world_1.tmx#vehicles": {
             "scaleInDock": 1

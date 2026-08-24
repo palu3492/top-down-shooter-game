@@ -35,6 +35,10 @@ class RecordingScreen:
     def blit(self, image, at):
         self.blits.append((image, at))
 
+    @staticmethod
+    def get_rect():
+        return pygame.Rect(0, 0, 100, 80)
+
 
 def background(monkeypatch):
     image = pygame.Surface((100, 80))
@@ -117,3 +121,25 @@ def test_tiled_object_images_respect_their_authored_tmx_size(monkeypatch):
     ground.draw(screen, 0, 0)
 
     assert screen.blits[1][0].get_size() == (12, 10)
+
+
+def test_tiled_background_skips_image_objects_outside_the_camera_view(monkeypatch):
+    backdrop = pygame.Surface((100, 80))
+    vehicle = pygame.Surface((24, 15))
+    object_layer = ObjectLayer([ImageObject(vehicle, 500, 500, 15)])
+    tiled_map = SimpleNamespace(
+        visible_layers=[ImageLayer(backdrop), object_layer],
+        width=10,
+        height=8,
+        tilewidth=10,
+        tileheight=10,
+    )
+    monkeypatch.setattr("shooter.background.TiledImageLayer", ImageLayer)
+    monkeypatch.setattr("shooter.background.TiledObjectGroup", ObjectLayer)
+    monkeypatch.setattr("shooter.background.load_tiled_map", lambda _: tiled_map)
+    ground = TiledBackground("Maps/world_1/world_1.tmx")
+    screen = RecordingScreen()
+
+    ground.draw(screen, 0, 0)
+
+    assert len(screen.blits) == 1
