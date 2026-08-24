@@ -4,7 +4,7 @@ import ast
 import random
 from pathlib import Path
 
-from shooter.weapon_attacks import AttackDescriptionService
+from shooter.weapon_attacks import AttackDescriptionService, damage_at_distance
 from shooter.weapon_state import WeaponDefinition
 from shooter.world_registry import EntityId
 
@@ -50,6 +50,28 @@ def test_seeded_spread_is_deterministic_before_adaptation():
 
     assert first == second
     assert len({attack.direction for attack in first}) > 1
+
+
+def test_data_defined_range_falloff_is_clamped_at_effective_and_maximum_ranges():
+    weapon = ballistic(
+        damage=100,
+        max_range=1000,
+        effective_range=400,
+        minimum_damage_fraction=0.4,
+    )
+
+    assert damage_at_distance(weapon, 0) == 100
+    assert damage_at_distance(weapon, 400) == 100
+    assert damage_at_distance(weapon, 700) == 70
+    assert damage_at_distance(weapon, 1000) == 40
+    assert damage_at_distance(weapon, 2000) == 40
+
+
+def test_weapons_without_a_valid_falloff_profile_keep_base_damage():
+    assert damage_at_distance(ballistic(damage=14), 999) == 14
+    assert damage_at_distance(
+        ballistic(damage=14, max_range=400, effective_range=400), 999
+    ) == 14
 
 
 def test_melee_description_carries_sweep_geometry():

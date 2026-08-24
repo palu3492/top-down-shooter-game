@@ -26,9 +26,9 @@ package.
 |---|---|
 | Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M11.5 — First-five-wave playtest and tuning |
+| Active work package | M11.7 — Weapon handling baseline |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
-| Next integration checkpoint | End of M11.10 — Combat-feel baseline playable run |
+| Next integration checkpoint | End of M11.8 verification — Combat-feel baseline playable run |
 | Last updated | 2026-08-23 |
 
 ## Confirmed Project Constraints
@@ -72,7 +72,7 @@ package.
 | 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
 | 10 | Resume Zombie Survival feature development | Complete | Barricade integration verified |
-| 11 | Survival playable-run milestone | In progress | M11.1–M11.9 complete; M11.10 map combat-structure pass active |
+| 11 | Survival playable-run milestone | In progress | M11.1–M11.6, M11.9, and M11.10 complete; M11.7 active; M11.8 ready for verification; M11.11 recorded |
 
 ## Phase 10 Product Review
 
@@ -116,19 +116,120 @@ price/count/speed tuning is deferred until this baseline is complete:
 
 | ID | Work package | Purpose |
 |---|---|---|
-| M11.6 | Paced, player-aware Survival spawn director | Release wave budgets in timed bursts through weighted authored lanes; prevent visible/too-close/blocked spawns and avoid one immediate blob. |
-| M11.7 | Weapon handling baseline | Implement held automatic, semi-auto, and burst trigger behavior plus data-defined per-weapon range, spread/recoil, and optional falloff. |
-| M11.8 | Active equipment baseline | Finish explicit firearm/tool active selection, snapshot/debug feedback, and input behavior so the pickaxe behaves as an equipped Fortnite-style primary tool. |
+| M11.6 | Paced, player-aware Survival spawn director | Complete — a reusable headless director releases ordered budgets in deterministic timed bursts; Survival composes it with weighted authored lanes and player-aware visibility, distance, occupancy, collision, and playable-area constraints. |
+| M11.7 | Weapon handling baseline | In progress — shared explicit semi-automatic, automatic, and burst trigger policies plus range/falloff evaluation now replace Survival-specific behavior; cadence and spread acceptance coverage remains. |
+| M11.8 | Active equipment baseline | Ready for integration — explicit firearm/tool selection, depleted-firearm fallback, tool-only starts, input, snapshots, debug feedback, and equipment presentation exist; formal focused verification remains. |
 | M11.9 | Consumable health-pack loop | Complete — Survival's TMX station sells carried health packs; `H` uses one only when wounded; inventory and outcomes appear in the debug overlay. Direct-restoration station policy remains available for modes that opt into it. |
 | M11.10 | Map combat-structure first pass | Complete — Production TMX labels separate enemy entry lanes and adapts collision matching two existing camp buildings. Map bounds remain authoritative; future boundaries and collision stay additive and provisional until the level layout is authored. |
+| M11.11 | Consolidate and validate the TMX semantic schema | Replace production-map layer-name inference and Python-authored prop defaults with documented Tiled classes/templates, properties, collision definitions, and validation before permanent navigation or substantial environment expansion. |
 
 Survival now begins with a configurable initial preparation countdown (10 seconds
 in the shipped balance profile). The player can move and use stations during it;
 wave 1 is queued only when the countdown reaches zero.
-| M11.10 | Map combat-structure first pass | Author intended spawn entrances/lanes and initial boundaries/collision without guessing the unfinished level's final layout. |
 
-Only after M11.6–M11.10 will M11.5 resume full numerical tuning of reward,
-station-price, ammo, enemy-pressure, and preparation-time values.
+Only after M11.7 is complete and M11.8 is formally verified will M11.5 resume
+full numerical tuning of reward, station-price, ammo, enemy-pressure, and
+preparation-time values.
+
+### M11.6 — Paced, player-aware Survival spawn director
+
+**Status:** Complete
+
+- A reusable pygame-free `SpawnDirector` converts ordered actor budgets into
+  deterministic releases with configurable burst size, interval, and activation
+  delay.
+- Large elapsed-time advances catch up by producing the same ordered release
+  sequence rather than silently dropping scheduled bursts.
+- Survival owns wave composition but delegates release pacing to the shared
+  director.
+- Each Survival release uses existing weighted authored spawn sources and
+  composes minimum player distance, visible-area exclusion, actor occupancy,
+  static collision, playable-area containment, and actor footprint constraints.
+- Spawn failures remain explicit through the shared spawn service; the director
+  does not create actors, parse TMX, or depend on a game mode.
+
+**Verification evidence:** Focused Ruff passes and 66 spawn-director, spawn
+selection/service, shared Survival, determinism, and movement tests pass. Coverage
+includes release cadence/order, deterministic catch-up, invalid policies,
+dependency boundaries, authored lane weights, and rejection of visible, near, or
+blocked lanes. The full suite reaches 1,183 passes with four unrelated existing
+failures in Sandbox HUD presentation, station-price expectations, and legacy tree
+movement.
+
+### M11.11 — Consolidate and validate the TMX semantic schema
+
+**Status:** Not started
+
+**Why this package exists:**
+
+The current TMX boundary is architecturally sound: Tiled remains the authoring
+source, `load_tmx_definition` is the adapter boundary, and gameplay consumes a
+neutral `MapDefinition`. The first production-map pass nevertheless introduced
+transitional conventions that should not become the permanent content schema:
+
+- exact visual layer names such as `Placed Trees`, `vehicles`, `Fence`, and
+  `Buildings` currently select gameplay behavior;
+- tree/vehicle durability, resource kind, yield, and debug behavior currently
+  receive Python defaults instead of validated authored definitions;
+- fence collision width is a Python constant rather than authored data;
+- tree collision comes from tileset collision objects, while vehicle, building,
+  and fence collision follow separate special-case paths;
+- vehicle `source_object_x`, `source_object_y`, and `source_polygon` properties
+  are migration residue and are not part of a consumed runtime contract;
+- missing or misspelled semantic data is commonly ignored rather than reported
+  with the responsible TMX layer and object ID.
+
+This is a schema consolidation, not a replacement of Tiled or a move of map data
+into gameplay code. It should precede permanent navigation work so navigation is
+built against the durable representation of static blockers and semantic props.
+
+**Existing foundation already complete:**
+
+- [x] Tiled-specific parsing is confined to the map adapter boundary.
+- [x] Gameplay receives neutral world-coordinate map values.
+- [x] Spawn regions, interactions, playable areas, harvestables, construction
+  anchors, and map capabilities have neutral representations.
+- [x] Tileset-authored tree collision shapes scale with placed tile objects.
+- [x] Incomplete maps can declare only the capabilities they actually provide.
+
+**Planned work:**
+
+- [ ] Document a reusable authored vocabulary and naming/version policy for map
+  metadata, solid props, harvestables, fences, buildings, interactions, spawns,
+  playable areas, and construction anchors.
+- [ ] Define Tiled classes/templates or equivalent reusable property definitions
+  for `SolidProp`, `Harvestable`, `Fence`, `Building`, and
+  `ConstructionAnchor` instead of assigning semantics from presentation-layer
+  names.
+- [ ] Author durability, resource definition/yield policy, compatible tool tags,
+  collision role, and fence width in Tiled data with explicit defaults owned by
+  reusable definitions rather than production-map branches.
+- [ ] Put tree and vehicle collision footprints in their tilesets/templates and
+  normalize every static blocker through one collision-extraction contract.
+- [ ] Add schema validation with actionable source, layer, object ID/name, and
+  property errors for malformed objects, duplicate stable IDs, unknown semantic
+  kinds, missing required values, and invalid geometry.
+- [ ] Migrate the production TMX to the documented vocabulary while preserving
+  its visual layout and stable semantic IDs.
+- [ ] Retain narrowly named legacy aliases only while fixture/production maps are
+  migrated, then remove layer-name branches, the hard-coded fence width, inferred
+  harvest defaults, and unused `source_*` migration properties.
+- [ ] Add at least two TMX fixtures proving that identical semantic classes work
+  under different organizational layer names without map-identity branches.
+
+**Exit criteria:**
+
+- Presentation-layer organization and capitalization do not determine gameplay
+  semantics.
+- Trees and vehicles each expose authored harvest and collision definitions, and
+  their visible bounds are not silently treated as gameplay footprints.
+- Fences and buildings use the shared authored collision contract.
+- Invalid semantic objects fail map validation with actionable diagnostics rather
+  than disappearing silently.
+- The production map passes schema validation and no longer depends on the listed
+  compatibility inference.
+- Permanent navigation/pathfinding can consume one stable set of static blocker
+  values without parsing Tiled conventions or prop kinds.
 
 ### Confirmed Survival loadout divergence — tool-only start
 
@@ -1368,8 +1469,10 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-23 | Completed M10.17 authored barricade construction | Construction anchors, resource recipes, all-or-nothing build/repair transactions, immutable feedback, and Survival E interaction are complete; focused Ruff and 30 tests pass |
 | 2026-08-23 | Completed M10.18 dynamic barricade integration | Built barricades participate in shared movement collision and pursuit; enemy contact damages/destroys them and reopens routes; focused Ruff and 31 tests pass |
 | 2026-08-23 | Confirmed configurable tools, harvesting, and barricade direction | Plans now separate firearm slots from optional tool/melee roles; Survival selects a pickaxe-like melee/harvest tool while other modes may select a knife or none; M10.14–M10.18 cover harvestables, resources, construction, and dynamic barricades |
+| 2026-08-23 | Completed M11.6 paced player-aware spawn director | Reusable headless scheduling releases ordered budgets in deterministic timed bursts; Survival composes weighted authored lanes with visibility, distance, occupancy, collision, and playable-area constraints; focused Ruff and 66 tests pass |
 
 ## Next Action
 
-Begin M11.6 by defining a shared spawn-director contract and using it for
-Survival's paced, multi-lane, player-aware enemy arrivals.
+Continue M11.7 by closing cadence and spread acceptance coverage for the shared
+firing-mode policy. Then run the focused M11.8 verification and resume M11.5
+tuning.

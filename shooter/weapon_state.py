@@ -11,6 +11,11 @@ MANUAL_RELOAD = "manual_reload"
 REFILL = "refill"
 ADVANCE = "advance"
 
+SEMI_AUTOMATIC = "semi_automatic"
+AUTOMATIC = "automatic"
+BURST = "burst"
+FIRING_MODES = frozenset((SEMI_AUTOMATIC, AUTOMATIC, BURST))
+
 
 @dataclass(frozen=True, slots=True)
 class WeaponDefinition:
@@ -26,13 +31,20 @@ class WeaponDefinition:
     ammo_id: str | None = None
     pellets: int = 1
     spread: float = 0.0
-    automatic: bool = False
+    firing_mode: str = SEMI_AUTOMATIC
+    burst_size: int = 3
     max_range: float | None = None
     effective_range: float | None = None
     minimum_damage_fraction: float = 1.0
     reach: float | None = None
     arc: float | None = None
     capabilities: frozenset[str] = frozenset()
+
+    def __post_init__(self):
+        if self.firing_mode not in FIRING_MODES:
+            raise ValueError(f"unknown firing mode: {self.firing_mode}")
+        if self.firing_mode == BURST and self.burst_size < 2:
+            raise ValueError("burst weapons require at least two shots")
 
 
 @dataclass(slots=True)
@@ -44,6 +56,7 @@ class WeaponRuntime:
     reserve: int | None
     cooldown_remaining: float = 0.0
     reload_remaining: float = 0.0
+    burst_remaining: int = 0
 
     @classmethod
     def fresh(cls, definition: WeaponDefinition):
@@ -176,6 +189,28 @@ class EquippedWeapon:
         return self.operations.apply(
             self.definition, self.runtime, WeaponOperationRequest(FIRE)
         )
+
+    def trigger_pressed(self):
+        """Start a new trigger pull and arm a burst when configured."""
+        if self.definition.firing_mode == BURST:
+            self.runtime.burst_remaining = max(1, self.definition.burst_size)
+        result = self.fire()
+        if not result.accepted and self.definition.firing_mode == BURST:
+            self.runtime.burst_remaining = 0
+        return result
+
+    def trigger_held(self):
+        """Fire while held only when this weapon's explicit policy allows it."""
+        mode = self.definition.firing_mode
+        if mode == AUTOMATIC:
+            return self.fire()
+        if mode == BURST and self.runtime.burst_remaining > 0:
+            return self.fire()
+        return WeaponOperationResult(False, None)
+
+    def record_shot(self):
+        if self.definition.firing_mode == BURST:
+            self.runtime.burst_remaining = max(0, self.runtime.burst_remaining - 1)
 
     def reload(self):
         return self.operations.apply(

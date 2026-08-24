@@ -1,12 +1,14 @@
 """Neutral weapon configuration and per-instance operation state."""
 
 import ast
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from pathlib import Path
 
 import pytest
 
 from shooter.weapon_state import (
+    AUTOMATIC,
+    BURST,
     ADVANCE,
     BEGIN_ATTACK,
     FIRE,
@@ -15,6 +17,7 @@ from shooter.weapon_state import (
     REFILL,
     RELOAD,
     WeaponDefinition,
+    EquippedWeapon,
     WeaponOperationRequest,
     WeaponOperationService,
     WeaponRuntime,
@@ -69,6 +72,28 @@ def test_melee_runtime_has_no_ammunition():
 
     assert runtime.loaded is None
     assert runtime.reserve is None
+
+
+def test_explicit_firing_modes_control_held_trigger_behavior():
+    automatic = EquippedWeapon(replace(rifle_definition(), firing_mode=AUTOMATIC))
+    burst = EquippedWeapon(
+        replace(rifle_definition(), firing_mode=BURST, burst_size=2)
+    )
+
+    automatic.trigger_pressed()
+    automatic.advance(1)
+    assert automatic.trigger_held().accepted is True
+    burst.trigger_pressed()
+    burst.record_shot()
+    burst.advance(1)
+    assert burst.trigger_held().accepted is True
+
+
+def test_weapon_definition_rejects_unknown_or_one_shot_burst_modes():
+    with pytest.raises(ValueError, match="unknown firing mode"):
+        replace(rifle_definition(), firing_mode="laser")
+    with pytest.raises(ValueError, match="at least two"):
+        replace(rifle_definition(), firing_mode=BURST, burst_size=1)
 
 
 def test_neutral_weapon_state_has_no_pygame_dependency():

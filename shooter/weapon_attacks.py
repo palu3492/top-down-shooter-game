@@ -6,6 +6,22 @@ from dataclasses import dataclass
 from shooter.world_registry import EntityId
 
 
+def damage_at_distance(definition, distance):
+    """Return a weapon's data-defined damage after its effective range.
+
+    Targeting decides whether a target is within maximum range. This calculation
+    only models the reusable damage falloff within that allowed range.
+    """
+    maximum = definition.max_range
+    effective = definition.effective_range
+    if maximum is None or effective is None or maximum <= effective:
+        return definition.damage
+    progress = (max(0.0, distance) - effective) / (maximum - effective)
+    fraction = 1 - (1 - definition.minimum_damage_fraction) * progress
+    fraction = min(1.0, max(definition.minimum_damage_fraction, fraction))
+    return definition.damage * fraction
+
+
 @dataclass(frozen=True, slots=True)
 class AttackDescription:
     instigator_id: EntityId | None

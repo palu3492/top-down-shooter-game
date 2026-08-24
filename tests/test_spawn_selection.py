@@ -114,6 +114,22 @@ def test_missing_source_and_rejected_positions_are_explicit_failures():
     assert blocked.position is None and blocked.reason == NO_VALID_POSITION
 
 
+def test_authored_source_weights_control_lane_selection():
+    sources = (
+        point("disabled-lane", (50, 50), role="enemy", weight=0),
+        point("active-lane", (150, 50), role="enemy", weight=3),
+    )
+
+    result = SpawnSelector().select(
+        sources,
+        SpawnQuery(role="enemy"),
+        PlacementConstraints(),
+        random.Random(1),
+    )
+
+    assert result.spawn_id == "active-lane"
+
+
 def test_spawn_selection_has_no_pygame_dependency():
     source = Path("shooter/spawn_selection.py").read_text()
     imports = set()

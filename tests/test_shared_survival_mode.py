@@ -38,16 +38,24 @@ from shooter.modes.zombie_survival import (
     UseSurvivorTool,
 )
 from shooter.modes.zombie_survival.mode import BREAKER, PICKAXE, RIFLE, SMG
-from shooter.weapon_state import EquippedWeapon
+from shooter.weapon_state import BURST, EquippedWeapon, WeaponDefinition
 from shooter.world_collision import Aabb, actor_box, overlaps
 
 
-def resolved(interactions=(), harvestables=(), construction_anchors=()):
+def resolved(
+    interactions=(),
+    harvestables=(),
+    construction_anchors=(),
+    *,
+    size=(1000, 800),
+    collision=(),
+):
     definition = MapDefinition(
         "arena",
         "Arena",
         "unused.tmx",
-        (1000, 800),
+        size,
+        collision=collision,
         capabilities=frozenset(("bounds",)),
         interactions=interactions,
         harvestables=harvestables,
@@ -104,6 +112,55 @@ def test_survival_spawns_player_and_initial_horde_into_match_stores():
     )
     assert snapshot.mode_status.enemies_remaining == 5
     assert snapshot.mode_status.enemy_composition == (("walker", 5),)
+
+
+def test_survival_director_uses_player_aware_authored_lane_constraints():
+    match = Match(
+        resolved(
+            size=(4000, 3000),
+            collision=(Aabb(3100, 1400, 200, 200),),
+        )
+    )
+    spawn_sources = (
+        SpawnPoint(
+            "survivor",
+            (2000, 1500),
+            role="player",
+            faction="survivors",
+            actor_kind="soldier",
+        ),
+        SpawnPoint(
+            "visible",
+            (2200, 1500),
+            role="enemy",
+            faction="horde",
+            actor_kind="walker",
+            weight=10,
+        ),
+        SpawnPoint(
+            "blocked",
+            (3200, 1500),
+            role="enemy",
+            faction="horde",
+            actor_kind="walker",
+            weight=10,
+        ),
+        SpawnPoint(
+            "valid",
+            (3600, 1500),
+            role="enemy",
+            faction="horde",
+            actor_kind="walker",
+            weight=1,
+        ),
+    )
+
+    mode = SurvivalMode(spawn_sources, enemy_count=1)
+    match.start(mode)
+
+    enemy = mode.enemy_ids[0]
+    position = match.spatial.get(enemy).transform
+    assert (position.x, position.y) == (3600, 1500)
 
 
 def test_survival_initial_preparation_defers_the_first_wave_without_skipping_it():
@@ -337,6 +394,25 @@ def test_held_trigger_only_operates_automatic_firearms():
     )
 
 
+def test_burst_firearm_releases_its_configured_shots_then_stops_while_held():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    burst = WeaponDefinition(
+        "burst", "ballistic", 12, 4, 12, 48, 0, "9mm",
+        firing_mode=BURST, burst_size=3,
+    )
+    weapon = mode.loadouts[mode.player_id].add(EquippedWeapon(burst), select=True)
+
+    match.advance(0, (FireSurvivorWeapon((1, 0)),))
+    match.advance(0.25, (HoldSurvivorWeapon((1, 0)),))
+    match.advance(0.25, (HoldSurvivorWeapon((1, 0)),))
+    match.advance(0.25, (HoldSurvivorWeapon((1, 0)),))
+
+    assert weapon.runtime.loaded == 9
+    assert weapon.runtime.burst_remaining == 0
+
+
 def test_survival_pickaxe_is_a_separate_configured_tool_role_that_can_melee():
     match = Match(resolved())
     mode = SurvivalMode(sources(), enemy_count=1)
@@ -471,7 +547,7 @@ def test_breaker_applies_heavy_damage_to_a_barricade():
     match.start(mode)
     mode.resources.add("wood", 1)
     match.advance(0.0, (InteractSurvivor(),))
-    mode.pending_spawns.clear()
+    mode.spawn_director.clear()
     mode.wave = 5
     batch = mode._spawn_wave(match)
     while not any(
@@ -479,7 +555,7 @@ def test_breaker_applies_heavy_damage_to_a_barricade():
         for spawned in batch
         for entity_id in spawned.actor_ids
     ):
-        batch = mode._release_spawn_burst(match)
+        batch = mode._release_spawns(match, mode.spawn_director.advance(1.0))
     breaker_id = next(
         entity_id
         for spawned in batch
@@ -738,8 +814,12 @@ def test_lethal_contact_damage_ends_survival_and_stops_progression():
     enemy = mode.enemy_ids[0]
     player_position = match.spatial.get(mode.player_id).transform
     match.spatial.move_to(enemy, player_position.x, player_position.y)
+    match.combat.synchronize(
+        mode.player_id,
+        config.ZOMBIE_DAMAGE * config.SIM_DT / 2,
+    )
 
-    match.advance(20)
+    match.advance(config.SIM_DT)
 
     assert match.result == "LOST"
     assert match.mode_status.outcome == "LOST"
