@@ -39,6 +39,8 @@ class MapSemanticsRenderer:
                 camera,
             )
         for harvestable in definition.harvestables:
+            if dict(harvestable.properties).get("debug_render") == "false":
+                continue
             self._draw_item(
                 surface,
                 harvestable.position,

@@ -86,12 +86,11 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
         "health_pack_station",
         "armor_station",
     }
-    assert {item.harvestable_id for item in definition.harvestables} == {
-        "camp-oak",
-        "camp-truck",
-    }
+    assert len(definition.harvestables) == 120
+    assert {item.kind for item in definition.harvestables} == {"tree", "vehicle"}
+    assert all("environment" in item.tags for item in definition.harvestables)
     assert definition.construction_anchors[0].anchor_id == "camp-gate"
-    assert len(definition.collision) == 2
+    assert len(definition.collision) >= 138
     assert {
         tag
         for spawn in definition.spawns
@@ -185,6 +184,20 @@ def test_interaction_regions_preserve_semantics_properties_and_offsets(tmp_path)
     assert interaction.area == Aabb(15, 27, 40, 50)
     assert interaction.tags == {"survival", "outdoor"}
     assert dict(interaction.properties)["price"] == "250"
+
+
+def test_zero_size_tiled_interaction_object_is_adapted_as_a_point(tmp_path):
+    source = tmp_path / "point-interaction.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Interactions"><object id="1" name="pistol" '
+        'x="50" y="70"><properties><property name="kind" '
+        'value="weapon_station"/></properties></object></objectgroup></map>'
+    )
+
+    (interaction,) = load_tmx_definition(source).interactions
+
+    assert interaction.position == (50, 70)
 
 
 def test_harvestable_regions_preserve_semantics_properties_and_offsets(tmp_path):

@@ -1,5 +1,6 @@
 from functools import cache
 
+import pygame
 from pytmx import TiledImageLayer, TiledObjectGroup
 from pytmx.util_pygame import load_pygame
 
@@ -24,6 +25,13 @@ class TiledBackground:
             for layer in self.map.visible_layers
             if isinstance(layer, TiledImageLayer)
         }
+        self.object_images = {
+            id(obj): self._scaled_object_image(obj)
+            for layer in self.map.visible_layers
+            if isinstance(layer, TiledObjectGroup)
+            for obj in layer
+            if obj.image is not None
+        }
 
     def draw(self, screen, camera_x, camera_y):
         for layer in self.map.visible_layers:
@@ -46,9 +54,20 @@ class TiledBackground:
                     # tileset is explicitly top-left aligned, so restore the
                     # authored Tiled position when drawing its image objects.
                     screen.blit(
-                        obj.image,
+                        self.object_images[id(obj)],
                         (
                             camera_x + offset_x + obj.x,
                             camera_y + offset_y + obj.y + obj.height,
-                        ),
-                    )
+                    ),
+                )
+
+    @staticmethod
+    def _scaled_object_image(obj):
+        width = round(getattr(obj, "width", obj.image.get_width()))
+        height = round(getattr(obj, "height", obj.image.get_height()))
+        size = (max(1, width), max(1, height))
+        return (
+            obj.image
+            if obj.image.get_size() == size
+            else pygame.transform.smoothscale(obj.image, size)
+        )

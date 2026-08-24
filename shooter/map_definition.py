@@ -131,6 +131,12 @@ def _shape(obj, offset_x, offset_y):
     return None
 
 
+def _is_point(obj):
+    return obj.get("point") == "1" or (
+        float(obj.get("width", 0)) == 0 and float(obj.get("height", 0)) == 0
+    )
+
+
 def _csv(value):
     return frozenset(part.strip() for part in value.split(",") if part.strip())
 
@@ -147,7 +153,7 @@ def _spawn(obj, offset_x, offset_y):
     }
     x = float(obj.get("x", 0)) + offset_x
     y = float(obj.get("y", 0)) + offset_y
-    if obj.get("point") == "1":
+    if _is_point(obj):
         return SpawnPoint(position=(x, y), **common)
     area = _shape(obj, offset_x, offset_y)
     return None if area is None else SpawnRegion(area=area, **common)
@@ -166,7 +172,7 @@ def _interaction(obj, offset_x, offset_y):
     }
     x = float(obj.get("x", 0)) + offset_x
     y = float(obj.get("y", 0)) + offset_y
-    if obj.get("point") == "1":
+    if _is_point(obj):
         return MapInteraction(position=(x, y), **common)
     area = _shape(obj, offset_x, offset_y)
     return None if area is None else MapInteraction(area=area, **common)
@@ -185,10 +191,35 @@ def _harvestable(obj, offset_x, offset_y):
     }
     x = float(obj.get("x", 0)) + offset_x
     y = float(obj.get("y", 0)) + offset_y
-    if obj.get("point") == "1":
+    if _is_point(obj):
         return MapHarvestable(position=(x, y), **common)
     area = _shape(obj, offset_x, offset_y)
     return None if area is None else MapHarvestable(area=area, **common)
+
+
+def _environment_harvestable(obj, offset_x, offset_y, layer_name):
+    """Adapt visible TMX prop layers without duplicating their artwork in code."""
+    kind = obj.get("type", "").lower()
+    if kind not in {"tree", "vehicle"}:
+        return None
+    area = _shape(obj, offset_x, offset_y)
+    if area is None:
+        return None
+    defaults = (
+        ("durability", "150" if kind == "tree" else "200"),
+        ("resource_id", "wood" if kind == "tree" else "metal"),
+        ("resource_yield", "12" if kind == "tree" else "8"),
+        ("debug_render", "false"),
+    )
+    values = (*tuple(sorted(_properties(obj).items())), *defaults)
+    identifier = layer_name.lower().replace(" ", "-")
+    return MapHarvestable(
+        f"{identifier}-{obj.get('id', 'unknown')}",
+        kind,
+        area=area,
+        tags=frozenset(("environment",)),
+        properties=values,
+    )
 
 
 def _construction_anchor(obj, offset_x, offset_y):
@@ -202,7 +233,7 @@ def _construction_anchor(obj, offset_x, offset_y):
     }
     x = float(obj.get("x", 0)) + offset_x
     y = float(obj.get("y", 0)) + offset_y
-    if obj.get("point") == "1":
+    if _is_point(obj):
         return MapConstructionAnchor(position=(x, y), **common)
     area = _shape(obj, offset_x, offset_y)
     return None if area is None else MapConstructionAnchor(area=area, **common)
@@ -226,6 +257,19 @@ def load_tmx_definition(source, presentation_source=None):
         offset_x = float(layer.get("offsetx", 0))
         offset_y = float(layer.get("offsety", 0))
         for obj in layer.findall("object"):
+            if layer_name in {"Placed Trees", "Trees", "vehicles", "Vehicles"}:
+                harvestable = _environment_harvestable(
+                    obj, offset_x, offset_y, layer_name
+                )
+                if harvestable is not None:
+                    harvestables.append(harvestable)
+                    collisions.append(harvestable.area)
+                continue
+            if layer_name == "Buildings":
+                shape = _shape(obj, offset_x, offset_y)
+                if shape is not None:
+                    collisions.append(shape)
+                continue
             if layer_name == "Spawns":
                 spawn = _spawn(obj, offset_x, offset_y)
                 if spawn is not None:

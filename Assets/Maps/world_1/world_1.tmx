@@ -108,7 +108,7 @@
  <imagelayer id="3" name="Background">
   <image source="../../map_10000_high_detail/map_master_10000_high_detail_merged.png" width="10000" height="10000"/>
  </imagelayer>
- <objectgroup id="17" name="Placed Trees" visible="0">
+ <objectgroup id="17" name="Placed Trees">
   <object id="194" name="tree_01" type="tree" gid="26" x="423.26" y="1303.35" width="220" height="330"/>
   <object id="281" name="tree_02" type="tree" gid="27" x="502.682" y="1614.26" width="220" height="330"/>
   <object id="282" name="tree_08" type="tree" gid="33" x="456.582" y="1916.87" width="220" height="330"/>
@@ -210,7 +210,7 @@
    <polygon points="0,0 313.307,129.199 645.995,484.496 1065.89,658.915 1721.58,865.633 2625.97,975.452 2781.01,1537.47 3239.66,2041.34 3708.01,2487.08 3711.24,2638.89 3436.69,2835.92 2367.57,2852.07 1379.2,2622.74 665.375,2177 203.488,1795.87 -158.269,1398.58 -300.388,833.333 -106.589,100.129"/>
   </object>
  </objectgroup>
- <objectgroup id="10" name="vehicles" visible="0">
+ <objectgroup id="10" name="vehicles">
   <object id="47" name="vehicle_47" type="vehicle" gid="1" x="2305" y="1674" width="248" height="211">
    <properties>
     <property name="source_object_x" type="float" value="2305.14"/>
@@ -392,7 +392,7 @@
    <polygon points="-479.626,-275.891 -864.388,274.4 -941.097,1502.32 -481.172,2001.39 -418.41,3165.97 -383.543,4274.76 -655.509,5516.04 -983.264,6847.98 -892.608,7482.57 -474.198,7956.76 488.145,8640.17 1478.38,8960.95 2503.49,9002.79 4351.46,9079.5 6624.83,8995.82 7649.93,8647.14 8013.76,8101.1 7712.09,6894.97 8110.18,4651.32 7998.61,3047.42 7635.98,1582.98 7747.56,599.721 7308.23,313.808 7601.12,-292.887 6471.41,-474.198 4937.24,-432.357 2949.79,-376.569 1603.91,-432.357 320.781,-446.304 -72.7659,-405.067"/>
   </object>
  </objectgroup>
- <objectgroup id="18" name="vegetation">
+ <objectgroup id="18" name="vegetation" visible="0">
   <object id="297" x="3194.87" y="2027.64">
    <polygon points="0,0 69.096,-75.6766 831.62,593.074 746.895,667.928"/>
   </object>
@@ -722,7 +722,7 @@
    <point/>
   </object>
  </objectgroup>
- <objectgroup id="15" name="Buildings" visible="0">
+ <objectgroup id="15" name="Buildings">
   <object id="161" x="6650.45" y="4490.12">
    <polygon points="0,0 59.6172,1.56887 61.1861,-21.9642 224.349,-129.432 396.141,-32.9463 397.709,336.523 378.883,350.643 380.452,408.692 287.888,410.26 282.397,460.464 235.331,463.602 235.331,512.237 156.103,509.099 156.103,474.584 149.043,469.093 147.474,412.614 14.9043,409.476 14.9043,340.446 -2.35331,340.446"/>
   </object>
@@ -779,35 +779,109 @@
   </object>
  </objectgroup>
  <objectgroup id="19" name="Spawns">
-  <object id="304" name="survival-player" x="4800" y="7800" point="1">
+  <object id="304" name="survival-player" x="4808.05" y="4548.49">
    <properties>
-    <property name="role" value="player"/>
-    <property name="faction" value="survivors"/>
     <property name="actor_kind" value="soldier"/>
+    <property name="faction" value="survivors"/>
+    <property name="role" value="player"/>
    </properties>
   </object>
-  <object id="305" name="walker-horde" x="4200" y="7200" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="walker"/><property name="tags" value="entry,west"/><property name="weight" value="2"/></properties></object>
-  <object id="315" name="walker-flank" x="5550" y="8100" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="walker"/><property name="tags" value="entry,east"/><property name="weight" value="1"/></properties></object>
-  <object id="306" name="runner-horde" x="5300" y="7200" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="runner"/><property name="tags" value="entry,north"/></properties></object>
-  <object id="316" name="runner-flank" x="4000" y="8200" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="runner"/><property name="tags" value="entry,southwest"/></properties></object>
-  <object id="307" name="breaker-horde" x="4500" y="8400" width="350" height="350"><properties><property name="role" value="enemy"/><property name="faction" value="horde"/><property name="actor_kind" value="breaker"/><property name="tags" value="entry,south"/></properties></object>
+  <object id="305" name="walker-horde" x="4200" y="7200" width="350" height="350">
+   <properties>
+    <property name="actor_kind" value="walker"/>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,west"/>
+    <property name="weight" value="2"/>
+   </properties>
+  </object>
+  <object id="315" name="walker-flank" x="5550" y="8100" width="350" height="350">
+   <properties>
+    <property name="actor_kind" value="walker"/>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,east"/>
+    <property name="weight" value="1"/>
+   </properties>
+  </object>
+  <object id="306" name="runner-horde" x="5300" y="7200" width="350" height="350">
+   <properties>
+    <property name="actor_kind" value="runner"/>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,north"/>
+   </properties>
+  </object>
+  <object id="316" name="runner-flank" x="4000" y="8200" width="350" height="350">
+   <properties>
+    <property name="actor_kind" value="runner"/>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,southwest"/>
+   </properties>
+  </object>
+  <object id="307" name="breaker-horde" x="4500" y="8400" width="350" height="350">
+   <properties>
+    <property name="actor_kind" value="breaker"/>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,south"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="20" name="Interactions">
-  <object id="308" name="camp-smg" x="4950" y="7800" point="1"><properties><property name="kind" value="weapon_station"/><property name="weapon_id" value="survivor_smg"/><property name="price" value="500"/><property name="prompt" value="PRESS E: BUY SMG $500"/></properties></object>
-  <object id="317" name="camp-pistol" x="4850" y="7750" point="1"><properties><property name="kind" value="weapon_station"/><property name="weapon_id" value="survivor_pistol"/><property name="price" value="150"/><property name="prompt" value="PRESS E: BUY PISTOL $150"/></properties></object>
-  <object id="312" name="camp-ammo" x="4800" y="7950" point="1"><properties><property name="kind" value="ammo_station"/><property name="price" value="250"/><property name="prompt" value="PRESS E: REFILL AMMO $250"/></properties></object>
-  <object id="313" name="camp-health-pack" x="4650" y="7800" point="1"><properties><property name="kind" value="health_pack_station"/><property name="item_id" value="health_pack"/><property name="amount" value="1"/><property name="price" value="150"/><property name="prompt" value="PRESS E: BUY HEALTH PACK $150"/></properties></object>
- <object id="314" name="camp-armor" x="4800" y="7650" point="1"><properties><property name="kind" value="armor_station"/><property name="price" value="400"/><property name="armor_amount" value="100"/><property name="armor_capacity" value="100"/><property name="prompt" value="PRESS E: RESTORE ARMOR $400"/></properties></object>
+  <object id="308" name="camp-smg" x="5259.86" y="4355.33">
+   <properties>
+    <property name="kind" value="weapon_station"/>
+    <property name="price" value="500"/>
+    <property name="prompt" value="PRESS E: BUY SMG $500"/>
+    <property name="weapon_id" value="survivor_smg"/>
+   </properties>
+  </object>
+  <object id="317" name="camp-pistol" x="5296.68" y="4623.24">
+   <properties>
+    <property name="kind" value="weapon_station"/>
+    <property name="price" value="150"/>
+    <property name="prompt" value="PRESS E: BUY PISTOL $150"/>
+    <property name="weapon_id" value="survivor_pistol"/>
+   </properties>
+  </object>
+  <object id="312" name="camp-ammo" x="4763.78" y="4875.55">
+   <properties>
+    <property name="kind" value="ammo_station"/>
+    <property name="price" value="250"/>
+    <property name="prompt" value="PRESS E: REFILL AMMO $250"/>
+   </properties>
+  </object>
+  <object id="313" name="camp-health-pack" x="4303.92" y="4548.49">
+   <properties>
+    <property name="amount" value="1"/>
+    <property name="item_id" value="health_pack"/>
+    <property name="kind" value="health_pack_station"/>
+    <property name="price" value="150"/>
+    <property name="prompt" value="PRESS E: BUY HEALTH PACK $150"/>
+   </properties>
+  </object>
+  <object id="314" name="camp-armor" x="4751.71" y="4161.07">
+   <properties>
+    <property name="armor_amount" value="100"/>
+    <property name="armor_capacity" value="100"/>
+    <property name="kind" value="armor_station"/>
+    <property name="price" value="400"/>
+    <property name="prompt" value="PRESS E: RESTORE ARMOR $400"/>
+   </properties>
+  </object>
  </objectgroup>
- <objectgroup id="23" name="Collision">
-  <object id="318" name="camp-east-building" x="5261.58" y="7686.1"><polygon points="0,0 146.816,-177.833 241.935,-187.138 326.716,-79.6112 336.022,-13.4409 191.274,174.731 12.4069,77.5434"/></object>
-  <object id="319" name="camp-west-building" x="4020.89" y="7552.73"><polygon points="0,0 118.9,-106.493 226.427,-146.816 373.242,-2.06782 343.259,23.78 344.293,95.1199 300.868,128.205 320.513,173.697 271.919,205.749 216.088,168.528 134.409,225.393 -2.06782,73.4078"/></object>
- </objectgroup>
- <objectgroup id="21" name="Harvestables">
-  <object id="309" name="camp-oak" x="4580" y="7680" width="120" height="150"><properties><property name="kind" value="tree"/><property name="durability" value="150"/><property name="resource_id" value="wood"/><property name="resource_yield" value="12"/></properties></object>
-  <object id="310" name="camp-truck" x="5100" y="7650" width="180" height="120"><properties><property name="kind" value="vehicle"/><property name="durability" value="200"/><property name="resource_id" value="metal"/><property name="resource_yield" value="8"/></properties></object>
+ <objectgroup id="21" name="Harvestables" visible="0">
  </objectgroup>
  <objectgroup id="22" name="ConstructionAnchors">
-  <object id="311" name="camp-gate" x="4680" y="7480" width="180" height="36"><properties><property name="kind" value="barricade"/><property name="build_cost" value="wood:8,metal:2"/><property name="repair_cost" value="wood:2"/><property name="max_health" value="180"/></properties></object>
+  <object id="311" name="camp-gate" x="4668.25" y="3769.08" width="180" height="36">
+   <properties>
+    <property name="build_cost" value="wood:8,metal:2"/>
+    <property name="kind" value="barricade"/>
+    <property name="max_health" value="180"/>
+    <property name="repair_cost" value="wood:2"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>

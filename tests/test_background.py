@@ -13,11 +13,12 @@ class ImageLayer:
 
 
 class ImageObject:
-    def __init__(self, image, x, y, height):
+    def __init__(self, image, x, y, height, width=None):
         self.image = image
         self.x = x
         self.y = y
         self.height = height
+        self.width = image.get_width() if width is None else width
 
 
 class ObjectLayer(list):
@@ -94,3 +95,25 @@ def test_draws_visible_tiled_image_objects_at_authored_position(monkeypatch):
     ground.draw(screen, -10, -20)
 
     assert screen.blits[1] == (vehicle, (24, 26))
+
+
+def test_tiled_object_images_respect_their_authored_tmx_size(monkeypatch):
+    backdrop = pygame.Surface((100, 80))
+    vehicle = pygame.Surface((24, 15))
+    object_layer = ObjectLayer([ImageObject(vehicle, 30, 25, 10, width=12)])
+    tiled_map = SimpleNamespace(
+        visible_layers=[ImageLayer(backdrop), object_layer],
+        width=10,
+        height=8,
+        tilewidth=10,
+        tileheight=10,
+    )
+    monkeypatch.setattr("shooter.background.TiledImageLayer", ImageLayer)
+    monkeypatch.setattr("shooter.background.TiledObjectGroup", ObjectLayer)
+    monkeypatch.setattr("shooter.background.load_tiled_map", lambda _: tiled_map)
+    ground = TiledBackground("Maps/world_1/world_1.tmx")
+    screen = RecordingScreen()
+
+    ground.draw(screen, 0, 0)
+
+    assert screen.blits[1][0].get_size() == (12, 10)
