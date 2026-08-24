@@ -56,3 +56,12 @@ class SurvivalTuner:
         for index, row in enumerate(rows):
             panel.blit(font.render(row, True, (235, 235, 235)), (10, 8 + index * 24))
         surface.blit(panel, (12, surface.get_height() - panel.get_height() - 12))
+
+    def draw_hint(self, surface):
+        font = pygame.font.Font(None, 22)
+        text = font.render("TAB: OPEN EDIT MENU", True, (235, 235, 235))
+        panel = pygame.Surface((text.get_width() + 20, text.get_height() + 16), pygame.SRCALPHA)
+        panel.fill((8, 12, 16, 230))
+        pygame.draw.rect(panel, (255, 180, 65), panel.get_rect(), 2)
+        panel.blit(text, (10, 8))
+        surface.blit(panel, (12, surface.get_height() - panel.get_height() - 12))

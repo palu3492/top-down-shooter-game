@@ -146,6 +146,11 @@ class UseHealthPack:
 
 
 @dataclass(frozen=True, slots=True)
+class UseArmorPlate:
+    pass
+
+
+@dataclass(frozen=True, slots=True)
 class InteractSurvivor:
     pass
 
@@ -225,7 +230,9 @@ class SurvivalMode:
             200,
             self.balance.smg_reload_seconds,
             "9mm",
-            spread=self.balance.smg_spread_degrees, firing_mode=AUTOMATIC, max_range=650,
+            spread=self.balance.smg_spread_degrees,
+            firing_mode=AUTOMATIC,
+            max_range=650,
             effective_range=350, minimum_damage_fraction=0.55,
         )
         self.weapons = WeaponCatalog((self.pistol, self.rifle, self.smg))
@@ -465,9 +472,11 @@ class SurvivalMode:
             batches.append(batch)
         actor_ids = tuple(actor_id for batch in batches for actor_id in batch.actor_ids)
         self.enemy_ids += actor_ids
-        self.entry_remaining.update(dict.fromkeys(actor_ids, release.activation_delay_seconds))
-        self.spawn_results += (batch.spawn_result,)
-        return batch
+        self.entry_remaining.update(
+            dict.fromkeys(actor_ids, release.activation_delay_seconds)
+        )
+        self.spawn_results += tuple(batch.spawn_result for batch in batches)
+        return tuple(batches)
 
     def advance(self, match, commands, dt):
         if dt < 0:
@@ -506,6 +515,11 @@ class SurvivalMode:
                 if self.player_id is not None:
                     self.health_pack_result = self.consumables.use_health_pack(
                         "health_pack", 50, match.combat, self.player_id
+                    )
+            elif isinstance(command, UseArmorPlate):
+                if self.player_id is not None:
+                    self.health_pack_result = self.consumables.use_armor_plate(
+                        "armor_plate", 100, 100, match.combat, self.player_id
                     )
             elif isinstance(command, InteractSurvivor):
                 interaction_requested = True
@@ -947,9 +961,12 @@ class SurvivalMode:
                 self.player_id,
                 self.cash,
             )
-        elif self.interaction_context.kind == "health_pack_station":
+        elif self.interaction_context.kind in {"health_pack_station", "armor_station"}:
+            properties = dict(self.interaction_context.properties)
+            if self.interaction_context.kind == "armor_station":
+                properties.update({"item_id": "armor_plate", "amount": "1"})
             self.consumable_purchase_result = self.consumable_purchases.purchase(
-                self.interaction_context.properties, self.consumables, self.cash
+                properties.items(), self.consumables, self.cash
             )
         elif self.interaction_context.kind == "construction_anchor":
             state = self.barricades[self.interaction_context.interaction_id]

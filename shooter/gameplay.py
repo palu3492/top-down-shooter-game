@@ -20,7 +20,7 @@ from shooter import config
 from shooter.background import TiledBackground
 from shooter.camera import FollowCamera
 from shooter.commands import (
-    FIRE, INTERACT, RELOAD, SELECT_SLOT, USE_HEALTH_PACK, USE_TOOL,
+    FIRE, INTERACT, RELOAD, SELECT_SLOT, USE_ARMOR_PLATE, USE_HEALTH_PACK, USE_TOOL,
 )
 from shooter.input_adapter import PygameInputAdapter
 from shooter.map_definition import SpawnPoint, SpawnRegion, current_map_definition
@@ -34,6 +34,7 @@ from shooter.modes.zombie_survival import (
     SelectSurvivorWeapon,
     UseSurvivorTool,
     UseHealthPack,
+    UseArmorPlate,
 )
 from shooter.scenes import Scene
 from shooter.session import Session
@@ -230,7 +231,9 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             return None
         if self.tuning and event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_1, pygame.K_2):
-                definition = self.mode.pistol if event.key == pygame.K_1 else self.mode.smg
+                definition = (
+                    self.mode.pistol if event.key == pygame.K_1 else self.mode.smg
+                )
                 self._grant_debug_weapon(definition)
                 return None
             self.tuner.handle(event)
@@ -253,6 +256,8 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             self.match.advance(0.0, (UseSurvivorTool(),))
         elif command is not None and command.action == USE_HEALTH_PACK:
             self.match.advance(0.0, (UseHealthPack(),))
+        elif command is not None and command.action == USE_ARMOR_PLATE:
+            self.match.advance(0.0, (UseArmorPlate(),))
         elif (
             command is not None
             and command.action == SELECT_SLOT
@@ -279,12 +284,15 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
         else:
             loadout.select_entry(weapon)
         self.mode.tool_equipped = False
-        self.tuner.notice = f"Debug equipped {definition.definition_id.replace('survivor_', '').upper()}."
+        weapon_name = definition.definition_id.replace("survivor_", "").upper()
+        self.tuner.notice = f"Debug equipped {weapon_name}."
 
     def draw(self, surface, alpha):
         super().draw(surface, alpha)
         if self.tuning:
             self.tuner.draw(surface)
+        else:
+            self.tuner.draw_hint(surface)
 
     def update(self, inputs, dt=config.SIM_DT):
         commands = [MoveSurvivor(inputs.move)]

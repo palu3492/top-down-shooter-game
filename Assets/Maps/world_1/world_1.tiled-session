@@ -8,11 +8,11 @@
             "scaleInDock": 1
         },
         "world_1.tmx": {
-            "scale": 0.3363,
-            "selectedLayer": 5,
+            "scale": 0.2041,
+            "selectedLayer": 12,
             "viewCenter": {
-                "x": 4864.704133214393,
-                "y": 3910.1992268807617
+                "x": 6673.199412052915,
+                "y": 1945.1249387555122
             }
         },
         "world_1.tmx#trees": {

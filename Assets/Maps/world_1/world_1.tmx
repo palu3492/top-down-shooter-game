@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="24" nextobjectid="320">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="24" nextobjectid="331">
  <properties>
-  <property name="schema_version" type="int" value="2"/>
-  <property name="map_id" value="world_1"/>
   <property name="display_name" value="World 1"/>
+  <property name="map_id" value="world_1"/>
+  <property name="schema_version" type="int" value="2"/>
   <property name="supported_modes" value="zombie_survival,sandbox"/>
  </properties>
  <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="547" tilecount="25" columns="0" objectalignment="topleft">
@@ -11,151 +11,201 @@
   <tile id="0" type="vehicle">
    <image source="../../Props/vehicles/vehicle_47.png" width="248" height="211"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.14,105.64 159.279,0.676 247.99,94.1278 65.827,210.604"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.14,105.64 159.279,0.676 247.99,94.1278 65.827,210.604"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="1" type="vehicle">
    <image source="../../Props/vehicles/vehicle_48.png" width="364" height="281"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.6,158.16 112.839,280.325 363.278,111.584 230.424,0.872"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.6,158.16 112.839,280.325 363.278,111.584 230.424,0.872"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="2" type="vehicle">
    <image source="../../Props/vehicles/vehicle_49.png" width="594" height="547"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="23.54,187.19 388.509,546.051 593.9,420.068 138.07,0.888 0.634,120.763"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="23.54,187.19 388.509,546.051 593.9,420.068 138.07,0.888 0.634,120.763"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="3" type="vehicle">
    <image source="../../Props/vehicles/vehicle_50.png" width="500" height="396"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="10.13,258.31 125.424,395.746 297.219,327.792 499.555,143.016 287.293,0.999 0.20406,229.296"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="10.13,258.31 125.424,395.746 297.219,327.792 499.555,143.016 287.293,0.999 0.20406,229.296"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="4" type="vehicle">
    <image source="../../Props/vehicles/vehicle_51.png" width="289" height="189"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.98,92.29 53.1569,188.527 288.533,98.0874 217.804,0.6905"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.98,92.29 53.1569,188.527 288.533,98.0874 217.804,0.6905"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="5" type="vehicle">
    <image source="../../Props/vehicles/vehicle_52.png" width="133" height="112"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="30.46,0.44 0.2177,62.4367 93.5908,111.959 132.528,40.5111"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="30.46,0.44 0.2177,62.4367 93.5908,111.959 132.528,40.5111"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="6" type="vehicle">
    <image source="../../Props/vehicles/vehicle_53.png" width="158" height="249"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.83,40.26 5.70045,248.715 155.71,243.845 157.658,7.141 5.70045,0.3223"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.83,40.26 5.70045,248.715 155.71,243.845 157.658,7.141 5.70045,0.3223"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="7" type="vehicle">
    <image source="../../Props/vehicles/vehicle_54.png" width="135" height="217"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.57,200.17 133.046,216.73 134.02,2.43 19.0777,0.482"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.57,200.17 133.046,216.73 134.02,2.43 19.0777,0.482"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="8" type="vehicle">
    <image source="../../Props/vehicles/vehicle_55.png" width="226" height="216"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.41,53.52 90.0262,215.219 225.425,190.867 110.482,0.9192"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.41,53.52 90.0262,215.219 225.425,190.867 110.482,0.9192"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="9" type="vehicle">
    <image source="../../Props/vehicles/vehicle_56.png" width="262" height="219"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="48.66,0.05 0.9296,125.708 213.281,218.246 261.011,107.2"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="48.66,0.05 0.9296,125.708 213.281,218.246 261.011,107.2"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="10" type="vehicle">
    <image source="../../Props/vehicles/vehicle_57.png" width="239" height="203"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.28,118.82 81.125,202.025 238.094,64.5299 141.906,0.208"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.28,118.82 81.125,202.025 238.094,64.5299 141.906,0.208"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="11" type="vehicle">
    <image source="../../Props/vehicles/vehicle_58.png" width="200" height="173"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.16,104.38 77.4644,172.243 199.027,61.302 114.051,0.521"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.16,104.38 77.4644,172.243 199.027,61.302 114.051,0.521"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="12" type="vehicle">
    <image source="../../Props/vehicles/vehicle_59.png" width="371" height="208"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="16.86,30.91 30.3835,200.568 370.929,207.945 363.553,0.1748 0.8777,3.863"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="16.86,30.91 30.3835,200.568 370.929,207.945 363.553,0.1748 0.8777,3.863"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="13" type="vehicle">
    <image source="../../Props/vehicles/vehicle_60.png" width="138" height="342"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.66,26.69 8.95375,341.099 137.13,327.527 113.003,0.3008"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.66,26.69 8.95375,341.099 137.13,327.527 113.003,0.3008"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="14" type="vehicle">
    <image source="../../Props/vehicles/vehicle_61.png" width="202" height="200"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.71,76.32 80.9032,199.991 201.676,114.001 97.3284,0.9577"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.71,76.32 80.9032,199.991 201.676,114.001 97.3284,0.9577"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="15" type="vehicle">
    <image source="../../Props/vehicles/vehicle_62.png" width="205" height="135"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="5.37,22.28 0.40525,134.483 204.953,132.497 202.967,0.4351"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="5.37,22.28 0.40525,134.483 204.953,132.497 202.967,0.4351"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="16" type="vehicle">
    <image source="../../Props/vehicles/vehicle_63.png" width="156" height="252"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.81,33.71 12.7254,251.166 155.71,233.293 113.013,0.9426"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.81,33.71 12.7254,251.166 155.71,233.293 113.013,0.9426"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="17" type="vehicle">
    <image source="../../Props/vehicles/vehicle_64.png" width="222" height="152"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.24,53.79 35.9862,151.099 221.668,80.5997 159.112,0.1707"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.24,53.79 35.9862,151.099 221.668,80.5997 159.112,0.1707"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="18" type="vehicle">
    <image source="../../Props/vehicles/vehicle_65.png" width="155" height="173"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="14.32,15.95 0.4187,172.836 154.326,172.836 130.495,0.0628"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="14.32,15.95 0.4187,172.836 154.326,172.836 130.495,0.0628"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="19" type="vehicle">
    <image source="../../Props/vehicles/vehicle_66.png" width="138" height="226"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="27.1,0.85 0.2903,218.306 88.6629,225.257 137.317,10.7795"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="27.1,0.85 0.2903,218.306 88.6629,225.257 137.317,10.7795"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="20" type="vehicle">
    <image source="../../Props/vehicles/vehicle_67.png" width="134" height="353"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.58,32.7 3.55885,348.458 133.635,352.43 91.9314,0.9256"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.58,32.7 3.55885,348.458 133.635,352.43 91.9314,0.9256"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="21" type="vehicle">
    <image source="../../Props/vehicles/vehicle_68.png" width="112" height="188"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="9.51,13.82 0.57345,187.586 97.8826,185.6 111.784,0.9116"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="9.51,13.82 0.57345,187.586 97.8826,185.6 111.784,0.9116"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="22" type="vehicle">
    <image source="../../Props/vehicles/vehicle_69.png" width="132" height="175"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="34.8,0.5 0.5566,153.207 87.5534,174.494 131.052,19.9354"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="34.8,0.5 0.5566,153.207 87.5534,174.494 131.052,19.9354"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="23" type="vehicle">
    <image source="../../Props/vehicles/vehicle_70.png" width="149" height="109"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.1,22.41 0.981446,106.147 148.183,108.792 134.08,0.3739"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.1,22.41 0.981446,106.147 148.183,108.792 134.08,0.3739"/>
+    </object>
    </objectgroup>
   </tile>
   <tile id="24" type="vehicle">
    <image source="../../Props/vehicles/vehicle_71.png" width="175" height="128"/>
    <objectgroup>
-    <object x="0" y="0"><polygon points="0.45,36.06 1.34214,127.95 174.417,122.598 157.467,0.3744"/></object>
+    <object id="0" x="0" y="0">
+     <polygon points="0.45,36.06 1.34214,127.95 174.417,122.598 157.467,0.3744"/>
+    </object>
    </objectgroup>
   </tile>
  </tileset>
@@ -231,14 +281,14 @@
  </imagelayer>
  <objectgroup id="17" name="Placed Trees">
   <properties>
-   <property name="semantic" value="harvestable"/>
-   <property name="kind" value="tree"/>
-   <property name="durability" value="150"/>
-   <property name="resource_id" value="wood"/>
-   <property name="resource_yield" value="12"/>
-   <property name="required_tool_capability" value="harvest"/>
    <property name="collision_source" value="tile"/>
    <property name="debug_render" value="false"/>
+   <property name="durability" value="150"/>
+   <property name="kind" value="tree"/>
+   <property name="required_tool_capability" value="harvest"/>
+   <property name="resource_id" value="wood"/>
+   <property name="resource_yield" value="12"/>
+   <property name="semantic" value="harvestable"/>
    <property name="tags" value="environment"/>
   </properties>
   <object id="194" name="tree_01" type="tree" gid="26" x="423.26" y="1303.35" width="220" height="330"/>
@@ -344,69 +394,46 @@
  </objectgroup>
  <objectgroup id="10" name="vehicles">
   <properties>
-   <property name="semantic" value="harvestable"/>
-   <property name="kind" value="vehicle"/>
+   <property name="collision_source" value="tile"/>
+   <property name="debug_render" value="false"/>
    <property name="durability" value="200"/>
+   <property name="kind" value="vehicle"/>
+   <property name="required_tool_capability" value="harvest"/>
    <property name="resource_id" value="metal"/>
    <property name="resource_yield" value="8"/>
-   <property name="required_tool_capability" value="harvest"/>
-   <property name="debug_render" value="false"/>
-   <property name="collision_source" value="tile"/>
+   <property name="semantic" value="harvestable"/>
    <property name="tags" value="environment"/>
   </properties>
- <object id="47" name="vehicle_47" type="vehicle" gid="1" x="2305" y="1674" width="248" height="211">
- </object>
- <object id="48" name="vehicle_48" type="vehicle" gid="2" x="7579" y="1078" width="364" height="281">
- </object>
- <object id="49" name="vehicle_49" type="vehicle" gid="3" x="7059" y="1375" width="594" height="547">
- </object>
- <object id="50" name="vehicle_50" type="vehicle" gid="4" x="6725" y="1071" width="500" height="396">
- </object>
- <object id="51" name="vehicle_51" type="vehicle" gid="5" x="8105" y="2378" width="289" height="189">
- </object>
- <object id="52" name="vehicle_52" type="vehicle" gid="6" x="7718" y="2597" width="133" height="112">
- </object>
- <object id="53" name="vehicle_53" type="vehicle" gid="7" x="6171" y="2619" width="158" height="249">
- </object>
- <object id="54" name="vehicle_54" type="vehicle" gid="8" x="5993" y="2350" width="135" height="217">
- </object>
- <object id="55" name="vehicle_55" type="vehicle" gid="9" x="5736" y="3160" width="226" height="216">
- </object>
- <object id="56" name="vehicle_56" type="vehicle" gid="10" x="5077" y="2780" width="262" height="219">
- </object>
- <object id="57" name="vehicle_57" type="vehicle" gid="11" x="1367" y="5787" width="239" height="203">
- </object>
- <object id="58" name="vehicle_58" type="vehicle" gid="12" x="1625" y="5589" width="200" height="173">
- </object>
- <object id="59" name="vehicle_59" type="vehicle" gid="13" x="6081" y="6646" width="371" height="208">
- </object>
- <object id="60" name="vehicle_60" type="vehicle" gid="14" x="7233" y="5981" width="138" height="342">
- </object>
- <object id="61" name="vehicle_61" type="vehicle" gid="15" x="4122" y="2343" width="202" height="200">
- </object>
- <object id="62" name="vehicle_62" type="vehicle" gid="16" x="8393" y="3882" width="205" height="135">
- </object>
- <object id="63" name="vehicle_63" type="vehicle" gid="17" x="7631" y="3669" width="156" height="252">
- </object>
- <object id="64" name="vehicle_64" type="vehicle" gid="18" x="7712" y="3215" width="222" height="152">
- </object>
- <object id="65" name="vehicle_65" type="vehicle" gid="19" x="7265" y="3935" width="155" height="173">
- </object>
- <object id="66" name="vehicle_66" type="vehicle" gid="20" x="7283" y="4527" width="138" height="226">
- </object>
- <object id="67" name="vehicle_67" type="vehicle" gid="21" x="7664" y="4376" width="134" height="353">
- </object>
- <object id="68" name="vehicle_68" type="vehicle" gid="22" x="7102" y="4659" width="112" height="188">
- </object>
- <object id="69" name="vehicle_69" type="vehicle" gid="23" x="7272" y="4925" width="132" height="175">
- </object>
- <object id="70" name="vehicle_70" type="vehicle" gid="24" x="8356" y="5469" width="149" height="109">
- </object>
- <object id="71" name="vehicle_71" type="vehicle" gid="25" x="6282" y="5621" width="175" height="128">
- </object>
+  <object id="47" name="vehicle_47" type="vehicle" gid="1" x="2305" y="1674" width="248" height="211"/>
+  <object id="48" name="vehicle_48" type="vehicle" gid="2" x="7579" y="1078" width="364" height="281"/>
+  <object id="49" name="vehicle_49" type="vehicle" gid="3" x="7059" y="1375" width="594" height="547"/>
+  <object id="50" name="vehicle_50" type="vehicle" gid="4" x="6725" y="1071" width="500" height="396"/>
+  <object id="51" name="vehicle_51" type="vehicle" gid="5" x="8105" y="2378" width="289" height="189"/>
+  <object id="52" name="vehicle_52" type="vehicle" gid="6" x="7718" y="2597" width="133" height="112"/>
+  <object id="53" name="vehicle_53" type="vehicle" gid="7" x="6171" y="2619" width="158" height="249"/>
+  <object id="54" name="vehicle_54" type="vehicle" gid="8" x="5993" y="2350" width="135" height="217"/>
+  <object id="55" name="vehicle_55" type="vehicle" gid="9" x="5736" y="3160" width="226" height="216"/>
+  <object id="56" name="vehicle_56" type="vehicle" gid="10" x="5077" y="2780" width="262" height="219"/>
+  <object id="57" name="vehicle_57" type="vehicle" gid="11" x="1367" y="5787" width="239" height="203"/>
+  <object id="58" name="vehicle_58" type="vehicle" gid="12" x="1625" y="5589" width="200" height="173"/>
+  <object id="59" name="vehicle_59" type="vehicle" gid="13" x="6081" y="6646" width="371" height="208"/>
+  <object id="60" name="vehicle_60" type="vehicle" gid="14" x="7233" y="5981" width="138" height="342"/>
+  <object id="61" name="vehicle_61" type="vehicle" gid="15" x="4122" y="2343" width="202" height="200"/>
+  <object id="62" name="vehicle_62" type="vehicle" gid="16" x="8393" y="3882" width="205" height="135"/>
+  <object id="63" name="vehicle_63" type="vehicle" gid="17" x="7631" y="3669" width="156" height="252"/>
+  <object id="64" name="vehicle_64" type="vehicle" gid="18" x="7712" y="3215" width="222" height="152"/>
+  <object id="65" name="vehicle_65" type="vehicle" gid="19" x="7265" y="3935" width="155" height="173"/>
+  <object id="66" name="vehicle_66" type="vehicle" gid="20" x="7283" y="4527" width="138" height="226"/>
+  <object id="67" name="vehicle_67" type="vehicle" gid="21" x="7664" y="4376" width="134" height="353"/>
+  <object id="68" name="vehicle_68" type="vehicle" gid="22" x="7102" y="4659" width="112" height="188"/>
+  <object id="69" name="vehicle_69" type="vehicle" gid="23" x="7272" y="4925" width="132" height="175"/>
+  <object id="70" name="vehicle_70" type="vehicle" gid="24" x="8356" y="5469" width="149" height="109"/>
+  <object id="71" name="vehicle_71" type="vehicle" gid="25" x="6282" y="5621" width="175" height="128"/>
  </objectgroup>
  <objectgroup id="11" name="Playable Area" visible="0">
-  <properties><property name="semantic" value="playable_area"/></properties>
+  <properties>
+   <property name="semantic" value="playable_area"/>
+  </properties>
   <object id="72" x="1297.07" y="697.35">
    <polygon points="-479.626,-275.891 -864.388,274.4 -941.097,1502.32 -481.172,2001.39 -418.41,3165.97 -383.543,4274.76 -655.509,5516.04 -983.264,6847.98 -892.608,7482.57 -474.198,7956.76 488.145,8640.17 1478.38,8960.95 2503.49,9002.79 4351.46,9079.5 6624.83,8995.82 7649.93,8647.14 8013.76,8101.1 7712.09,6894.97 8110.18,4651.32 7998.61,3047.42 7635.98,1582.98 7747.56,599.721 7308.23,313.808 7601.12,-292.887 6471.41,-474.198 4937.24,-432.357 2949.79,-376.569 1603.91,-432.357 320.781,-446.304 -72.7659,-405.067"/>
   </object>
@@ -665,8 +692,8 @@
  </objectgroup>
  <objectgroup id="14" name="Fence">
   <properties>
-   <property name="semantic" value="static_blocker"/>
    <property name="clearance" value="32"/>
+   <property name="semantic" value="static_blocker"/>
   </properties>
   <object id="158" x="2426.42" y="2096.14">
    <polyline points="0,0 372.793,-255.069 519.948,-1036.63 202.747,-1298.23 -62.1321,-1422.5 -1121.65,-1445.39 -1618.71,-1049.71 -1687.38,-879.66 -1726.62,-588.62 -1703.73,-212.557 -1530.41,179.856 -1487.9,353.172 -856.769,366.252 -196.207,98.1033"/>
@@ -746,7 +773,9 @@
   </object>
  </objectgroup>
  <objectgroup id="15" name="Buildings">
-  <properties><property name="semantic" value="static_blocker"/></properties>
+  <properties>
+   <property name="semantic" value="static_blocker"/>
+  </properties>
   <object id="161" x="6650.45" y="4490.12">
    <polygon points="0,0 59.6172,1.56887 61.1861,-21.9642 224.349,-129.432 396.141,-32.9463 397.709,336.523 378.883,350.643 380.452,408.692 287.888,410.26 282.397,460.464 235.331,463.602 235.331,512.237 156.103,509.099 156.103,474.584 149.043,469.093 147.474,412.614 14.9043,409.476 14.9043,340.446 -2.35331,340.446"/>
   </object>
@@ -803,7 +832,9 @@
   </object>
  </objectgroup>
  <objectgroup id="19" name="Spawns">
-  <properties><property name="semantic" value="spawn"/></properties>
+  <properties>
+   <property name="semantic" value="spawn"/>
+  </properties>
   <object id="304" name="survival-player" x="4808.05" y="4548.49">
    <properties>
     <property name="actor_kind" value="soldier"/>
@@ -811,7 +842,7 @@
     <property name="role" value="player"/>
    </properties>
   </object>
-  <object id="305" name="walker-horde" x="4200" y="7200" width="350" height="350">
+  <object id="305" name="walker-horde" x="4546.17" y="7188.33" width="350" height="350">
    <properties>
     <property name="actor_kind" value="walker"/>
     <property name="faction" value="horde"/>
@@ -829,7 +860,7 @@
     <property name="weight" value="1"/>
    </properties>
   </object>
-  <object id="306" name="runner-horde" x="5300" y="7200" width="350" height="350">
+  <object id="306" name="runner-horde" x="5428.35" y="7106.65" width="350" height="350">
    <properties>
     <property name="actor_kind" value="runner"/>
     <property name="faction" value="horde"/>
@@ -837,7 +868,7 @@
     <property name="tags" value="entry,north"/>
    </properties>
   </object>
-  <object id="316" name="runner-flank" x="4000" y="8200" width="350" height="350">
+  <object id="316" name="runner-flank" x="3824.97" y="8040.53" width="350" height="350">
    <properties>
     <property name="actor_kind" value="runner"/>
     <property name="faction" value="horde"/>
@@ -845,7 +876,7 @@
     <property name="tags" value="entry,southwest"/>
    </properties>
   </object>
-  <object id="307" name="breaker-horde" x="4500" y="8400" width="350" height="350">
+  <object id="307" name="breaker-horde" x="4659.47" y="7839.91" width="350" height="350">
    <properties>
     <property name="actor_kind" value="breaker"/>
     <property name="faction" value="horde"/>
@@ -853,9 +884,88 @@
     <property name="tags" value="entry,south"/>
    </properties>
   </object>
+  <object id="320" name="shared-west-01" x="946.674" y="3763.24" width="217.756" height="225.535">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,west,shared"/>
+   </properties>
+  </object>
+  <object id="321" name="shared-west-02" x="2522.38" y="6471.65" width="350" height="350">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,west,shared"/>
+   </properties>
+  </object>
+  <object id="322" name="shared-north-01" x="4900.63" y="756.044" width="287.767" height="272.209">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,north,shared"/>
+   </properties>
+  </object>
+  <object id="323" name="shared-north-02" x="6429.99" y="1232.24" width="283.878" height="264.43">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,north,shared"/>
+   </properties>
+  </object>
+  <object id="324" name="shared-east-01" x="8620.58" y="2809.92" width="350" height="350">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,east,shared"/>
+   </properties>
+  </object>
+  <object id="325" name="shared-east-02" x="8107.78" y="5966.63" width="350" height="350">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,east,shared"/>
+   </properties>
+  </object>
+  <object id="326" name="shared-south-01" x="5397.12" y="8717.81" width="350" height="350">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,south,shared"/>
+   </properties>
+  </object>
+  <object id="327" name="shared-south-02" x="2272.66" y="7488.21" width="350" height="350">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,south,shared"/>
+   </properties>
+  </object>
+  <object id="328" name="shared-east-03" x="6027.84" y="3935.73" width="350" height="350">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,east,shared"/>
+   </properties>
+  </object>
+  <object id="329" name="shared-west-03" x="3734.85" y="3382.08" width="296.105" height="271.607">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,west,shared"/>
+   </properties>
+  </object>
+  <object id="330" name="shared-west-04" x="1209.1" y="847.546" width="217.756" height="225.535">
+   <properties>
+    <property name="faction" value="horde"/>
+    <property name="role" value="enemy"/>
+    <property name="tags" value="entry,west,shared"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="20" name="Interactions">
-  <properties><property name="semantic" value="interaction"/></properties>
+  <properties>
+   <property name="semantic" value="interaction"/>
+  </properties>
   <object id="308" name="camp-smg" x="5259.86" y="4355.33">
    <properties>
     <property name="kind" value="weapon_station"/>
@@ -900,7 +1010,9 @@
  </objectgroup>
  <objectgroup id="21" name="Harvestables" visible="0"/>
  <objectgroup id="22" name="ConstructionAnchors">
-  <properties><property name="semantic" value="construction_anchor"/></properties>
+  <properties>
+   <property name="semantic" value="construction_anchor"/>
+  </properties>
   <object id="311" name="camp-gate" x="4668.25" y="3769.08" width="180" height="36">
    <properties>
     <property name="build_cost" value="wood:8,metal:2"/>

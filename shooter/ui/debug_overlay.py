@@ -2,12 +2,12 @@
 
 import pygame
 
-PANEL = (12, 12, 520, 214)
+PANEL = (12, 12, 520, 0)
 BACKGROUND = (8, 12, 16, 205)
 BORDER = (75, 170, 190)
 TEXT = (225, 235, 238)
 MUTED = (155, 175, 180)
-LINE_HEIGHT = 20
+LINE_HEIGHT = 17
 INSET = 10
 
 
@@ -113,7 +113,7 @@ class DebugOverlay:
 
     def draw(self, surface, snapshot, presentation):
         lines = self.lines(snapshot, presentation)
-        font = pygame.font.Font(None, 23)
+        font = pygame.font.Font(None, 19)
         available_width = max(1, surface.get_width() // 3 - PANEL[0] * 2)
         content_width = max((font.size(line)[0] for line in lines), default=0)
         width = min(available_width, max(1, min(PANEL[2], content_width + INSET * 2)))

@@ -47,6 +47,17 @@ class ConsumableInventory:
         self._quantities[item_id] -= 1
         return ConsumableUseResult(True, "used", item_id, self.count(item_id), restored)
 
+    def use_armor_plate(self, item_id, armor_amount, armor_capacity, combat, actor_id):
+        if self.count(item_id) <= 0:
+            return ConsumableUseResult(False, "none_owned", item_id, 0)
+        before = combat.get(actor_id)
+        after = combat.grant_armor(actor_id, armor_amount, armor_capacity)
+        restored = after.armor - before.armor
+        if restored <= 0:
+            return ConsumableUseResult(False, "full_armor", item_id, self.count(item_id))
+        self._quantities[item_id] -= 1
+        return ConsumableUseResult(True, "used", item_id, self.count(item_id), restored)
+
     def snapshot(self):
         return tuple(sorted(self._quantities.items()))
 

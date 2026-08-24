@@ -27,6 +27,7 @@ class PygameInputAdapter:
             pygame.K_f: commands.USE_STUN_GRENADE,
             pygame.K_q: commands.USE_TOOL,
             pygame.K_h: commands.USE_HEALTH_PACK,
+            pygame.K_b: commands.USE_ARMOR_PLATE,
             pygame.K_r: commands.RELOAD,
             pygame.K_SPACE: commands.SKIP_PHASE,
             pygame.K_0: commands.GRANT_ALL,

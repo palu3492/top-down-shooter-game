@@ -10,7 +10,9 @@ ACTIVE = (255, 180, 65)
 
 
 class PlaytestHud:
-    def draw(self, surface, snapshot):
+    def draw(self, surface, snapshot, presentation=None):
+        if not hasattr(snapshot.mode_status, "cash"):
+            return
         player = next(
             (entity for entity in snapshot.entities if "player" in entity.tags), None
         )
@@ -18,27 +20,47 @@ class PlaytestHud:
             return
         self._draw_health_cash(surface, snapshot, player)
         self._draw_wave_status(surface, snapshot.mode_status)
-        self._draw_resources(surface, snapshot.mode_status.resources)
-        self._draw_slots(surface, snapshot, player)
+        self._draw_resources(
+            surface, snapshot.mode_status.resources, snapshot.mode_status.consumables
+        )
+        self._draw_slots(surface, snapshot, player, presentation)
 
     def _draw_health_cash(self, surface, snapshot, player):
         vital = player.vitality
         health = "-" if vital is None else f"{vital.health:.0f}/{vital.max_health:.0f}"
+        armor = "-" if vital is None else f"{vital.armor:.0f}/{vital.max_armor:.0f}"
         self._panel(
             surface,
-            (surface.get_width() // 2 - 130, 12, 260, 52),
-            (f"HEALTH {health}", f"CASH ${snapshot.mode_status.cash}"),
+            (surface.get_width() // 2 - 130, 12, 260, 74),
+            (
+                f"HEALTH {health}",
+                f"ARMOR {armor}",
+                f"CASH ${snapshot.mode_status.cash}",
+            ),
         )
 
-    def _draw_resources(self, surface, resources):
-        values = dict(resources)
+    def _draw_resources(self, surface, resources, consumables=()):
+        values = {**dict(resources), **dict(consumables)}
         right = surface.get_width() - 12
         for index, resource in enumerate(("wood", "metal")):
             rect = pygame.Rect(right - (index + 1) * 94 - index * 8, 12, 94, 52)
             self._panel(
                 surface,
                 rect,
-                (resource.upper(), str(values.get(resource, 0))),
+                (resource.replace("_", " ").upper(), str(values.get(resource, 0))),
+            )
+        for index, resource in enumerate(("armor_plate", "health_pack")):
+            width = 126
+            rect = pygame.Rect(
+                right - (index + 1) * width - index * 8,
+                76,
+                width,
+                52,
+            )
+            self._panel(
+                surface,
+                rect,
+                (resource.replace("_", " ").upper(), str(values.get(resource, 0))),
             )
 
     def _draw_wave_status(self, surface, status):
@@ -53,11 +75,11 @@ class PlaytestHud:
         )
         self._panel(
             surface,
-            (12, 12, 250, 52),
+            (12, 120, 250, 52),
             (f"WAVE {status.wave}  {phase}", detail),
         )
 
-    def _draw_slots(self, surface, snapshot, player):
+    def _draw_slots(self, surface, snapshot, player, presentation):
         total_width = BOX[0] * 3 + GAP * 2
         left = surface.get_width() // 2 - total_width // 2
         top = surface.get_height() - BOX[1] - 16
@@ -90,6 +112,19 @@ class PlaytestHud:
                 lines,
                 is_active,
             )
+        grenade_left = left + (BOX[0] + GAP) * 3 + GAP
+        self._slot(
+            surface,
+            pygame.Rect(grenade_left, top, 86, BOX[1]),
+            ("G  GRENADE", str(0 if presentation is None else presentation.grenades)),
+            False,
+        )
+        self._slot(
+            surface,
+            pygame.Rect(grenade_left + 94, top, 86, BOX[1]),
+            ("F  STUN", str(0 if presentation is None else presentation.stun_grenades)),
+            False,
+        )
 
     def _slot(self, surface, rect, lines, active):
         colour = ACTIVE if active else BORDER

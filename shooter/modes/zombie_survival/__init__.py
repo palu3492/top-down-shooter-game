@@ -9,6 +9,7 @@ from shooter.modes.zombie_survival.mode import (
     ReloadSurvivorWeapon,
     SelectSurvivorWeapon,
     SurvivalMode,
+    UseArmorPlate,
     UseSurvivorTool,
     UseHealthPack,
 )
@@ -30,6 +31,7 @@ __all__ = (
     "SurvivalMode",
     "SurvivalWavePlan",
     "UseHealthPack",
+    "UseArmorPlate",
     "UseSurvivorTool",
     "WaveSystem",
 )

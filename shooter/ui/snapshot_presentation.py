@@ -23,4 +23,4 @@ class SnapshotPresentation:
     ):
         self.world.draw(surface, snapshot, camera)
         self.overlay.draw(surface, snapshot, presentation)
-        self.playtest_hud.draw(surface, snapshot)
+        self.playtest_hud.draw(surface, snapshot, presentation)
