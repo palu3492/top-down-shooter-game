@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object type="Fence">
+  <properties>
+   <property name="semantic" value="static_blocker"/>
+   <property name="clearance" type="float" value="32"/>
+  </properties>
+ </object>
+</template>

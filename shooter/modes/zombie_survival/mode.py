@@ -167,22 +167,35 @@ class SurvivalMode:
         spawn_director_policy=None,
     ):
         self.balance = load_survival_balance() if balance is None else balance
+        self.survivor = ActorDefinition(
+            "survivor",
+            "soldier",
+            "survivors",
+            config.PLAYER_HEALTH,
+            (48, 48),
+            self.balance.player_speed,
+        )
         self.walker = ActorDefinition(
             "walker",
             "walker",
             "horde",
-            config.ZOMBIE_HEALTH,
+            self.balance.walker_health,
             (56, 56),
             self.balance.walker_speed,
         )
         self.runner = ActorDefinition(
-            "runner", "runner", "horde", 70, (42, 42), self.balance.runner_speed
+            "runner",
+            "runner",
+            "horde",
+            self.balance.runner_health,
+            (42, 42),
+            self.balance.runner_speed,
         )
         self.breaker = ActorDefinition(
             "breaker",
             "breaker",
             "horde",
-            260,
+            self.balance.breaker_health,
             (64, 64),
             self.balance.breaker_speed,
         )
@@ -194,13 +207,39 @@ class SurvivalMode:
             effective_range=800,
             minimum_damage_fraction=0.7,
         )
+        self.pistol = WeaponDefinition(
+            "survivor_pistol", "ballistic", self.balance.pistol_damage,
+            1 / self.balance.pistol_cooldown_seconds,
+            12, 48, self.balance.pistol_reload_seconds, "9mm", max_range=800, effective_range=500,
+            minimum_damage_fraction=0.65,
+        )
+        self.smg = WeaponDefinition(
+            "survivor_smg", "ballistic", self.balance.smg_damage,
+            1 / self.balance.smg_cooldown_seconds, 40, 200, self.balance.smg_reload_seconds, "9mm",
+            spread=5.0, firing_mode=AUTOMATIC, max_range=650,
+            effective_range=350, minimum_damage_fraction=0.55,
+        )
+        self.weapons = WeaponCatalog((self.pistol, self.rifle, self.smg))
         self.spawn_sources = tuple(spawn_sources)
         selected_plan = (
             SurvivalWavePlan(
                 (
-                    EnemyWaveRule(self.walker, 5, growth=2),
-                    EnemyWaveRule(self.runner, 2, growth=1, starts_at=3),
-                    EnemyWaveRule(self.breaker, 1, starts_at=5),
+                    EnemyWaveRule(
+                        self.walker,
+                        self.balance.walker_wave_one_count,
+                        growth=self.balance.walker_wave_growth,
+                    ),
+                    EnemyWaveRule(
+                        self.runner,
+                        self.balance.runner_wave_count,
+                        growth=self.balance.runner_wave_growth,
+                        starts_at=self.balance.runner_starts_at_wave,
+                    ),
+                    EnemyWaveRule(
+                        self.breaker,
+                        self.balance.breaker_wave_count,
+                        starts_at=self.balance.breaker_starts_at_wave,
+                    ),
                 ),
                 self.balance.preparation_seconds,
             )
@@ -238,7 +277,19 @@ class SurvivalMode:
         self.spawn_results = ()
         self.loadouts = {}
         self.tool_slots = {}
-        self.tool_definition = tool_definition
+        self.tool_definition = (
+            WeaponDefinition(
+                "survivor_pickaxe",
+                "melee",
+                self.balance.tool_damage,
+                1 / self.balance.tool_cooldown_seconds,
+                reach=85,
+                arc=70,
+                capabilities=frozenset(("melee_attack", "harvest")),
+            )
+            if tool_definition is PICKAXE
+            else tool_definition
+        )
         self.starting_firearm = starting_firearm
         self.tool_equipped = False
         self.attacks = AttackDescriptionService()
@@ -278,12 +329,12 @@ class SurvivalMode:
         player = spawn_match_actors(
             match,
             SpawnActorRequest(
-                SURVIVOR,
+                self.survivor,
                 SpawnQuery(
                     role="player", faction="survivors", actor_kind="soldier"
                 ),
                 PlacementConstraints(
-                    footprint=SURVIVOR.collision_size,
+                    footprint=self.survivor.collision_size,
                     **common,
                 ),
                 1,
@@ -726,7 +777,7 @@ class SurvivalMode:
                         enemy_id,
                         enemy_id,
                         self.player_id,
-                        config.ZOMBIE_DAMAGE * dt,
+                        self.balance.contact_damage_per_second * dt,
                         "contact",
                         match.tick,
                     )
@@ -764,9 +815,13 @@ class SurvivalMode:
                 if not in_contact:
                     continue
                 role = match.entities.get(enemy_id).definition_id
-                multiplier = ENEMY_BARRICADE_DAMAGE.get(role, 1.0)
+                multiplier = (
+                    self.balance.breaker_barricade_damage_multiplier
+                    if role == "breaker"
+                    else ENEMY_BARRICADE_DAMAGE.get(role, 1.0)
+                )
                 self.construction.damage(
-                    state, config.ZOMBIE_DAMAGE * multiplier * dt
+                    state, self.balance.contact_damage_per_second * multiplier * dt
                 )
 
     def _advance_waves(self, match, dt):
@@ -855,7 +910,7 @@ class SurvivalMode:
         if self.interaction_context.kind == "weapon_station":
             self.purchase_result = self.weapon_purchases.purchase(
                 self.interaction_context.properties,
-                SURVIVAL_WEAPONS,
+                self.weapons,
                 self.loadouts[self.player_id],
                 self.cash,
             )

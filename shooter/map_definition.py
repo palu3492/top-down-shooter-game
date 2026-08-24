@@ -10,9 +10,6 @@ from shooter.asset_paths import asset_path
 from shooter.world_collision import Aabb, Ellipse, Polygon
 
 CURRENT_MAP_SOURCE = "Maps/world_1/world_1.tmx"
-FENCE_COLLISION_WIDTH = 32.0
-
-
 class TmxSchemaError(ValueError):
     """An authored semantic object is incomplete or invalid."""
 
@@ -137,8 +134,6 @@ def _validate_schema_metadata(path, metadata):
     version = metadata.get("schema_version")
     if version is None:
         return
-    if version == "1":
-        return
     if version != "2":
         raise TmxMapSchemaError(path, f"unsupported schema_version '{version}'")
     missing = tuple(
@@ -228,7 +223,7 @@ def _tile_collision_shapes(obj, offset_x, offset_y, catalog):
     return tuple(shapes)
 
 
-def _polyline_shapes(obj, offset_x, offset_y, width=FENCE_COLLISION_WIDTH):
+def _polyline_shapes(obj, offset_x, offset_y, width):
     polyline = obj.find("polyline")
     if polyline is None:
         return ()
@@ -326,31 +321,6 @@ def _harvestable(obj, offset_x, offset_y, properties=None):
         return MapHarvestable(position=(x, y), **common)
     area = _shape(obj, offset_x, offset_y)
     return None if area is None else MapHarvestable(area=area, **common)
-
-
-def _environment_harvestable(obj, offset_x, offset_y, layer_name):
-    """Adapt visible TMX prop layers without duplicating their artwork in code."""
-    kind = obj.get("type", "").lower()
-    if kind not in {"tree", "vehicle"}:
-        return None
-    area = _shape(obj, offset_x, offset_y)
-    if area is None:
-        return None
-    defaults = (
-        ("durability", "150" if kind == "tree" else "200"),
-        ("resource_id", "wood" if kind == "tree" else "metal"),
-        ("resource_yield", "12" if kind == "tree" else "8"),
-        ("debug_render", "false"),
-    )
-    values = (*tuple(sorted(_properties(obj).items())), *defaults)
-    identifier = layer_name.lower().replace(" ", "-")
-    return MapHarvestable(
-        f"{identifier}-{obj.get('id', 'unknown')}",
-        kind,
-        area=area,
-        tags=frozenset(("environment",)),
-        properties=values,
-    )
 
 
 def _authored_semantic(path, layer_name, obj, offset_x, offset_y, defaults=()):
@@ -482,7 +452,6 @@ def load_tmx_definition(source, presentation_source=None):
     for layer in root.findall("objectgroup"):
         layer_name = layer.get("name", "")
         layer_properties = _properties(layer)
-        include = layer_name in {"Collision", "Obstacles"}
         offset_x = float(layer.get("offsetx", 0))
         offset_y = float(layer.get("offsety", 0))
         for obj in layer.findall("object"):
@@ -543,59 +512,8 @@ def load_tmx_definition(source, presentation_source=None):
                 else:
                     construction_anchors.extend(values)
                 continue
-            if layer_name in {"Placed Trees", "Trees", "vehicles", "Vehicles"}:
-                harvestable = _environment_harvestable(
-                    obj, offset_x, offset_y, layer_name
-                )
-                if harvestable is not None:
-                    harvestables.append(harvestable)
-                if layer_name in {"Placed Trees", "Trees"}:
-                    collisions.extend(
-                        _tile_collision_shapes(
-                            obj, offset_x, offset_y, tile_collision_catalog
-                        )
-                    )
-                continue
-            if layer_name == "Buildings":
-                shape = _shape(obj, offset_x, offset_y)
-                if shape is not None:
-                    collisions.append(shape)
-                continue
-            if layer_name in {"Tree Colliders", "Vehicle Colliders"}:
-                shape = _shape(obj, offset_x, offset_y)
-                if shape is not None:
-                    collisions.append(shape)
-                continue
-            if layer_name == "Fence":
-                collisions.extend(_polyline_shapes(obj, offset_x, offset_y))
-                continue
-            if layer_name == "Playable Area":
-                shape = _shape(obj, offset_x, offset_y)
-                if shape is not None:
-                    playable_areas.append(shape)
-                continue
-            if layer_name == "Spawns":
-                spawn = _spawn(obj, offset_x, offset_y)
-                if spawn is not None:
-                    spawns.append(spawn)
-                continue
-            if layer_name == "Interactions":
-                interaction = _interaction(obj, offset_x, offset_y)
-                if interaction is not None:
-                    interactions.append(interaction)
-                continue
-            if layer_name == "Harvestables":
-                harvestable = _harvestable(obj, offset_x, offset_y)
-                if harvestable is not None:
-                    harvestables.append(harvestable)
-                continue
-            if layer_name == "ConstructionAnchors":
-                anchor = _construction_anchor(obj, offset_x, offset_y)
-                if anchor is not None:
-                    construction_anchors.append(anchor)
-                continue
             solid = _properties(obj).get("solid", "false").lower() == "true"
-            if not include and not solid:
+            if not solid:
                 continue
             shape = _shape(obj, offset_x, offset_y)
             if shape is not None:

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object type="Harvestable">
+  <properties>
+   <property name="semantic" value="harvestable"/>
+   <property name="kind" value=""/>
+   <property name="durability" type="int" value="1"/>
+   <property name="resource_id" value=""/>
+   <property name="resource_yield" type="int" value="0"/>
+   <property name="required_tool_capability" value="harvest"/>
+   <property name="collision_source" value="none"/>
+  </properties>
+ </object>
+</template>

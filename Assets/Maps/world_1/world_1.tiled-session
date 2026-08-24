@@ -5,7 +5,7 @@
     ],
     "fileStates": {
         "": {
-            "scaleInDock": 1
+            "scaleInDock": 0.1561
         },
         "world_1.tmx": {
             "scale": 0.3363,
@@ -21,6 +21,7 @@
             "scaleInEditor": 0.43
         },
         "world_1.tmx#vehicles": {
+            "dynamicWrapping": false,
             "scaleInDock": 1
         }
     },

@@ -162,7 +162,8 @@ def test_spawn_semantic_metadata_and_layer_offsets_survive_adaptation(tmp_path):
     source = tmp_path / "semantic-spawns.tmx"
     source.write_text(
         '<map width="10" height="10" tilewidth="32" tileheight="32">'
-        '<objectgroup name="Spawns" offsetx="10" offsety="20">'
+        '<objectgroup name="Spawns" offsetx="10" offsety="20"><properties>'
+        '<property name="semantic" value="spawn"/></properties>'
         '<object id="1" name="north" x="5" y="7" point="1">'
         '<properties><property name="role" value="enemy"/>'
         '<property name="tags" value="outdoor, elevated"/>'
@@ -187,7 +188,8 @@ def test_interaction_regions_preserve_semantics_properties_and_offsets(tmp_path)
     source = tmp_path / "semantic-interactions.tmx"
     source.write_text(
         '<map width="10" height="10" tilewidth="32" tileheight="32">'
-        '<objectgroup name="Interactions" offsetx="10" offsety="20">'
+        '<objectgroup name="Interactions" offsetx="10" offsety="20"><properties>'
+        '<property name="semantic" value="interaction"/></properties>'
         '<object id="1" name="ammo-yard" x="5" y="7" width="40" height="50">'
         '<properties><property name="kind" value="ammo_station"/>'
         '<property name="tags" value="survival, outdoor"/>'
@@ -208,7 +210,8 @@ def test_zero_size_tiled_interaction_object_is_adapted_as_a_point(tmp_path):
     source = tmp_path / "point-interaction.tmx"
     source.write_text(
         '<map width="10" height="10" tilewidth="32" tileheight="32">'
-        '<objectgroup name="Interactions"><object id="1" name="pistol" '
+        '<objectgroup name="Interactions"><properties><property name="semantic" '
+        'value="interaction"/></properties><object id="1" name="pistol" '
         'x="50" y="70"><properties><property name="kind" '
         'value="weapon_station"/></properties></object></objectgroup></map>'
     )
@@ -255,6 +258,16 @@ def test_schema_v2_map_metadata_requires_identity_and_supported_version(tmp_path
     )
 
     with pytest.raises(TmxMapSchemaError, match=r"unsupported schema_version '3'"):
+        load_tmx_definition(source)
+
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<properties><property name="schema_version" type="int" value="1"/>'
+        '<property name="map_id" value="test"/><property '
+        'name="display_name" value="Test"/></properties></map>'
+    )
+
+    with pytest.raises(TmxMapSchemaError, match=r"unsupported schema_version '1'"):
         load_tmx_definition(source)
 
 
@@ -338,7 +351,9 @@ def test_fence_polyline_adapts_to_a_solid_clearance_collider(tmp_path):
     source = tmp_path / "fence.tmx"
     source.write_text(
         '<map width="10" height="10" tilewidth="32" tileheight="32">'
-        '<objectgroup name="Fence"><object id="1" x="10" y="20">'
+        '<objectgroup name="Fence"><properties><property name="semantic" '
+        'value="static_blocker"/><property name="clearance" value="32"/>'
+        '</properties><object id="1" x="10" y="20">'
         '<polyline points="0,0 100,0"/></object></objectgroup></map>'
     )
 
@@ -352,7 +367,8 @@ def test_tree_collider_layer_preserves_authored_non_rectangular_shapes(tmp_path)
     source = tmp_path / "tree-colliders.tmx"
     source.write_text(
         '<map width="10" height="10" tilewidth="32" tileheight="32">'
-        '<objectgroup name="Tree Colliders"><object id="1" x="10" y="20">'
+        '<objectgroup name="Tree Colliders"><properties><property name="semantic" '
+        'value="static_blocker"/></properties><object id="1" x="10" y="20">'
         '<polygon points="0,0 30,0 15,25"/></object></objectgroup></map>'
     )
 
@@ -369,8 +385,14 @@ def test_placed_tree_inherits_and_scales_its_tileset_collision_shape(tmp_path):
         '<image source="tree.png" width="100" height="200"/>'
         '<objectgroup><object x="20" y="100"><polygon '
         'points="0,0 60,0 30,80"/></object></objectgroup>'
-        '</tile></tileset><objectgroup name="Placed Trees" '
-        'offsetx="5" offsety="7"><object id="1" type="tree" gid="1" '
+        '</tile></tileset><objectgroup name="Placed Trees" offsetx="5" offsety="7">'
+        '<properties><property name="semantic" value="harvestable"/>'
+        '<property name="kind" value="tree"/><property name="durability" '
+        'value="100"/><property name="resource_id" value="wood"/>'
+        '<property name="resource_yield" value="1"/><property '
+        'name="required_tool_capability" value="harvest"/><property '
+        'name="collision_source" value="tile"/></properties><object id="1" '
+        'type="tree" gid="1" '
         'x="10" y="20" width="50" height="100"/></objectgroup></map>'
     )
 
@@ -405,7 +427,9 @@ def test_harvestable_regions_preserve_semantics_properties_and_offsets(tmp_path)
     source = tmp_path / "semantic-harvestables.tmx"
     source.write_text(
         '<map width="10" height="10" tilewidth="32" tileheight="32">'
-        '<objectgroup name="Harvestables" offsetx="10" offsety="20">'
+        '<objectgroup name="Harvestables" offsetx="10" offsety="20"><properties>'
+        '<property name="semantic" value="harvestable"/><property name="resource_id" '
+        'value="wood"/><property name="resource_yield" value="1"/></properties>'
         '<object id="1" name="oak-1" x="5" y="7" width="40" height="50">'
         '<properties><property name="kind" value="tree"/>'
         '<property name="durability" value="200"/>'
@@ -420,9 +444,12 @@ def test_harvestable_regions_preserve_semantics_properties_and_offsets(tmp_path)
         "tree",
         area=Aabb(15, 27, 40, 50),
         properties=(
-            ("durability", "200"),
-            ("kind", "tree"),
-            ("required_tool_capability", "harvest"),
+                ("durability", "200"),
+                ("kind", "tree"),
+                ("required_tool_capability", "harvest"),
+                ("resource_id", "wood"),
+                ("resource_yield", "1"),
+                ("semantic", "harvestable"),
         ),
     )
     assert "harvestable:tree" in load_tmx_definition(source).capabilities

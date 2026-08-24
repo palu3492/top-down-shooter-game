@@ -26,7 +26,7 @@ package.
 |---|---|
 | Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M11.11 — TMX semantic schema consolidation |
+| Active work package | M11.5 — First-five-wave playtest and balance update |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
 | Next integration checkpoint | M11.5 — First-five-wave playtest and balance update |
 | Last updated | 2026-08-23 |
@@ -72,7 +72,7 @@ package.
 | 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
 | 10 | Resume Zombie Survival feature development | Complete | Barricade integration verified |
-| 11 | Survival playable-run milestone | In progress | M11.1–M11.10 complete; M11.5 tuning has resumed; M11.11 recorded |
+| 11 | Survival playable-run milestone | In progress | M11.1–M11.11 complete; M11.5 tuning is active |
 
 ## Phase 10 Product Review
 
@@ -158,7 +158,7 @@ movement.
 
 ### M11.11 — Consolidate and validate the TMX semantic schema
 
-**Status:** In progress
+**Status:** Complete
 
 **Why this package exists:**
 
@@ -211,7 +211,7 @@ built against the durable representation of static blockers and semantic props.
   kinds, missing required values, and invalid geometry.
 - [x] Migrate the production TMX to the documented vocabulary while preserving
   its visual layout and stable semantic IDs.
-- [ ] Retain narrowly named legacy aliases only while fixture/production maps are
+- [x] Retain narrowly named legacy aliases only while fixture/production maps are
   migrated, then remove layer-name branches, the hard-coded fence width, inferred
   harvest defaults, and unused `source_*` migration properties.
 - [x] Add at least two TMX fixtures proving that identical semantic classes work

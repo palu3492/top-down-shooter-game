@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object type="ConstructionAnchor">
+  <properties>
+   <property name="semantic" value="construction_anchor"/>
+   <property name="kind" value="barricade"/>
+  </properties>
+ </object>
+</template>
