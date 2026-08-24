@@ -436,7 +436,11 @@ class SurvivalMode:
             self._execute_interaction(match)
         if self.phase == "combat":
             self._advance_enemies(match, dt)
-            self._apply_contact_damage(match, dt)
+            taking_contact_damage = self._apply_contact_damage(match, dt)
+        else:
+            taking_contact_damage = False
+        if not taking_contact_damage:
+            self._regenerate_health(match, dt)
         self._advance_waves(match, dt)
 
     def status(self, match):
@@ -476,6 +480,14 @@ class SurvivalMode:
             match.combat.get(enemy_id).alive
             for enemy_id in self.enemy_ids
             if enemy_id in match.combat
+        )
+
+    def _regenerate_health(self, match, dt):
+        if self.player_id is None or self.player_id not in match.combat:
+            return
+        match.combat.restore(
+            self.player_id,
+            health=self.balance.health_regeneration_per_second * dt,
         )
 
     def _advance_enemies(self, match, dt):
@@ -687,11 +699,12 @@ class SurvivalMode:
 
     def _apply_contact_damage(self, match, dt):
         if dt == 0 or self.player_id is None or self.player_id not in match.spatial:
-            return
+            return False
         player_state = match.spatial.get(self.player_id)
         if player_state.collision is None:
-            return
+            return False
         player_box = actor_box(player_state.transform, player_state.collision)
+        applied = False
         for enemy_id in self.enemy_ids:
             if enemy_id not in match.spatial or not match.combat.get(enemy_id).alive:
                 continue
@@ -700,6 +713,7 @@ class SurvivalMode:
                 continue
             enemy_box = actor_box(enemy_state.transform, enemy_state.collision)
             if overlaps(enemy_box, player_box):
+                applied = True
                 match.damage.apply(
                     DamageRequest(
                         enemy_id,
@@ -710,6 +724,7 @@ class SurvivalMode:
                         match.tick,
                     )
                 )
+        return applied
 
     def _apply_barricade_damage(self, match, dt):
         if dt == 0:

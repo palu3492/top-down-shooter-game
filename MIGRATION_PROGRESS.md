@@ -149,7 +149,7 @@ reintroduce a Survival-specific assumption into shared loadout mechanics.
 
 Health regeneration is not a universal player rule. Shared combat/vitality owns
 only bounded health and explicit restoration; each mode supplies its recovery
-policy. Survival disables passive regeneration and relies on consumables,
+policy. Survival uses deliberately slow passive regeneration alongside consumables,
 stations, and other explicit mode rewards. Team Deathmatch and future modes may
 enable a configurable delayed, slow health regeneration policy. Damage,
 recovery delay, rate, maximum health, and regeneration eligibility must remain

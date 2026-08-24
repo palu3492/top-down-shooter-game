@@ -14,6 +14,7 @@ FIELDS = (
     ("starting_magazine", 5),
     ("starting_reserve", 5),
     ("kill_reward", 10),
+    ("health_regeneration_per_second", 0.25),
     ("preparation_seconds", 5),
 )
 

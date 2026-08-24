@@ -16,6 +16,7 @@ from shooter.map_definition import (
     SpawnRegion,
 )
 from shooter.match import Match
+from shooter.survival_balance import SurvivalBalance
 from shooter.match_configuration import (
     ZOMBIE_SURVIVAL,
     MapCatalog,
@@ -303,6 +304,22 @@ def test_tool_is_active_at_the_start_of_a_tool_only_survival_run():
 
     assert mode.tool_equipped is True
     assert match.mode_status.active_equipment == "survivor_pickaxe"
+
+
+def test_survival_uses_its_own_deliberately_slow_health_regeneration_policy():
+    match = Match(resolved())
+    mode = SurvivalMode(
+        sources(),
+        enemy_count=1,
+        balance=SurvivalBalance(health_regeneration_per_second=0.5),
+    )
+    match.start(mode)
+    match.combat.deplete(mode.enemy_ids[0], 100)
+    match.combat.deplete(mode.player_id, 10)
+
+    match.advance(4.0)
+
+    assert match.combat.get(mode.player_id).health == 92
 
 
 def test_held_trigger_only_operates_automatic_firearms():
