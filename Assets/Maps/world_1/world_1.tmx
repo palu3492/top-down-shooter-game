@@ -859,8 +859,8 @@
   <object id="308" name="camp-smg" x="5259.86" y="4355.33">
    <properties>
     <property name="kind" value="weapon_station"/>
-    <property name="price" value="500"/>
-    <property name="prompt" value="PRESS E: BUY SMG $500"/>
+    <property name="price" value="450"/>
+    <property name="prompt" value="PRESS E: BUY SMG $450"/>
     <property name="weapon_id" value="survivor_smg"/>
    </properties>
   </object>

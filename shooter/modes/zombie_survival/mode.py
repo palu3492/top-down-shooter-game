@@ -1,6 +1,6 @@
 """Neutral first vertical slice of Zombie Survival rules."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 
 from shooter import config
@@ -171,7 +171,7 @@ class SurvivalMode:
             "survivor",
             "soldier",
             "survivors",
-            config.PLAYER_HEALTH,
+            self.balance.player_max_health,
             (48, 48),
             self.balance.player_speed,
         )
@@ -210,13 +210,22 @@ class SurvivalMode:
         self.pistol = WeaponDefinition(
             "survivor_pistol", "ballistic", self.balance.pistol_damage,
             1 / self.balance.pistol_cooldown_seconds,
-            12, 48, self.balance.pistol_reload_seconds, "9mm", max_range=800, effective_range=500,
+            12,
+            48,
+            self.balance.pistol_reload_seconds,
+            "9mm",
+            max_range=800,
+            effective_range=500,
             minimum_damage_fraction=0.65,
         )
         self.smg = WeaponDefinition(
             "survivor_smg", "ballistic", self.balance.smg_damage,
-            1 / self.balance.smg_cooldown_seconds, 40, 200, self.balance.smg_reload_seconds, "9mm",
-            spread=5.0, firing_mode=AUTOMATIC, max_range=650,
+            1 / self.balance.smg_cooldown_seconds,
+            40,
+            200,
+            self.balance.smg_reload_seconds,
+            "9mm",
+            spread=self.balance.smg_spread_degrees, firing_mode=AUTOMATIC, max_range=650,
             effective_range=350, minimum_damage_fraction=0.55,
         )
         self.weapons = WeaponCatalog((self.pistol, self.rifle, self.smg))
@@ -396,24 +405,32 @@ class SurvivalMode:
         return tuple(
             batch
             for release in releases
-            for batch in (self._spawn_release(match, release),)
+            for batch in self._spawn_release(match, release)
         )
 
     def _spawn_release(self, match, release):
         width, height = match.map_definition.size
         definition = release.definition
-        batch = spawn_match_actors(
+        batches = []
+        variation = self.balance.enemy_speed_variation_fraction
+        speed_rng = match.random_stream("survival-enemy-speeds")
+        for index in range(release.count):
+            multiplier = speed_rng.uniform(1 - variation, 1 + variation)
+            varied_definition = replace(
+                definition, movement_speed=definition.movement_speed * multiplier
+            )
+            batch = spawn_match_actors(
             match,
             SpawnActorRequest(
-                definition,
+                varied_definition,
                 SpawnQuery(
                     role="enemy",
                     faction=definition.faction,
                     actor_kind=definition.actor_kind,
                 ),
                 PlacementConstraints(
-                    footprint=definition.collision_size,
-                    minimum_occupant_distance=max(definition.collision_size),
+                    footprint=varied_definition.collision_size,
+                    minimum_occupant_distance=max(varied_definition.collision_size),
                     bounds=Aabb(0, 0, width, height),
                     reference=(
                         match.spatial.get(self.player_id).transform.x,
@@ -439,16 +456,16 @@ class SurvivalMode:
                     collision=match.map_definition.collision,
                     playable_areas=match.map_definition.playable_areas,
                 ),
-                release.count,
+                1,
             ),
             self.spawn_sources,
-            f"survival-wave-{self.wave}-{definition.definition_id}-{release.sequence}",
+            f"survival-wave-{self.wave}-{definition.definition_id}-{release.sequence}-{index}",
             tags=("enemy",),
         )
-        self.enemy_ids += batch.actor_ids
-        self.entry_remaining.update(
-            dict.fromkeys(batch.actor_ids, release.activation_delay_seconds)
-        )
+            batches.append(batch)
+        actor_ids = tuple(actor_id for batch in batches for actor_id in batch.actor_ids)
+        self.enemy_ids += actor_ids
+        self.entry_remaining.update(dict.fromkeys(actor_ids, release.activation_delay_seconds))
         self.spawn_results += (batch.spawn_result,)
         return batch
 
@@ -518,6 +535,7 @@ class SurvivalMode:
             active_equipment=self._active_equipment(),
             consumables=self.consumables.snapshot(),
             pending_enemies=self.spawn_director.remaining,
+            activating_enemies=len(self.entry_remaining),
             outcome=self.result(match),
             enemy_composition=self._living_composition(match),
             interaction_context=self.interaction_context,
@@ -914,6 +932,8 @@ class SurvivalMode:
                 self.loadouts[self.player_id],
                 self.cash,
             )
+            if self.purchase_result.success:
+                self.tool_equipped = False
         elif self.interaction_context.kind in {
             "ammo_station",
             "health_station",

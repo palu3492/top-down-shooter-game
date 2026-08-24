@@ -56,29 +56,53 @@ def pursue_match_actor(match, actor_id, target_id, dt, avoid_ids=(), obstacles=(
 def separate_overlapping_actors(match, actor_ids, obstacles=()):
     """Resolve crowd overlap before pursuit so avoidance cannot deadlock."""
     actor_ids = tuple(actor_id for actor_id in actor_ids if actor_id in match.spatial)
-    for index, first_id in enumerate(actor_ids):
-        for second_id in actor_ids[index + 1 :]:
-            first = match.spatial.get(first_id)
-            second = match.spatial.get(second_id)
-            if first.collision is None or second.collision is None:
-                continue
-            first_box = actor_box(first.transform, first.collision)
-            second_box = actor_box(second.transform, second.collision)
-            if not overlaps(first_box, second_box):
-                continue
-            horizontal = min(first_box.right, second_box.right) - max(
-                first_box.left, second_box.left
-            )
-            vertical = min(first_box.bottom, second_box.bottom) - max(
-                first_box.top, second_box.top)
-            if horizontal <= vertical:
-                direction = -1 if first.transform.x <= second.transform.x else 1
-                offset = (direction * (horizontal / 2 + 0.5), 0)
-            else:
-                direction = -1 if first.transform.y <= second.transform.y else 1
-                offset = (0, direction * (vertical / 2 + 0.5))
-            _move_if_clear(match, first_id, offset, obstacles)
-            _move_if_clear(match, second_id, (-offset[0], -offset[1]), obstacles)
+    cells = {}
+    cell_size = 128
+    for actor_id in actor_ids:
+        transform = match.spatial.get(actor_id).transform
+        cell = int(transform.x // cell_size), int(transform.y // cell_size)
+        cells.setdefault(cell, []).append(actor_id)
+    compared = set()
+    for cell, members in cells.items():
+        nearby = [
+            other
+            for offset_x in (-1, 0, 1)
+            for offset_y in (-1, 0, 1)
+            for other in cells.get((cell[0] + offset_x, cell[1] + offset_y), ())
+        ]
+        for first_id in members:
+            for second_id in nearby:
+                if first_id == second_id:
+                    continue
+                pair = tuple(sorted((first_id, second_id)))
+                if pair in compared:
+                    continue
+                compared.add(pair)
+                _separate_pair(match, first_id, second_id, obstacles)
+
+
+def _separate_pair(match, first_id, second_id, obstacles):
+    first = match.spatial.get(first_id)
+    second = match.spatial.get(second_id)
+    if first.collision is None or second.collision is None:
+        return
+    first_box = actor_box(first.transform, first.collision)
+    second_box = actor_box(second.transform, second.collision)
+    if not overlaps(first_box, second_box):
+        return
+    horizontal = min(first_box.right, second_box.right) - max(
+        first_box.left, second_box.left
+    )
+    vertical = min(first_box.bottom, second_box.bottom) - max(
+        first_box.top, second_box.top)
+    if horizontal <= vertical:
+        direction = -1 if first.transform.x <= second.transform.x else 1
+        offset = (direction * (horizontal / 2 + 0.5), 0)
+    else:
+        direction = -1 if first.transform.y <= second.transform.y else 1
+        offset = (0, direction * (vertical / 2 + 0.5))
+    _move_if_clear(match, first_id, offset, obstacles)
+    _move_if_clear(match, second_id, (-offset[0], -offset[1]), obstacles)
 
 
 def _move_if_clear(match, actor_id, offset, obstacles):

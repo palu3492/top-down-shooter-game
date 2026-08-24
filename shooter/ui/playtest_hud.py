@@ -17,6 +17,7 @@ class PlaytestHud:
         if player is None:
             return
         self._draw_health_cash(surface, snapshot, player)
+        self._draw_wave_status(surface, snapshot.mode_status)
         self._draw_resources(surface, snapshot.mode_status.resources)
         self._draw_slots(surface, snapshot, player)
 
@@ -39,6 +40,22 @@ class PlaytestHud:
                 rect,
                 (resource.upper(), str(values.get(resource, 0))),
             )
+
+    def _draw_wave_status(self, surface, status):
+        phase = status.phase.upper()
+        detail = (
+            f"NEXT {status.preparation_remaining:.1f}s"
+            if status.phase == "preparation"
+            else (
+                f"ALIVE {status.enemies_remaining}  QUEUED {status.pending_enemies}"
+                f"  ARMING {status.activating_enemies}"
+            )
+        )
+        self._panel(
+            surface,
+            (12, 12, 250, 52),
+            (f"WAVE {status.wave}  {phase}", detail),
+        )
 
     def _draw_slots(self, surface, snapshot, player):
         total_width = BOX[0] * 3 + GAP * 2

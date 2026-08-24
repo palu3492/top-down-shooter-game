@@ -41,6 +41,7 @@ from shooter.ui.snapshot_presentation import SnapshotPresentation
 from shooter.ui.map_semantics import MapSemanticsRenderer
 from shooter.ui.survival_tuner import SurvivalTuner
 from shooter.world_collision import Aabb
+from shooter.weapon_state import EquippedWeapon
 
 PAUSE = "PAUSE"
 
@@ -218,6 +219,7 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
         super().__init__(*args, **kwargs)
         self.tuner = SurvivalTuner(self.mode.balance)
         self.tuning = False
+        self.fire_pointer = None
 
     def handle(self, event):
         routed = super().handle(event)
@@ -227,10 +229,17 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             self.tuning = not self.tuning
             return None
         if self.tuning and event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_1, pygame.K_2):
+                definition = self.mode.pistol if event.key == pygame.K_1 else self.mode.smg
+                self._grant_debug_weapon(definition)
+                return None
             self.tuner.handle(event)
             return None
+        if event.type == pygame.MOUSEMOTION:
+            self.fire_pointer = event.pos
         command = self.input_adapter.action_for(event)
         if command is not None and command.action == FIRE:
+            self.fire_pointer = event.pos
             player = self.match.spatial.get(self.mode.player_id).transform
             camera_x, camera_y = self.camera
             world_pointer = (event.pos[0] - camera_x, event.pos[1] - camera_y)
@@ -252,6 +261,26 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             self.match.advance(0.0, (SelectSurvivorWeapon(command.value),))
         return None
 
+    def _grant_debug_weapon(self, definition):
+        loadout = self.mode.loadouts.get(self.mode.player_id)
+        if loadout is None:
+            return
+        weapon = loadout.find(
+            lambda held: held.definition.definition_id == definition.definition_id
+        )
+        if weapon is None:
+            if loadout.full:
+                entries = list(loadout)
+                entries[loadout.selected_index] = EquippedWeapon(definition)
+                loadout.replace(entries, selected=loadout.selected_index)
+                weapon = loadout.selected
+            else:
+                weapon = loadout.add(EquippedWeapon(definition), select=True)
+        else:
+            loadout.select_entry(weapon)
+        self.mode.tool_equipped = False
+        self.tuner.notice = f"Debug equipped {definition.definition_id.replace('survivor_', '').upper()}."
+
     def draw(self, surface, alpha):
         super().draw(surface, alpha)
         if self.tuning:
@@ -260,7 +289,7 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
     def update(self, inputs, dt=config.SIM_DT):
         commands = [MoveSurvivor(inputs.move)]
         if getattr(inputs, "trigger_held", getattr(inputs, "trigger", False)):
-            pointer = getattr(inputs, "pointer", None)
+            pointer = self.fire_pointer or getattr(inputs, "pointer", None)
             if pointer is None:
                 aim = inputs.aim
             else:

@@ -28,14 +28,20 @@ def test_profile_includes_spawn_pacing_and_rejects_an_empty_burst():
 def test_mode_uses_profile_weapon_damage_and_cooldowns():
     mode = SurvivalMode(
         balance=SurvivalBalance(
+            player_max_health=125,
             pistol_damage=21,
             pistol_cooldown_seconds=0.5,
+            pistol_reload_seconds=1.5,
             smg_damage=15,
             smg_cooldown_seconds=0.1,
+            smg_reload_seconds=2,
         )
     )
 
     assert mode.pistol.damage == 21
+    assert mode.survivor.max_health == 125
     assert mode.pistol.rate == 2
+    assert mode.pistol.reload_seconds == 1.5
     assert mode.smg.damage == 15
     assert mode.smg.rate == 10
+    assert mode.smg.reload_seconds == 2

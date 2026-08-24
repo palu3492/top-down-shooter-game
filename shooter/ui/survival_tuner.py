@@ -42,7 +42,7 @@ class SurvivalTuner:
 
     def draw(self, surface):
         font = pygame.font.Font(None, 24)
-        rows = ["SURVIVAL TUNER  TAB close | arrows adjust | S save"]
+        rows = ["SURVIVAL TUNER  TAB close | arrows adjust | S save | 1 pistol | 2 SMG"]
         rows += tuple(
             f"{'>' if index == self.selected else ' '} {name}: "
             f"{getattr(self.balance, name):g}"

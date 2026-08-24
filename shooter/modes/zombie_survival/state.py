@@ -22,6 +22,7 @@ class SurvivalStatus:
     active_equipment: str | None = None
     consumables: tuple[tuple[str, int], ...] = ()
     pending_enemies: int = 0
+    activating_enemies: int = 0
     outcome: str | None = None
     wave_target: int | None = None
     title: str = "Zombie Survival"

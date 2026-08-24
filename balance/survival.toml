@@ -1,16 +1,19 @@
 # Zombie Survival tuning profile. Start a fresh match after saving.
 player_speed = 300
+player_max_health = 100
 pistol_damage = 18
 pistol_cooldown_seconds = 0.25
 pistol_reload_seconds = 1
-smg_damage = 12
-smg_cooldown_seconds = 0.0833333333
+smg_damage = 22
+smg_cooldown_seconds = 0.0833333
 smg_reload_seconds = 1.2
+smg_spread_degrees = 0
 tool_damage = 75
-tool_cooldown_seconds = 0.3333333333
+tool_cooldown_seconds = 0.333333
 walker_speed = 200
 runner_speed = 380
 breaker_speed = 220
+enemy_speed_variation_fraction = 0.05
 walker_health = 100
 runner_health = 70
 breaker_health = 260
