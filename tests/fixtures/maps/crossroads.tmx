@@ -3,16 +3,18 @@
  <properties>
   <property name="map_id" value="crossroads"/>
   <property name="display_name" value="Crossroads Fixture"/>
-  <property name="schema_version" type="int" value="1"/>
+  <property name="schema_version" type="int" value="2"/>
   <property name="supported_modes" value="zombie_survival,team_deathmatch"/>
  </properties>
  <objectgroup id="1" name="Collision">
+  <properties><property name="semantic" value="static_blocker"/></properties>
   <object id="1" x="128" y="96" width="160" height="64"/>
   <object id="2" x="416" y="256">
    <polygon points="0,0 96,0 48,80"/>
   </object>
  </objectgroup>
  <objectgroup id="2" name="Spawns">
+  <properties><property name="semantic" value="spawn"/></properties>
   <object id="3" name="survivor-west" type="spawn" x="64" y="240" point="1">
    <properties><property name="role" value="survivor"/></properties>
   </object>
@@ -27,6 +29,7 @@
   </object>
  </objectgroup>
  <objectgroup id="3" name="Interactions">
+  <properties><property name="semantic" value="interaction"/></properties>
   <object id="7" name="weapon-station" type="interaction" x="304" y="208" point="1">
    <properties><property name="kind" value="weapon_station"/></properties>
   </object>

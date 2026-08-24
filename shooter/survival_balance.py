@@ -19,6 +19,9 @@ class SurvivalBalance:
     health_regeneration_per_second: float = 0.75
     initial_preparation_seconds: float = 10
     preparation_seconds: float = 25
+    spawn_burst_size: int = 2
+    spawn_burst_interval_seconds: float = 1.0
+    spawn_activation_delay_seconds: float = 0.75
 
     def __post_init__(self):
         if min(self.walker_speed, self.runner_speed, self.breaker_speed) <= 0:
@@ -29,8 +32,12 @@ class SurvivalBalance:
             self.initial_preparation_seconds,
             self.preparation_seconds,
             self.health_regeneration_per_second,
+            self.spawn_burst_interval_seconds,
+            self.spawn_activation_delay_seconds,
         ) < 0:
             raise ValueError("preparation times cannot be negative")
+        if self.spawn_burst_size < 1:
+            raise ValueError("spawn burst size must be positive")
 
 
 def load_survival_balance(path=BALANCE_PATH):
@@ -55,5 +62,10 @@ def save_survival_balance(balance, path=BALANCE_PATH):
         f"{balance.health_regeneration_per_second:g}\n",
         f"initial_preparation_seconds = {balance.initial_preparation_seconds:g}\n",
         f"preparation_seconds = {balance.preparation_seconds:g}\n",
+        f"spawn_burst_size = {balance.spawn_burst_size}\n",
+        "spawn_burst_interval_seconds = "
+        f"{balance.spawn_burst_interval_seconds:g}\n",
+        "spawn_activation_delay_seconds = "
+        f"{balance.spawn_activation_delay_seconds:g}\n",
     )
     Path(path).write_text("".join(lines))

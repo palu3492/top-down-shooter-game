@@ -22,12 +22,14 @@ from shooter.projectile_adapter import adapt_attacks
 from shooter.weapon_attacks import AttackDescriptionService
 from shooter.weapon_state import (
     ADVANCE,
+    AUTOMATIC,
     BEGIN_ATTACK,
     FIRE,
     MANUAL_RELOAD,
     NO_AMMO as NO_AMMO,
     REFILL,
     RELOAD as RELOAD,
+    SEMI_AUTOMATIC,
     WeaponDefinition,
     WeaponOperationRequest,
     WeaponOperationService,
@@ -491,7 +493,7 @@ def _definition_of(made):
         ammo_id=made.ammo.id,
         pellets=made.pellets,
         spread=made.spread,
-        automatic=made.automatic,
+        firing_mode=AUTOMATIC if made.automatic else SEMI_AUTOMATIC,
     )
 
 

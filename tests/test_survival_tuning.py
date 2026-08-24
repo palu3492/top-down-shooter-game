@@ -1,19 +1,20 @@
 """Initial, repeatable balance targets for the first authored Survival run."""
 
-from shooter import config
 from shooter.map_definition import load_tmx_definition
 from shooter.modes.zombie_survival.mode import DEFAULT_WAVE_PLAN
+from shooter.survival_balance import load_survival_balance
 
 
 def test_first_five_waves_create_intentional_preparation_purchase_choices():
     definition = load_tmx_definition("Assets/Maps/world_1/world_1.tmx")
+    balance = load_survival_balance()
     prices = {
         interaction.interaction_id: int(dict(interaction.properties)["price"])
         for interaction in definition.interactions
     }
     rewards = {
         wave: sum(count for _, count in DEFAULT_WAVE_PLAN.composition(wave))
-        * config.KILL_REWARD
+        * balance.kill_reward
         for wave in range(1, 6)
     }
 
@@ -21,12 +22,16 @@ def test_first_five_waves_create_intentional_preparation_purchase_choices():
     assert prices == {
         "camp-smg": 500,
         "camp-ammo": 250,
-        "camp-health": 300,
+        "camp-health-pack": 150,
         "camp-armor": 400,
+        "camp-pistol": 150,
     }
-    # Wave one funds one ammo refill, but no larger recovery or weapon purchase.
+    # Wave one pays for one refill, a pistol, or a health pack, but not an SMG
+    # or both new low-cost purchases together.
     assert rewards[1] == prices["camp-ammo"]
-    assert rewards[1] < min(prices["camp-smg"], prices["camp-health"])
+    assert rewards[1] >= prices["camp-pistol"]
+    assert rewards[1] < prices["camp-smg"]
+    assert rewards[1] < prices["camp-pistol"] + prices["camp-health-pack"]
     # By wave two, the player chooses between saving for an SMG and recovery.
     assert rewards[1] + rewards[2] >= prices["camp-smg"]
     # By wave three, armor becomes an achievable added layer of protection.

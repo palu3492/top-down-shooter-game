@@ -225,7 +225,11 @@ class SurvivalMode:
         self.player_id = None
         self.enemy_ids = ()
         self.spawn_director = SpawnDirector(
-            SpawnDirectorPolicy(2, 1.0, 0.75)
+            SpawnDirectorPolicy(
+                self.balance.spawn_burst_size,
+                self.balance.spawn_burst_interval_seconds,
+                self.balance.spawn_activation_delay_seconds,
+            )
             if spawn_director_policy is None
             else spawn_director_policy
         )

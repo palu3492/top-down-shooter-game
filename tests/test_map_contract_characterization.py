@@ -104,7 +104,7 @@ def test_each_map_normalizes_to_the_same_contract(path):
 
     assert contract.map_id
     assert contract.display_name
-    assert contract.schema_version == 1
+    assert contract.schema_version == 2
     assert all(dimension > 0 for dimension in contract.size)
     assert contract.collision_shapes
     assert {spawn.role for spawn in contract.spawns} >= {"survivor", "enemy"}

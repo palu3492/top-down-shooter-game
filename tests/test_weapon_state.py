@@ -89,6 +89,19 @@ def test_explicit_firing_modes_control_held_trigger_behavior():
     assert burst.trigger_held().accepted is True
 
 
+@pytest.mark.parametrize("step", (1 / 30, 1 / 60, 1 / 120))
+def test_automatic_fire_cadence_is_consistent_across_simulation_step_rates(step):
+    weapon = EquippedWeapon(replace(rifle_definition(), firing_mode=AUTOMATIC))
+    starting_rounds = weapon.runtime.loaded
+
+    assert weapon.trigger_pressed().accepted is True
+    for _ in range(round(1 / step)):
+        weapon.advance(step)
+        weapon.trigger_held()
+
+    assert starting_rounds - weapon.runtime.loaded == 7
+
+
 def test_weapon_definition_rejects_unknown_or_one_shot_burst_modes():
     with pytest.raises(ValueError, match="unknown firing mode"):
         replace(rifle_definition(), firing_mode="laser")

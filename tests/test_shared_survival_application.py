@@ -28,7 +28,10 @@ def test_production_start_route_opens_visible_shared_survival(display):
 
     assert isinstance(scene, SurvivalGameplayScene)
     assert scene.mode.player_id is not None
-    assert scene.match.snapshot().entity(scene.mode.player_id).weapons == ()
+    player = scene.match.snapshot().entity(scene.mode.player_id)
+    assert player.weapons == ()
+    assert player.tool.weapon_id == "survivor_pickaxe"
+    assert scene.match.mode_status.active_equipment == "survivor_pickaxe"
     assert scene.match.mode_status.phase == "preparation"
     assert scene.match.mode_status.preparation_remaining == 10
     assert scene.mode.enemy_ids == ()

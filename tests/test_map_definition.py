@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from shooter.map_definition import (
     MapDefinition,
     MapHarvestable,
@@ -11,6 +13,8 @@ from shooter.map_definition import (
     SpawnRegion,
     current_map_definition,
     load_tmx_definition,
+    TmxMapSchemaError,
+    TmxSchemaError,
 )
 from shooter.session import Session
 from shooter.viewport import Viewport
@@ -50,10 +54,20 @@ def test_incomplete_tmx_maps_adapt_without_requiring_future_layers():
             "weapon-station",
             "weapon_station",
             position=(304, 208),
-            properties=(("kind", "weapon_station"),),
+            properties=(("kind", "weapon_station"), ("semantic", "interaction")),
         ),
     )
     assert riverside.interactions == ()
+
+
+def test_schema_semantics_are_identical_under_different_layer_organizations():
+    first = load_tmx_definition(FIXTURES / "schema_semantics_a.tmx")
+    second = load_tmx_definition(FIXTURES / "schema_semantics_b.tmx")
+
+    assert first.collision == second.collision == (Aabb(10, 20, 40, 10),)
+    assert first.spawns == second.spawns == (
+        SpawnPoint("survivor-start", (80, 90), role="player"),
+    )
 
 
 def test_production_map_has_first_survival_semantics_without_visual_map_changes():
@@ -204,6 +218,122 @@ def test_zero_size_tiled_interaction_object_is_adapted_as_a_point(tmp_path):
     assert interaction.position == (50, 70)
 
 
+def test_authored_semantics_ignore_presentation_layer_names(tmp_path):
+    source = tmp_path / "schema-v2.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Art and Organization"><object id="1" name="wall" '
+        'x="10" y="20" width="30" height="40"><properties><property '
+        'name="semantic" value="static_blocker"/></properties></object>'
+        '<object id="2" name="start" x="50" y="60"><properties>'
+        '<property name="semantic" value="spawn"/><property name="role" '
+        'value="survivor"/></properties></object></objectgroup></map>'
+    )
+
+    definition = load_tmx_definition(source)
+
+    assert definition.collision == (Aabb(10, 20, 30, 40),)
+    assert definition.spawns == (SpawnPoint("start", (50, 60), role="survivor"),)
+
+
+def test_schema_v2_map_metadata_requires_identity_and_supported_version(tmp_path):
+    source = tmp_path / "invalid-map-metadata.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<properties><property name="schema_version" type="int" value="2"/>'
+        '<property name="map_id" value="test"/></properties></map>'
+    )
+
+    with pytest.raises(TmxMapSchemaError, match=r"missing properties: display_name"):
+        load_tmx_definition(source)
+
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<properties><property name="schema_version" type="int" value="3"/>'
+        '<property name="map_id" value="test"/><property '
+        'name="display_name" value="Test"/></properties></map>'
+    )
+
+    with pytest.raises(TmxMapSchemaError, match=r"unsupported schema_version '3'"):
+        load_tmx_definition(source)
+
+
+def test_invalid_authored_semantics_report_the_responsible_object(tmp_path):
+    source = tmp_path / "invalid-schema-v2.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Any Layer"><object id="9" name="bad-tree" '
+        'x="10" y="20" width="30" height="40"><properties><property '
+        'name="semantic" value="harvestable"/></properties></object>'
+        '</objectgroup></map>'
+    )
+
+    with pytest.raises(
+        TmxSchemaError, match=r"Any Layer.*9.*bad-tree.*missing properties"
+    ):
+        load_tmx_definition(source)
+
+
+def test_authored_static_blocker_rejects_empty_ellipse_geometry(tmp_path):
+    source = tmp_path / "empty-blocker.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Props"><object id="8" name="bad-rock" x="5" '
+        'y="6"><ellipse/><properties><property name="semantic" '
+        'value="static_blocker"/></properties></object></objectgroup></map>'
+    )
+
+    with pytest.raises(TmxSchemaError, match=r"Props.*bad-rock.*requires geometry"):
+        load_tmx_definition(source)
+
+
+def test_authored_construction_anchor_requires_a_kind(tmp_path):
+    source = tmp_path / "invalid-anchor.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Build"><object id="4" name="missing-kind" x="5" '
+        'y="6"><properties><property name="semantic" '
+        'value="construction_anchor"/></properties></object></objectgroup></map>'
+    )
+
+    with pytest.raises(TmxSchemaError, match=r"Build.*missing-kind.*requires a kind"):
+        load_tmx_definition(source)
+
+
+def test_authored_semantics_reject_duplicate_stable_names_across_layers(tmp_path):
+    source = tmp_path / "duplicate-schema-v2.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Collision A"><object id="1" name="wall" '
+        'x="0" y="0" width="10" height="10"><properties><property '
+        'name="semantic" value="static_blocker"/></properties></object>'
+        '</objectgroup><objectgroup name="Collision B"><object id="2" '
+        'name="wall" x="20" y="20" width="10" height="10"><properties>'
+        '<property name="semantic" value="static_blocker"/></properties>'
+        '</object></objectgroup></map>'
+    )
+
+    with pytest.raises(TmxSchemaError, match=r"Collision B.*duplicate static_blocker"):
+        load_tmx_definition(source)
+
+
+def test_authored_harvestable_requires_valid_numeric_durability_and_yield(tmp_path):
+    source = tmp_path / "invalid-harvest-numbers.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<objectgroup name="Props"><object id="3" name="oak" x="0" y="0" '
+        'width="10" height="10"><properties><property name="semantic" '
+        'value="harvestable"/><property name="kind" value="tree"/>'
+        '<property name="durability" value="broken"/><property '
+        'name="resource_id" value="wood"/><property name="resource_yield" '
+        'value="10"/><property name="required_tool_capability" '
+        'value="harvest"/></properties></object></objectgroup></map>'
+    )
+
+    with pytest.raises(TmxSchemaError, match=r"Props.*oak.*durability must be numeric"):
+        load_tmx_definition(source)
+
+
 def test_fence_polyline_adapts_to_a_solid_clearance_collider(tmp_path):
     source = tmp_path / "fence.tmx"
     source.write_text(
@@ -247,6 +377,28 @@ def test_placed_tree_inherits_and_scales_its_tileset_collision_shape(tmp_path):
     definition = load_tmx_definition(source)
 
     assert definition.collision == (Polygon(((25, 77), (55, 77), (40, 117))),)
+
+
+def test_authored_harvestable_can_request_its_tile_collision_footprint(tmp_path):
+    source = tmp_path / "semantic-tile-collision.tmx"
+    source.write_text(
+        '<map width="10" height="10" tilewidth="32" tileheight="32">'
+        '<tileset firstgid="1"><tile id="0"><image source="tree.png" '
+        'width="100" height="100"/><objectgroup><object x="20" y="30" '
+        'width="40" height="50"/></objectgroup></tile></tileset>'
+        '<objectgroup name="Props"><object id="1" name="oak" gid="1" '
+        'x="10" y="20" width="50" height="50"><properties><property '
+        'name="semantic" value="harvestable"/><property name="kind" '
+        'value="tree"/><property name="durability" value="100"/><property '
+        'name="resource_id" value="wood"/><property name="resource_yield" '
+        'value="5"/><property name="required_tool_capability" value="harvest"/>'
+        '<property name="collision_source" value="tile"/></properties>'
+        '</object></objectgroup></map>'
+    )
+
+    (collision,) = load_tmx_definition(source).collision
+
+    assert collision == Aabb(20, 35, 20, 25)
 
 
 def test_harvestable_regions_preserve_semantics_properties_and_offsets(tmp_path):

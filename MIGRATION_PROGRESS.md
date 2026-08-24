@@ -26,9 +26,9 @@ package.
 |---|---|
 | Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M11.7 — Weapon handling baseline |
+| Active work package | M11.11 — TMX semantic schema consolidation |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
-| Next integration checkpoint | End of M11.8 verification — Combat-feel baseline playable run |
+| Next integration checkpoint | M11.5 — First-five-wave playtest and balance update |
 | Last updated | 2026-08-23 |
 
 ## Confirmed Project Constraints
@@ -72,7 +72,7 @@ package.
 | 8 | Complete presentation separation | Complete | Headless Match/snapshot and import boundaries verified |
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
 | 10 | Resume Zombie Survival feature development | Complete | Barricade integration verified |
-| 11 | Survival playable-run milestone | In progress | M11.1–M11.6, M11.9, and M11.10 complete; M11.7 active; M11.8 ready for verification; M11.11 recorded |
+| 11 | Survival playable-run milestone | In progress | M11.1–M11.10 complete; M11.5 tuning has resumed; M11.11 recorded |
 
 ## Phase 10 Product Review
 
@@ -117,8 +117,8 @@ price/count/speed tuning is deferred until this baseline is complete:
 | ID | Work package | Purpose |
 |---|---|---|
 | M11.6 | Paced, player-aware Survival spawn director | Complete — a reusable headless director releases ordered budgets in deterministic timed bursts; Survival composes it with weighted authored lanes and player-aware visibility, distance, occupancy, collision, and playable-area constraints. |
-| M11.7 | Weapon handling baseline | In progress — shared explicit semi-automatic, automatic, and burst trigger policies plus range/falloff evaluation now replace Survival-specific behavior; cadence and spread acceptance coverage remains. |
-| M11.8 | Active equipment baseline | Ready for integration — explicit firearm/tool selection, depleted-firearm fallback, tool-only starts, input, snapshots, debug feedback, and equipment presentation exist; formal focused verification remains. |
+| M11.7 | Weapon handling baseline | Complete — shared explicit semi-automatic, automatic, and burst trigger policies; data-defined range/falloff; cadence across fixed simulation rates; and bounded deterministic spread are covered. |
+| M11.8 | Active equipment baseline | Complete — explicit firearm/tool selection, depleted-firearm fallback, tool-only starts, input, immutable snapshots, and compact playtest-HUD feedback are verified. |
 | M11.9 | Consumable health-pack loop | Complete — Survival's TMX station sells carried health packs; `H` uses one only when wounded; inventory and outcomes appear in the debug overlay. Direct-restoration station policy remains available for modes that opt into it. |
 | M11.10 | Map combat-structure first pass | Complete — Production TMX labels separate enemy entry lanes and adapts collision matching two existing camp buildings. Map bounds remain authoritative; future boundaries and collision stay additive and provisional until the level layout is authored. |
 | M11.11 | Consolidate and validate the TMX semantic schema | Replace production-map layer-name inference and Python-authored prop defaults with documented Tiled classes/templates, properties, collision definitions, and validation before permanent navigation or substantial environment expansion. |
@@ -158,7 +158,7 @@ movement.
 
 ### M11.11 — Consolidate and validate the TMX semantic schema
 
-**Status:** Not started
+**Status:** In progress
 
 **Why this package exists:**
 
@@ -194,27 +194,27 @@ built against the durable representation of static blockers and semantic props.
 
 **Planned work:**
 
-- [ ] Document a reusable authored vocabulary and naming/version policy for map
+- [x] Document a reusable authored vocabulary and naming/version policy for map
   metadata, solid props, harvestables, fences, buildings, interactions, spawns,
   playable areas, and construction anchors.
-- [ ] Define Tiled classes/templates or equivalent reusable property definitions
+- [x] Define Tiled classes/templates or equivalent reusable property definitions
   for `SolidProp`, `Harvestable`, `Fence`, `Building`, and
   `ConstructionAnchor` instead of assigning semantics from presentation-layer
   names.
 - [ ] Author durability, resource definition/yield policy, compatible tool tags,
   collision role, and fence width in Tiled data with explicit defaults owned by
   reusable definitions rather than production-map branches.
-- [ ] Put tree and vehicle collision footprints in their tilesets/templates and
+- [x] Put tree and vehicle collision footprints in their tilesets/templates and
   normalize every static blocker through one collision-extraction contract.
-- [ ] Add schema validation with actionable source, layer, object ID/name, and
+- [x] Add schema validation with actionable source, layer, object ID/name, and
   property errors for malformed objects, duplicate stable IDs, unknown semantic
   kinds, missing required values, and invalid geometry.
-- [ ] Migrate the production TMX to the documented vocabulary while preserving
+- [x] Migrate the production TMX to the documented vocabulary while preserving
   its visual layout and stable semantic IDs.
 - [ ] Retain narrowly named legacy aliases only while fixture/production maps are
   migrated, then remove layer-name branches, the hard-coded fence width, inferred
   harvest defaults, and unused `source_*` migration properties.
-- [ ] Add at least two TMX fixtures proving that identical semantic classes work
+- [x] Add at least two TMX fixtures proving that identical semantic classes work
   under different organizational layer names without map-identity branches.
 
 **Exit criteria:**
@@ -379,7 +379,16 @@ debug-overlay, and presentation tests pass.
 
 ### M11.5 — First-five-wave initial tuning pass
 
-**Status:** Paused after initial observation
+**Status:** Resumed after M11.6–M11.8 combat-feel baseline verification
+
+- `balance/survival.toml` is the fresh-match source of truth for enemy speeds,
+  starting ammunition, kill reward, health regeneration, preparation timing,
+  and spawn burst size, interval, and activation delay.
+- The first-five-wave economy test now reflects the shipped tool-only start,
+  pistol and carried-health-pack purchases, and the profile-owned kill reward.
+- First playtest baseline retained: two enemies per one-second burst, a 0.75
+  second post-spawn activation delay, 50 cash per kill, and 0.75 health per
+  second regeneration.
 
 - The current five-wave rewards are $250, $350, $550, $700, and $900. This
   creates the intended first-run economy: wave one pays for one ammo refill;
@@ -1473,6 +1482,6 @@ decision has meaningful alternatives and is expensive to reverse.
 
 ## Next Action
 
-Continue M11.7 by closing cadence and spread acceptance coverage for the shared
-firing-mode policy. Then run the focused M11.8 verification and resume M11.5
-tuning.
+Resume M11.5 with a first-five-wave playtest using `balance/survival.toml` as the
+editable source of truth. Record concrete observations, change only the relevant
+tunables, and verify each resulting Survival run.

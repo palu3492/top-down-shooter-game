@@ -3,14 +3,16 @@
  <properties>
   <property name="map_id" value="riverside"/>
   <property name="display_name" value="Riverside Fixture"/>
-  <property name="schema_version" type="int" value="1"/>
+  <property name="schema_version" type="int" value="2"/>
   <property name="supported_modes" value="zombie_survival"/>
  </properties>
  <objectgroup id="1" name="Collision">
+  <properties><property name="semantic" value="static_blocker"/></properties>
   <object id="1" x="216" y="72" width="72" height="288"/>
   <object id="2" x="432" y="168" width="120" height="120"><ellipse/></object>
  </objectgroup>
  <objectgroup id="2" name="Spawns">
+  <properties><property name="semantic" value="spawn"/></properties>
   <object id="3" name="survivor-south" type="spawn" x="360" y="384" point="1">
    <properties><property name="role" value="survivor"/></properties>
   </object>

@@ -62,7 +62,7 @@ class PlaytestHud:
             is_active = False
             if weapon is not None:
                 lines = (
-                    f"{index + 1}  FIREARM",
+                    f"{index + 1}  {_firing_label(weapon.firing_mode)}",
                     weapon.weapon_id.replace("survivor_", "").upper(),
                     f"AMMO {weapon.loaded}/{weapon.reserve}",
                 )
@@ -91,3 +91,9 @@ class PlaytestHud:
         for index, line in enumerate(lines):
             text = font.render(line, True, TEXT if index else MUTED)
             surface.blit(text, (rect.left + INSET, rect.top + 5 + index * 22))
+
+
+def _firing_label(mode):
+    return {"semi_automatic": "SEMI", "automatic": "AUTO", "burst": "BURST"}.get(
+        mode, mode.upper()
+    )

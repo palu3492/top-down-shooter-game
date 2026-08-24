@@ -429,6 +429,7 @@ def test_survival_pickaxe_is_a_separate_configured_tool_role_that_can_melee():
     snapshot = match.snapshot().entity(mode.player_id)
     assert snapshot.tool.weapon_id == "survivor_pickaxe"
     assert len(snapshot.weapons) == 1
+    assert snapshot.weapons[0].firing_mode == "semi_automatic"
     assert match.combat.get(enemy_id).health == before - 75
     assert PICKAXE.rate == 3.0
 

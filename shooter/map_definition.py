@@ -13,6 +13,23 @@ CURRENT_MAP_SOURCE = "Maps/world_1/world_1.tmx"
 FENCE_COLLISION_WIDTH = 32.0
 
 
+class TmxSchemaError(ValueError):
+    """An authored semantic object is incomplete or invalid."""
+
+    def __init__(self, path, layer, obj, message):
+        super().__init__(
+            f"{path}: layer '{layer}', object {obj.get('id', '?')} "
+            f"('{obj.get('name', '')}'): {message}"
+        )
+
+
+class TmxMapSchemaError(ValueError):
+    """Map-level TMX schema metadata is incomplete or unsupported."""
+
+    def __init__(self, path, message):
+        super().__init__(f"{path}: map metadata: {message}")
+
+
 @dataclass(frozen=True, slots=True)
 class MapDefinition:
     map_id: str
@@ -115,6 +132,22 @@ def _properties(element):
     }
 
 
+def _validate_schema_metadata(path, metadata):
+    """Validate schema-v2 metadata while preserving legacy fixture maps."""
+    version = metadata.get("schema_version")
+    if version is None:
+        return
+    if version == "1":
+        return
+    if version != "2":
+        raise TmxMapSchemaError(path, f"unsupported schema_version '{version}'")
+    missing = tuple(
+        name for name in ("map_id", "display_name") if not metadata.get(name)
+    )
+    if missing:
+        raise TmxMapSchemaError(path, f"missing properties: {', '.join(missing)}")
+
+
 def _shape(obj, offset_x, offset_y):
     x = float(obj.get("x", 0)) + offset_x
     y = float(obj.get("y", 0)) + offset_y
@@ -128,7 +161,7 @@ def _shape(obj, offset_x, offset_y):
         )
         return Polygon(points) if len(points) >= 3 else None
     if obj.find("ellipse") is not None:
-        return Ellipse(x, y, width, height)
+        return Ellipse(x, y, width, height) if width > 0 and height > 0 else None
     if width > 0 and height > 0:
         return Aabb(x, y, width, height)
     return None
@@ -239,8 +272,8 @@ def _csv(value):
     return frozenset(part.strip() for part in value.split(",") if part.strip())
 
 
-def _spawn(obj, offset_x, offset_y):
-    properties = _properties(obj)
+def _spawn(obj, offset_x, offset_y, properties=None):
+    properties = _properties(obj) if properties is None else properties
     common = {
         "spawn_id": obj.get("name") or f"spawn-{obj.get('id', 'unknown')}",
         "role": properties.get("role", ""),
@@ -257,8 +290,8 @@ def _spawn(obj, offset_x, offset_y):
     return None if area is None else SpawnRegion(area=area, **common)
 
 
-def _interaction(obj, offset_x, offset_y):
-    properties = _properties(obj)
+def _interaction(obj, offset_x, offset_y, properties=None):
+    properties = _properties(obj) if properties is None else properties
     kind = properties.get("kind") or obj.get("type", "")
     if not kind or kind == "interaction":
         return None
@@ -276,8 +309,8 @@ def _interaction(obj, offset_x, offset_y):
     return None if area is None else MapInteraction(area=area, **common)
 
 
-def _harvestable(obj, offset_x, offset_y):
-    properties = _properties(obj)
+def _harvestable(obj, offset_x, offset_y, properties=None):
+    properties = _properties(obj) if properties is None else properties
     kind = properties.get("kind") or obj.get("type", "")
     if not kind or kind == "harvestable":
         return None
@@ -320,8 +353,101 @@ def _environment_harvestable(obj, offset_x, offset_y, layer_name):
     )
 
 
-def _construction_anchor(obj, offset_x, offset_y):
-    properties = _properties(obj)
+def _authored_semantic(path, layer_name, obj, offset_x, offset_y, defaults=()):
+    """Adapt one schema-v2 object without depending on its presentation layer."""
+    properties = {**dict(defaults), **_properties(obj)}
+    semantic = properties.get("semantic")
+    if semantic is None:
+        return None
+    if semantic == "static_blocker":
+        shape = _shape(obj, offset_x, offset_y)
+        if shape is not None:
+            return semantic, (shape,)
+        clearance = properties.get("clearance")
+        if clearance is None:
+            raise TmxSchemaError(
+                path, layer_name, obj, "requires geometry or clearance"
+            )
+        try:
+            width = float(clearance)
+        except ValueError as error:
+            raise TmxSchemaError(
+                path, layer_name, obj, "clearance must be numeric"
+            ) from error
+        shapes = _polyline_shapes(obj, offset_x, offset_y, width)
+        if width <= 0 or not shapes:
+            raise TmxSchemaError(
+                path,
+                layer_name,
+                obj,
+                "requires a non-empty positive-width polyline",
+            )
+        return semantic, shapes
+    if semantic == "playable_area":
+        shape = _shape(obj, offset_x, offset_y)
+        if shape is None:
+            raise TmxSchemaError(path, layer_name, obj, "requires closed area geometry")
+        return semantic, (shape,)
+    if semantic == "spawn":
+        if not properties.get("role"):
+            raise TmxSchemaError(path, layer_name, obj, "requires a role")
+        value = _spawn(obj, offset_x, offset_y, properties)
+        if value is None:
+            raise TmxSchemaError(
+                path, layer_name, obj, "requires point or area geometry"
+            )
+        return semantic, (value,)
+    if semantic == "interaction":
+        if not properties.get("kind"):
+            raise TmxSchemaError(path, layer_name, obj, "requires a kind")
+        value = _interaction(obj, offset_x, offset_y, properties)
+        if value is None:
+            raise TmxSchemaError(
+                path, layer_name, obj, "requires point or area geometry"
+            )
+        return semantic, (value,)
+    if semantic == "harvestable":
+        required = (
+            "kind",
+            "durability",
+            "resource_id",
+            "resource_yield",
+            "required_tool_capability",
+        )
+        missing = tuple(name for name in required if not properties.get(name))
+        if missing:
+            raise TmxSchemaError(
+                path, layer_name, obj, f"missing properties: {', '.join(missing)}"
+            )
+        for property_name in ("durability", "resource_yield"):
+            try:
+                value = float(properties[property_name])
+            except ValueError as error:
+                raise TmxSchemaError(
+                    path, layer_name, obj, f"{property_name} must be numeric"
+                ) from error
+            if value < 0 or (property_name == "durability" and value == 0):
+                raise TmxSchemaError(
+                    path, layer_name, obj, f"{property_name} must be positive"
+                )
+        value = _harvestable(obj, offset_x, offset_y, properties)
+        if value is None:
+            raise TmxSchemaError(path, layer_name, obj, "requires area geometry")
+        return semantic, (value,)
+    if semantic == "construction_anchor":
+        if not properties.get("kind"):
+            raise TmxSchemaError(path, layer_name, obj, "requires a kind")
+        value = _construction_anchor(obj, offset_x, offset_y, properties)
+        if value is None:
+            raise TmxSchemaError(
+                path, layer_name, obj, "requires point or area geometry"
+            )
+        return semantic, (value,)
+    raise TmxSchemaError(path, layer_name, obj, f"unknown semantic '{semantic}'")
+
+
+def _construction_anchor(obj, offset_x, offset_y, properties=None):
+    properties = _properties(obj) if properties is None else properties
     kind = properties.get("kind") or obj.get("type", "") or "barricade"
     common = {
         "anchor_id": obj.get("name") or f"anchor-{obj.get('id', 'unknown')}",
@@ -345,18 +471,78 @@ def load_tmx_definition(source, presentation_source=None):
     root = ElementTree.parse(path).getroot()
     tile_collision_catalog = _tile_collision_catalog(root)
     metadata = _properties(root)
+    _validate_schema_metadata(path, metadata)
     collisions = []
     spawns = []
     interactions = []
     harvestables = []
     construction_anchors = []
     playable_areas = []
+    semantic_ids = set()
     for layer in root.findall("objectgroup"):
         layer_name = layer.get("name", "")
+        layer_properties = _properties(layer)
         include = layer_name in {"Collision", "Obstacles"}
         offset_x = float(layer.get("offsetx", 0))
         offset_y = float(layer.get("offsety", 0))
         for obj in layer.findall("object"):
+            authored = _authored_semantic(
+                path, layer_name, obj, offset_x, offset_y, layer_properties.items()
+            )
+            if authored is not None:
+                semantic, values = authored
+                name = obj.get("name", "")
+                object_id = obj.get("id", "")
+                if not name and not object_id:
+                    raise TmxSchemaError(
+                        path, layer_name, obj, "requires a stable name or object ID"
+                    )
+                # Harvestable instances are commonly cloned from a small set of
+                # named Tiled tiles.  Their TMX object id, rather than the
+                # repeated display name, is therefore their stable identity.
+                identity = semantic, (
+                    object_id if semantic == "harvestable" else name or object_id
+                )
+                if identity in semantic_ids:
+                    raise TmxSchemaError(
+                        path, layer_name, obj, f"duplicate {semantic} name '{name}'"
+                    )
+                semantic_ids.add(identity)
+                if semantic == "static_blocker":
+                    collisions.extend(values)
+                elif semantic == "playable_area":
+                    playable_areas.extend(values)
+                elif semantic == "spawn":
+                    spawns.extend(values)
+                elif semantic == "interaction":
+                    interactions.extend(values)
+                elif semantic == "harvestable":
+                    harvestables.extend(values)
+                    object_properties = {**layer_properties, **_properties(obj)}
+                    collision_source = object_properties.get("collision_source")
+                    if collision_source == "tile":
+                        shapes = _tile_collision_shapes(
+                            obj, offset_x, offset_y, tile_collision_catalog
+                        )
+                        if not shapes:
+                            raise TmxSchemaError(
+                                path,
+                                layer_name,
+                                obj,
+                                "collision_source=tile requires tile collision "
+                                "geometry",
+                            )
+                        collisions.extend(shapes)
+                    elif collision_source not in {None, "none"}:
+                        raise TmxSchemaError(
+                            path,
+                            layer_name,
+                            obj,
+                            f"unknown collision_source '{collision_source}'",
+                        )
+                else:
+                    construction_anchors.extend(values)
+                continue
             if layer_name in {"Placed Trees", "Trees", "vehicles", "Vehicles"}:
                 harvestable = _environment_harvestable(
                     obj, offset_x, offset_y, layer_name

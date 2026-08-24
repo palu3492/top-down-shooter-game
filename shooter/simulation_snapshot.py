@@ -38,6 +38,7 @@ class WeaponSnapshot:
     max_range: float | None = None
     effective_range: float | None = None
     spread: float = 0.0
+    firing_mode: str = "semi_automatic"
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +159,7 @@ def _weapon_snapshots(loadout):
             max_range=held.definition.max_range,
             effective_range=held.definition.effective_range,
             spread=held.definition.spread,
+            firing_mode=held.definition.firing_mode,
         )
         for index, held in enumerate(loadout)
     )
@@ -180,6 +182,7 @@ def _tool_snapshot(tool_slot):
         max_range=held.definition.max_range,
         effective_range=held.definition.effective_range,
         spread=held.definition.spread,
+        firing_mode=held.definition.firing_mode,
     )
 
 

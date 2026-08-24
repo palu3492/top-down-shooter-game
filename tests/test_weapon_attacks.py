@@ -1,6 +1,7 @@
 """Neutral attributed attack descriptions precede pygame adaptation."""
 
 import ast
+import math
 import random
 from pathlib import Path
 
@@ -50,6 +51,22 @@ def test_seeded_spread_is_deterministic_before_adaptation():
 
     assert first == second
     assert len({attack.direction for attack in first}) > 1
+
+
+def test_spread_remains_inside_the_configured_cone_and_preserves_reach():
+    attacks = AttackDescriptionService().create(
+        ballistic(pellets=40, spread=20),
+        EntityId(1),
+        (0, 0),
+        (100, 0),
+        random.Random(18),
+    )
+
+    assert all(math.isclose(math.hypot(*attack.direction), 100) for attack in attacks)
+    assert all(
+        abs(math.degrees(math.atan2(attack.direction[1], attack.direction[0]))) <= 10
+        for attack in attacks
+    )
 
 
 def test_data_defined_range_falloff_is_clamped_at_effective_and_maximum_ranges():
