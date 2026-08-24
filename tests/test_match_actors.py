@@ -1,6 +1,7 @@
 """Modes share neutral actor registration and movement orchestration."""
 
 import ast
+import math
 from pathlib import Path
 
 from shooter.actor_creation import ActorDefinition
@@ -8,6 +9,7 @@ from shooter.domain_events import EntityRemoved
 from shooter.map_definition import MapDefinition, SpawnPoint
 from shooter.match import Match
 from shooter.match_actors import (
+    _polygon_tangents,
     move_match_actor,
     remove_match_actor,
     spawn_match_actors,
@@ -163,6 +165,34 @@ def test_movement_filters_distant_collision_shapes_without_missing_nearby_ones()
     assert owner.spatial.get(actor_id).transform.x <= 65
 
 
+def test_movement_caches_broad_phase_bounds_for_static_map_collision(monkeypatch):
+    owner = match((Aabb(75, 0, 20, 300),))
+    definition = ActorDefinition("runner", "soldier", "green", 100, (20, 20), 80)
+    actor_id = spawn_match_actors(
+        owner,
+        SpawnActorRequest(definition, SpawnQuery(), PlacementConstraints(), 1),
+        (SpawnPoint("start", (30, 40)),),
+        "cached-bounds-runner",
+    ).actor_ids[0]
+    import shooter.match_actors as match_actors
+
+    original = match_actors.bounds_of
+    calls = 0
+
+    def tracked_bounds(shape):
+        nonlocal calls
+        calls += 1
+        return original(shape)
+
+    match_actors._static_obstacle_bounds.cache_clear()
+    monkeypatch.setattr(match_actors, "bounds_of", tracked_bounds)
+
+    move_match_actor(owner, actor_id, (1, 0), 0.25)
+    move_match_actor(owner, actor_id, (-1, 0), 0.25)
+
+    assert calls == 1
+
+
 def test_shared_movement_slides_along_collision_on_the_unblocked_axis():
     owner = match((Aabb(75, 0, 20, 300),))
     definition = ActorDefinition("runner", "soldier", "green", 100, (20, 20), 80)
@@ -195,6 +225,23 @@ def test_cardinal_input_slides_along_an_angled_authored_collider():
 
     moved = owner.spatial.get(actor_id).transform
     assert moved.y != 20
+
+
+def test_polygon_slide_uses_only_input_component_parallel_to_surface():
+    edge = Polygon(((0, 0), (3, 4), (0, 10)))
+
+    (slide,) = _polygon_tangents(type("Position", (), {"x": 1, "y": 1})(), edge, (10, 0))
+
+    assert all(math.isclose(actual, expected) for actual, expected in zip(slide, (3.6, 4.8), strict=True))
+    assert math.isclose((slide[0] ** 2 + slide[1] ** 2) ** 0.5, 6)
+
+
+def test_polygon_slide_does_not_push_player_along_perpendicular_wall():
+    wall = Polygon(((0, 0), (0, 100), (10, 100)))
+
+    assert _polygon_tangents(
+        type("Position", (), {"x": 1, "y": 40})(), wall, (10, 0)
+    ) == ()
 
 
 def test_dynamic_actor_occupancy_is_explicit_and_configurable():

@@ -367,6 +367,7 @@ class SurvivalMode:
                         and height > config.WINDOW[1] * 2
                     ),
                     collision=match.map_definition.collision,
+                    playable_areas=match.map_definition.playable_areas,
                 ),
                 count,
             ),

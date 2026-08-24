@@ -1,6 +1,7 @@
 """Shared neutral actor registration and movement against Match-owned stores."""
 
 from dataclasses import dataclass
+from functools import cache
 import math
 
 from shooter.actor_creation import NeutralActorFactory
@@ -13,6 +14,16 @@ from shooter.world_collision import Aabb, Polygon, actor_box, bounds_of, contain
 class RegisteredSpawnBatch:
     actor_ids: tuple[int, ...]
     spawn_result: object
+
+
+@cache
+def _static_obstacle_bounds(obstacles):
+    """Cache broad-phase bounds for immutable map geometry.
+
+    Dynamic actors and barricades are deliberately excluded: their positions can
+    change between movement calls, while authored TMX geometry cannot.
+    """
+    return tuple((obstacle, bounds_of(obstacle)) for obstacle in obstacles)
 
 
 def spawn_match_actors(match, request, sources, stream_name, tags=()):
@@ -66,8 +77,7 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
     delta_y = dy * actor.movement_speed * dt
     collision = match.spatial.get(actor_id).collision
     playable_areas = match.map_definition.playable_areas
-    obstacles = (
-        *match.map_definition.collision,
+    dynamic_obstacles = (
         *tuple(obstacles),
         *(
             actor_box(
@@ -87,7 +97,12 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
         abs(delta_y) + actor.collision_size[1],
     )
     obstacles = tuple(
-        obstacle for obstacle in obstacles if overlaps(travel_area, bounds_of(obstacle))
+        obstacle
+        for obstacle, obstacle_bounds in (
+            *_static_obstacle_bounds(match.map_definition.collision),
+            *((obstacle, bounds_of(obstacle)) for obstacle in dynamic_obstacles),
+        )
+        if overlaps(travel_area, obstacle_bounds)
     )
     if collision is None or (not obstacles and not playable_areas):
         target = bounds.clamp(Transform(current.x + delta_x, current.y + delta_y))
@@ -147,8 +162,7 @@ def _blocked(transform, collision, obstacles, playable_areas=()):
 
 def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles, playable_areas=()):
     """Try either tangent when movement directly into a collider is blocked."""
-    distance = math.hypot(delta_x, delta_y)
-    if distance == 0:
+    if delta_x == 0 and delta_y == 0:
         return start
     forward = Transform(start.x + delta_x, start.y + delta_y)
     blocking_shapes = [
@@ -164,7 +178,7 @@ def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles, playable_
     offsets = [
         offset
         for obstacle in blocking_shapes
-        for offset in _polygon_tangents(start, obstacle, distance)
+        for offset in _polygon_tangents(start, obstacle, (delta_x, delta_y))
     ]
     offsets.sort(
         key=lambda offset: offset[0] * delta_x + offset[1] * delta_y,
@@ -179,7 +193,8 @@ def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles, playable_
     return start
 
 
-def _polygon_tangents(position, obstacle, distance):
+def _polygon_tangents(position, obstacle, movement):
+    """Return the movement component parallel to the nearest polygon edge."""
     if not isinstance(obstacle, Polygon):
         return ()
     edges = tuple(
@@ -189,11 +204,11 @@ def _polygon_tangents(position, obstacle, distance):
     length = math.dist(start, end)
     if length == 0:
         return ()
-    tangent = (
-        (end[0] - start[0]) / length * distance,
-        (end[1] - start[1]) / length * distance,
-    )
-    return (tangent, (-tangent[0], -tangent[1]))
+    tangent = ((end[0] - start[0]) / length, (end[1] - start[1]) / length)
+    projection = movement[0] * tangent[0] + movement[1] * tangent[1]
+    if projection == 0:
+        return ()
+    return ((tangent[0] * projection, tangent[1] * projection),)
 
 
 def _segment_distance(point, start, end):
