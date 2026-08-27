@@ -26,10 +26,10 @@ package.
 |---|---|
 | Migration phase | Phase 11 — Survival playable-run milestone |
 | Phase status | In progress |
-| Active work package | M11.5 — First-five-wave playtest and balance update |
+| Active work package | M12.2 — Navigation-map contract and debug view |
 | Application expected to run | Yes; production START GAME uses the shared Survival runtime |
-| Next integration checkpoint | M11.5 — First-five-wave playtest and balance update |
-| Last updated | 2026-08-23 |
+| Next integration checkpoint | M12.6 — Navigation playtest validation |
+| Last updated | 2026-08-24 |
 
 ## Confirmed Project Constraints
 
@@ -73,6 +73,7 @@ package.
 | 9 | Prove reuse with a sandbox ruleset | Complete | Visible Sandbox and switching integration checkpoint verified |
 | 10 | Resume Zombie Survival feature development | Complete | Barricade integration verified |
 | 11 | Survival playable-run milestone | In progress | M11.1–M11.11 complete; M11.5 tuning is active |
+| 12 | Navigation and horde-AI milestone | Design in progress | Establish planned, obstacle-aware enemy movement before resuming detailed Survival tuning. |
 
 ## Phase 10 Product Review
 
@@ -1480,8 +1481,114 @@ decision has meaningful alternatives and is expensive to reverse.
 | 2026-08-23 | Confirmed configurable tools, harvesting, and barricade direction | Plans now separate firearm slots from optional tool/melee roles; Survival selects a pickaxe-like melee/harvest tool while other modes may select a knife or none; M10.14–M10.18 cover harvestables, resources, construction, and dynamic barricades |
 | 2026-08-23 | Completed M11.6 paced player-aware spawn director | Reusable headless scheduling releases ordered budgets in deterministic timed bursts; Survival composes weighted authored lanes with visibility, distance, occupancy, collision, and playable-area constraints; focused Ruff and 66 tests pass |
 
+## Phase 12 — Navigation and Horde AI
+
+**Status:** Design in progress. M11.5 numerical tuning is paused: movement that
+cannot reliably route around authored geometry makes wave, weapon, and speed
+feedback misleading.
+
+### M12.1 — Navigation design contract
+
+**Goal:** An enemy should choose a route around a tree, building, fence, or other
+blocking structure before it reaches the obstacle whenever a route exists. It
+must not depend on collision sliding as its primary way to find the player.
+
+**Architecture decision:** use two layers, with clear ownership.
+
+| Layer | Responsibility | Must not do |
+|---|---|---|
+| Global route planner | Convert static TMX collision and playable-area data into clearance-aware walkable navigation; return a route or next waypoint toward a target. | Read pygame state, own combat, or resolve actor-to-actor pushing. |
+| Local movement controller | Follow the current waypoint, perform short-range collision avoidance, maintain horde spacing, and report lack of progress. | Discover a map-wide route by repeatedly sliding against a collider. |
+| Survival horde policy | Chooses targets, route refresh policy, controlled lane/side variation, and barricade response. | Embed map parsing or generic path-search algorithms. |
+| Presentation/debug | Render navigation cells/route/waypoint/recovery facts from snapshots or explicit debug views. | Mutate simulation state. |
+
+**Initial navigation representation:** a clearance-aware navigation grid derived
+from `MapDefinition.collision` and `playable_areas`. A cell is walkable only when
+the whole enemy footprint fits. This is the first implementation, not a permanent
+commitment to grids: expose it behind a pygame-free navigation interface so a
+future TMX-authored navmesh can replace it without changing Survival rules.
+
+**Why this representation first:** the current map is 10,000×10,000, contains
+mixed AABB/ellipse/polygon colliders, and will continue changing in Tiled. A
+derived grid provides deterministic clearance, direct testability, and no manual
+navigation polygons while the map is unfinished.
+
+### Required behavior
+
+1. Routes are planned from the enemy's navigation cell (or shared nearby-cell
+   cache) to the player's navigation cell. A route consists of world-space
+   waypoints, not merely one collision-slide direction.
+2. A route is requested at spawn, when its target has crossed a configurable
+   navigation threshold, after a dynamic obstacle changes, or after measurable
+   route progress fails. It is never recomputed every simulation tick.
+3. Static routes must go around obstacles before contact when the planner can
+   see the obstruction. Collision remains a correctness backstop only.
+4. Nearby enemies are soft crowd constraints: bounded local avoidance and
+   separation may alter the immediate movement vector, but must not replace the
+   global route or create all-horde collision scans.
+5. Enemies may use deterministic, bounded side/waypoint variation so a horde
+   naturally uses both sides of an obstacle. The variation must remain seedable
+   and replayable.
+6. If no route exists, the enemy reports `unreachable` and uses a bounded local
+   fallback. It must not silently die, despawn, or complete a wave.
+
+### Dynamic and map policy
+
+- Static tree, vehicle, building, fence, and playable-area geometry defines the
+  base navigation surface at match start.
+- Built/destroyed barricades invalidate only affected navigation cells or a
+  bounded route cache; they do not require an all-map rebuild every frame.
+- Spawn lanes are validated against the same clearance rules as navigation.
+  A lane that has no reachable path to a playable player position is reported as
+  invalid in diagnostics rather than silently spending its spawn budget.
+- TMX remains the source for world geometry. Initial navigation parameters are
+  map-level data: `navigation_cell_size`, `navigation_enabled`, and optional
+  route-cost/clearance overrides. No per-tree runtime special cases.
+
+### Debug and playtest contract
+
+The temporary debug interface must be able to show, on demand:
+
+- walkable vs blocked navigation cells;
+- the selected enemy's route, next waypoint, target cell, and route age;
+- local avoidance vector and current crowd-neighbour count;
+- counters for route requests, cache hits, unreachable routes, and genuinely
+  stuck enemies;
+- spawn-lane reachability failures.
+
+### Acceptance scenarios
+
+| Scenario | Required outcome |
+|---|---|
+| Player is behind a tree/building | Enemy chooses a valid side and follows waypoints around it without first pressing into the collider. |
+| Multiple enemies approach one obstacle | They retain individual routes/side variation and do not form an immobile overlapping blob. |
+| Player changes position | Existing route remains until the configured threshold is crossed, then refreshes deterministically. |
+| Barricade is built/destroyed | Affected enemies replan and use the changed route; unrelated enemies do not cause a full-map pathfinding spike. |
+| No reachable route | Enemy remains alive, exposes an explicit unreachable state, and cannot cause automatic wave completion. |
+| Dense horde | Per-tick work is bounded by local neighbours and route following; no all-pairs actor collision or per-enemy full-map search. |
+
+### Implementation packages
+
+| ID | Status | Deliverable |
+|---|---|---|
+| M12.1 | Complete | Navigation ownership, map/schema requirements, refresh/invalidation policy, debug needs, and acceptance scenarios are recorded above. |
+| M12.2 | In progress | Pygame-free clearance-aware grid is available for inspection; `N` now draws its visible cells, goal, reachable count, and stuck actors without changing default pursuit. Map validation remains next. |
+| M12.3 | Not started | Deterministic A* waypoint planner with bounded route cache and route result states. |
+| M12.4 | In progress | Zombies follow cached waypoint routes with bounded nearby occupancy; deterministic route variants split equal-cost obstacle choices. Route-progress/replan diagnostics are visible with `N`; dynamic-obstacle invalidation and horde-pressure validation remain. |
+| M12.5 | Not started | Dynamic barricade invalidation and reachability-aware spawn validation. |
+| M12.6 | Not started | Navigation debug view, performance counters, obstacle/horde playtest scenarios, and integration checkpoint. |
+
+### Explicit non-goals for M12
+
+- No online-multiplayer implementation.
+- No final art/navigation-polish dependency.
+- No requirement to hand-author a collider or a route around every placed tree.
+- No return to experimental live steering until its scenario and performance
+  tests pass; tuning resumes only after M12.6.
+
 ## Next Action
 
-Resume M11.5 with a first-five-wave playtest using `balance/survival.toml` as the
-editable source of truth. Record concrete observations, change only the relevant
-tunables, and verify each resulting Survival run.
+Complete M12.2 map validation and route-query contracts, then implement M12.3:
+deterministic waypoint routes with bounded caching. `N` toggles the live
+navigation debug view; default enemy pursuit remains unchanged until the route
+controller passes its obstacle and crowd scenarios.

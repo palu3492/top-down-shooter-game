@@ -40,6 +40,7 @@ from shooter.scenes import Scene
 from shooter.session import Session
 from shooter.ui.snapshot_presentation import SnapshotPresentation
 from shooter.ui.map_semantics import MapSemanticsRenderer
+from shooter.ui.navigation_debug import NavigationDebugRenderer
 from shooter.ui.survival_tuner import SurvivalTuner
 from shooter.world_collision import Aabb
 from shooter.weapon_state import EquippedWeapon
@@ -220,6 +221,8 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
         super().__init__(*args, **kwargs)
         self.tuner = SurvivalTuner(self.mode.balance)
         self.tuning = False
+        self.navigation_debug = False
+        self.navigation_debug_renderer = NavigationDebugRenderer()
         self.fire_pointer = None
 
     def handle(self, event):
@@ -228,6 +231,9 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
             return routed
         if event.type == pygame.KEYDOWN and event.key == pygame.K_TAB:
             self.tuning = not self.tuning
+            return None
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_n:
+            self.navigation_debug = not self.navigation_debug
             return None
         if self.tuning and event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_1, pygame.K_2):
@@ -289,6 +295,14 @@ class SurvivalGameplayScene(SnapshotGameplayScene):
 
     def draw(self, surface, alpha):
         super().draw(surface, alpha)
+        if self.navigation_debug:
+            self.navigation_debug_renderer.draw(
+                surface,
+                self.match.snapshot(),
+                self.camera,
+                self.mode.navigation,
+                self.mode.route_planner,
+            )
         if self.tuning:
             self.tuner.draw(surface)
         else:

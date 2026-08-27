@@ -22,7 +22,11 @@ class SpawnQuery:
             (self.role is None or source.role == self.role)
             and self.required_tags <= source.tags
             and (self.faction is None or source.faction == self.faction)
-            and (self.actor_kind is None or source.actor_kind == self.actor_kind)
+            and (
+                self.actor_kind is None
+                or source.actor_kind is None
+                or source.actor_kind == self.actor_kind
+            )
         )
 
 

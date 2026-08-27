@@ -14,7 +14,7 @@ from shooter.match_configuration import (
     ModeDescriptor,
 )
 from shooter.spatial import Box, Transform
-from shooter.steering import pursue_match_actor
+from shooter.steering import nearby_occupants, pursue_match_actor
 from shooter.world_collision import Aabb
 
 
@@ -59,6 +59,17 @@ def test_blocked_pursuit_deterministically_steers_around_a_wall():
     assert first.y > 150
     assert final.x > 210
     assert final.x > first.x
+
+
+def test_nearby_occupants_bounds_dense_crowd_collision_work():
+    match = owner()
+    actor_ids = tuple(attach(match, (50 + index, 50)) for index in range(20))
+
+    occupants = nearby_occupants(match, actor_ids, limit=4)
+
+    assert len(occupants[actor_ids[10]]) == 4
+    assert actor_ids[9] in occupants[actor_ids[10]]
+    assert actor_ids[10] not in occupants[actor_ids[10]]
 
 
 def test_steering_has_no_pygame_or_mode_dependency():

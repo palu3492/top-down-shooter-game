@@ -842,48 +842,6 @@
     <property name="role" value="player"/>
    </properties>
   </object>
-  <object id="305" name="walker-horde" x="4546.17" y="7188.33" width="350" height="350">
-   <properties>
-    <property name="actor_kind" value="walker"/>
-    <property name="faction" value="horde"/>
-    <property name="role" value="enemy"/>
-    <property name="tags" value="entry,west"/>
-    <property name="weight" value="2"/>
-   </properties>
-  </object>
-  <object id="315" name="walker-flank" x="5550" y="8100" width="350" height="350">
-   <properties>
-    <property name="actor_kind" value="walker"/>
-    <property name="faction" value="horde"/>
-    <property name="role" value="enemy"/>
-    <property name="tags" value="entry,east"/>
-    <property name="weight" value="1"/>
-   </properties>
-  </object>
-  <object id="306" name="runner-horde" x="5428.35" y="7106.65" width="350" height="350">
-   <properties>
-    <property name="actor_kind" value="runner"/>
-    <property name="faction" value="horde"/>
-    <property name="role" value="enemy"/>
-    <property name="tags" value="entry,north"/>
-   </properties>
-  </object>
-  <object id="316" name="runner-flank" x="3824.97" y="8040.53" width="350" height="350">
-   <properties>
-    <property name="actor_kind" value="runner"/>
-    <property name="faction" value="horde"/>
-    <property name="role" value="enemy"/>
-    <property name="tags" value="entry,southwest"/>
-   </properties>
-  </object>
-  <object id="307" name="breaker-horde" x="4659.47" y="7839.91" width="350" height="350">
-   <properties>
-    <property name="actor_kind" value="breaker"/>
-    <property name="faction" value="horde"/>
-    <property name="role" value="enemy"/>
-    <property name="tags" value="entry,south"/>
-   </properties>
-  </object>
   <object id="320" name="shared-west-01" x="946.674" y="3763.24" width="217.756" height="225.535">
    <properties>
     <property name="faction" value="horde"/>

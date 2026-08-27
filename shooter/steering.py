@@ -6,7 +6,46 @@ from shooter.match_actors import move_match_actor
 from shooter.world_collision import actor_box, overlaps
 
 
-def pursue_match_actor(match, actor_id, target_id, dt, avoid_ids=(), obstacles=()):
+def nearby_occupants(match, actor_ids, cell_size=128, limit=12):
+    """Return bounded, local dynamic blockers for each actor.
+
+    Crowd collision must never build a list containing the whole horde.  The
+    surrounding grid cells contain every actor that could contact this frame;
+    bounding the result keeps an extreme pile-up inexpensive as well.
+    """
+    cells = {}
+    actor_ids = tuple(actor_id for actor_id in actor_ids if actor_id in match.spatial)
+    for actor_id in actor_ids:
+        transform = match.spatial.get(actor_id).transform
+        cell = int(transform.x // cell_size), int(transform.y // cell_size)
+        cells.setdefault(cell, []).append(actor_id)
+    result = {}
+    for actor_id in actor_ids:
+        transform = match.spatial.get(actor_id).transform
+        cell = int(transform.x // cell_size), int(transform.y // cell_size)
+        candidates = [
+            other_id
+            for x_offset in (-1, 0, 1)
+            for y_offset in (-1, 0, 1)
+            for other_id in cells.get((cell[0] + x_offset, cell[1] + y_offset), ())
+            if other_id != actor_id
+        ]
+        candidates.sort(
+            key=lambda other_id: math.dist(
+                (transform.x, transform.y),
+                (
+                    match.spatial.get(other_id).transform.x,
+                    match.spatial.get(other_id).transform.y,
+                ),
+            )
+        )
+        result[actor_id] = tuple(candidates[:limit])
+    return result
+
+
+def pursue_match_actor(
+    match, actor_id, target_id, dt, avoid_ids=(), obstacles=(), direction=None
+):
     """Move toward a target, choosing a stable side when direct travel is blocked."""
     if dt < 0:
         raise ValueError("dt cannot be negative")
@@ -22,7 +61,7 @@ def pursue_match_actor(match, actor_id, target_id, dt, avoid_ids=(), obstacles=(
     if speed <= 0:
         return match.spatial.get(actor_id)
     travel_dt = min(dt, distance / speed)
-    direction = (dx / distance, dy / distance)
+    direction = (dx / distance, dy / distance) if direction is None else direction
     occupied = tuple(avoid_ids)
     moved = move_match_actor(
         match, actor_id, direction, travel_dt, occupied, obstacles

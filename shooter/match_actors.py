@@ -7,7 +7,14 @@ import math
 from shooter.actor_creation import NeutralActorFactory
 from shooter.spatial import Bounds, Box, Transform
 from shooter.spawn_service import SpawnService
-from shooter.world_collision import Aabb, Polygon, actor_box, bounds_of, contains, overlaps
+from shooter.world_collision import (
+    Aabb,
+    Polygon,
+    actor_box,
+    bounds_of,
+    contains,
+    overlaps,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,14 +23,51 @@ class RegisteredSpawnBatch:
     spawn_result: object
 
 
+@dataclass(frozen=True, slots=True)
+class _StaticObstacleIndex:
+    """Cached uniform-grid broad phase for immutable TMX collision geometry."""
+
+    members: tuple[tuple[object, Aabb], ...]
+    cells: dict[tuple[int, int], tuple[int, ...]]
+    cell_size: int = 256
+
+    def nearby(self, area):
+        left = int(area.left // self.cell_size)
+        right = int((area.right - 0.0001) // self.cell_size)
+        top = int(area.top // self.cell_size)
+        bottom = int((area.bottom - 0.0001) // self.cell_size)
+        indices = {
+            index
+            for cell_x in range(left, right + 1)
+            for cell_y in range(top, bottom + 1)
+            for index in self.cells.get((cell_x, cell_y), ())
+        }
+        return tuple(self.members[index] for index in sorted(indices))
+
+
 @cache
 def _static_obstacle_bounds(obstacles):
-    """Cache broad-phase bounds for immutable map geometry.
+    """Cache a spatial index for immutable map geometry.
 
     Dynamic actors and barricades are deliberately excluded: their positions can
     change between movement calls, while authored TMX geometry cannot.
     """
-    return tuple((obstacle, bounds_of(obstacle)) for obstacle in obstacles)
+    members = tuple((obstacle, bounds_of(obstacle)) for obstacle in obstacles)
+    cells = {}
+    cell_size = 256
+    for index, (_, bounds) in enumerate(members):
+        left = int(bounds.left // cell_size)
+        right = int((bounds.right - 0.0001) // cell_size)
+        top = int(bounds.top // cell_size)
+        bottom = int((bounds.bottom - 0.0001) // cell_size)
+        for cell_x in range(left, right + 1):
+            for cell_y in range(top, bottom + 1):
+                cells.setdefault((cell_x, cell_y), []).append(index)
+    return _StaticObstacleIndex(
+        members,
+        {cell: tuple(indices) for cell, indices in cells.items()},
+        cell_size,
+    )
 
 
 def spawn_match_actors(match, request, sources, stream_name, tags=()):
@@ -96,10 +140,11 @@ def move_match_actor(match, actor_id, direction, dt, occupied_ids=(), obstacles=
         abs(delta_x) + actor.collision_size[0],
         abs(delta_y) + actor.collision_size[1],
     )
+    static_obstacles = _static_obstacle_bounds(match.map_definition.collision)
     obstacles = tuple(
         obstacle
         for obstacle, obstacle_bounds in (
-            *_static_obstacle_bounds(match.map_definition.collision),
+            *static_obstacles.nearby(travel_area),
             *((obstacle, bounds_of(obstacle)) for obstacle in dynamic_obstacles),
         )
         if overlaps(travel_area, obstacle_bounds)
@@ -160,7 +205,9 @@ def _blocked(transform, collision, obstacles, playable_areas=()):
     )
 
 
-def _slide_step(start, delta_x, delta_y, bounds, collision, obstacles, playable_areas=()):
+def _slide_step(
+    start, delta_x, delta_y, bounds, collision, obstacles, playable_areas=()
+):
     """Try either tangent when movement directly into a collider is blocked."""
     if delta_x == 0 and delta_y == 0:
         return start

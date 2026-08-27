@@ -149,6 +149,7 @@ class DebugOverlay:
                 f"NEXT {mode.preparation_remaining:.1f}s | "
                 f"ENEMIES {mode.enemies_remaining} "
                 f"| PENDING {mode.pending_enemies} "
+                f"| RECOVERING {mode.recovering_enemies} "
                 f"| TYPES {composition} | CASH {mode.cash} "
                 f"| RESOURCES {resources} "
                 f"| CONSUMABLES {consumables} "

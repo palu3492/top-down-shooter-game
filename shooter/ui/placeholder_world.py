@@ -64,6 +64,15 @@ class PlaceholderWorldRenderer:
             self._shape(surface, centre, binding)
             if "actor" in entity.tags and entity.vitality is not None:
                 self._health(surface, centre, binding.size, entity.vitality)
+        self._ballistic_traces(surface, snapshot.mode_status, camera)
+
+    @staticmethod
+    def _ballistic_traces(surface, status, camera):
+        for trace in getattr(status, "ballistic_traces", ()):
+            travelled = trace.speed * trace.elapsed
+            x = trace.origin[0] + trace.direction[0] * travelled + camera[0]
+            y = trace.origin[1] + trace.direction[1] * travelled + camera[1]
+            pygame.draw.circle(surface, (0, 0, 0), (round(x), round(y)), 3)
 
     @staticmethod
     def _shape(surface, centre, binding):

@@ -74,12 +74,11 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
     definition = load_tmx_definition("Assets/Maps/world_1/world_1.tmx")
 
     assert definition.spawn_roles() >= {"player", "enemy"}
-    assert {spawn.actor_kind for spawn in definition.spawns} >= {
-        "soldier",
-        "walker",
-        "runner",
-        "breaker",
-    }
+    players = tuple(spawn for spawn in definition.spawns if spawn.role == "player")
+    enemies = tuple(spawn for spawn in definition.spawns if spawn.role == "enemy")
+    assert {spawn.actor_kind for spawn in players} == {"soldier"}
+    assert len(enemies) == 11
+    assert {spawn.actor_kind for spawn in enemies} == {None}
     assert definition.capabilities >= {
         "collision",
         "interactions",
@@ -114,7 +113,7 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
         for spawn in definition.spawns
         if spawn.role == "enemy"
         for tag in spawn.tags
-    } >= {"entry", "west", "east", "north", "south", "southwest"}
+    } >= {"entry", "shared", "west", "east", "north", "south"}
 
 
 def test_spawn_points_and_regions_normalize_without_map_identity_branches():

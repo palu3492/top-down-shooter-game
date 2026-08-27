@@ -46,6 +46,19 @@ def test_query_filters_role_tags_faction_and_actor_kind():
     assert (result.spawn_id, result.position) == ("wanted", (80, 90))
 
 
+def test_untyped_enemy_lane_matches_every_requested_enemy_kind():
+    source = point("shared-lane", (80, 90), role="enemy", faction="horde")
+
+    result = SpawnSelector().select(
+        (source,),
+        SpawnQuery(role="enemy", faction="horde", actor_kind="runner"),
+        PlacementConstraints(),
+        random.Random(1),
+    )
+
+    assert (result.spawn_id, result.position) == ("shared-lane", (80, 90))
+
+
 def test_region_sampling_is_reproducible_for_box_ellipse_and_polygon():
     regions = (
         SpawnRegion("box", Aabb(0, 0, 100, 100), role="enemy"),

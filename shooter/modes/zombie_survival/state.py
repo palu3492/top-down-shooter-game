@@ -13,6 +13,17 @@ LOST = "LOST"
 
 
 @dataclass(frozen=True, slots=True)
+class BallisticTrace:
+    """A short-lived, snapshot-safe visual for a resolved firearm shot."""
+
+    origin: tuple[float, float]
+    direction: tuple[float, float]
+    speed: float
+    elapsed: float
+    remaining: float
+
+
+@dataclass(frozen=True, slots=True)
 class SurvivalStatus:
     phase: str
     wave: int
@@ -37,6 +48,14 @@ class SurvivalStatus:
     harvest_context: HarvestContext | None = None
     resources: tuple[tuple[str, int], ...] = ()
     construction_result: ConstructionResult | None = None
+    ballistic_traces: tuple[BallisticTrace, ...] = ()
+    recovering_enemies: int = 0
+    navigation_cell_size: int | None = None
+    navigation_goal: tuple[int, int] | None = None
+    navigation_reachable_cells: int = 0
+    navigation_route_requests: int = 0
+    navigation_route_cache_hits: int = 0
+    stuck_enemy_ids: tuple[int, ...] = ()
 
 
 class SurvivalWallet:

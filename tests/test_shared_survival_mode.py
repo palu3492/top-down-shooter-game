@@ -114,6 +114,23 @@ def test_survival_spawns_player_and_initial_horde_into_match_stores():
     assert snapshot.mode_status.enemy_composition == (("walker", 5),)
 
 
+def test_stuck_enemy_uses_flow_navigation_only_after_the_recovery_delay():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+    enemy = mode.enemy_ids[0]
+
+    assert mode._enemy_direction(match, enemy) is None
+    mode.stuck_seconds[enemy] = 0.4
+
+    assert mode._enemy_direction(match, enemy) in {
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1),
+    }
+
+
 def test_survival_director_uses_player_aware_authored_lane_constraints():
     match = Match(
         resolved(
@@ -713,7 +730,6 @@ def test_survivor_rifle_ammo_cooldown_reload_and_snapshot_are_authoritative():
     weapon = match.snapshot().entity(mode.player_id).weapons[0]
     assert weapon.loaded == 29
     assert weapon.ready is False
-
     match.advance(1 / 6, (FireSurvivorWeapon(aim_at(match, mode, enemy)),))
     assert match.snapshot().entity(mode.player_id).weapons[0].loaded == 28
     match.advance(0.0, (ReloadSurvivorWeapon(),))
@@ -723,6 +739,25 @@ def test_survivor_rifle_ammo_cooldown_reload_and_snapshot_are_authoritative():
 
     match.advance(config.RELOAD_SECONDS)
     assert match.snapshot().entity(mode.player_id).weapons[0].ready is True
+
+
+def test_ballistic_shots_are_exposed_as_short_lived_visual_traces():
+    match = Match(resolved())
+    mode = SurvivalMode(sources(), enemy_count=1)
+    match.start(mode)
+
+    match.advance(0.0, (FireSurvivorWeapon((1, 0)),))
+    trace = match.snapshot().mode_status.ballistic_traces[0]
+
+    assert trace.origin == (500, 400)
+    assert trace.direction == (1.0, 0.0)
+    assert trace.elapsed == 0.0
+    assert trace.remaining > 0.0
+
+    match.advance(0.1)
+    advanced = match.snapshot().mode_status.ballistic_traces[0]
+    assert advanced.elapsed == 0.1
+    assert advanced.remaining == trace.remaining - 0.1
 
 
 def test_weapon_ray_hits_nearest_enemy_and_a_miss_still_spends_ammunition():

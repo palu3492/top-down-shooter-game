@@ -9,6 +9,7 @@ from shooter.construction import ConstructionService
 from shooter.consumables import ConsumableInventory, ConsumablePurchaseService
 from shooter.damage import DamageRequest
 from shooter.equipment_roles import ToolSlot
+from shooter.flow_field import ROUTE_FOUND, FlowField, NavigationRoutePlanner
 from shooter.harvesting import HarvestingService
 from shooter.interactions import InteractionService
 from shooter.loadout import Loadout
@@ -18,7 +19,13 @@ from shooter.match_actors import (
     remove_match_actor,
     spawn_match_actors,
 )
-from shooter.modes.zombie_survival.state import LOST, SurvivalStatus, SurvivalWallet
+from shooter.navigation_controller import RouteProgress, WaypointFollower
+from shooter.modes.zombie_survival.state import (
+    LOST,
+    BallisticTrace,
+    SurvivalStatus,
+    SurvivalWallet,
+)
 from shooter.resources import ResourceInventory
 from shooter.station_purchases import StationPurchaseService
 from shooter.survival_balance import load_survival_balance
@@ -33,7 +40,11 @@ from shooter.spawn_director import (
     SpawnDirectorPolicy,
 )
 from shooter.spawn_service import SpawnActorRequest
-from shooter.steering import pursue_match_actor, separate_overlapping_actors
+from shooter.steering import (
+    nearby_occupants,
+    pursue_match_actor,
+    separate_overlapping_actors,
+)
 from shooter.targeting import first_box_target_on_ray
 from shooter.weapon_attacks import AttackDescriptionService, damage_at_distance
 from shooter.weapon_purchases import WeaponCatalog, WeaponPurchaseService
@@ -54,6 +65,10 @@ WALKER = ActorDefinition(
 RUNNER = ActorDefinition("runner", "runner", "horde", 70, (42, 42), 380)
 BREAKER = ActorDefinition("breaker", "breaker", "horde", 260, (64, 64), 220)
 ENEMY_BARRICADE_DAMAGE = {"walker": 1.0, "runner": 1.0, "breaker": 4.0}
+TRACE_SPEED = 1800.0
+NAVIGATION_CELL_SIZE = 96
+STUCK_RECOVERY_SECONDS = 0.4
+STUCK_RECOVERY_SECONDS = 0.4
 RIFLE = WeaponDefinition(
     "survivor_rifle",
     "ballistic",
@@ -329,6 +344,13 @@ class SurvivalMode:
         self.construction = ConstructionService()
         self.barricades = {}
         self.construction_result = None
+        self.ballistic_traces = ()
+        self.stuck_seconds = {}
+        self.navigation = None
+        self.navigation_goal = None
+        self.route_planner = None
+        self.route_follower = WaypointFollower(arrival_distance=32)
+        self.route_progress = {}
         self.wave = 1
         self.phase = "combat"
         self.preparation_remaining = 0.0
@@ -378,6 +400,7 @@ class SurvivalMode:
                 self.tool_slots[self.player_id].equipped is not None
                 and self.starting_firearm is None
             )
+            self._navigation_for(match)
         self.first_wave_pending = self.initial_preparation_seconds > 0
         self.phase = "preparation" if self.first_wave_pending else "combat"
         self.preparation_remaining = self.initial_preparation_seconds
@@ -483,6 +506,7 @@ class SurvivalMode:
             raise ValueError("dt cannot be negative")
         if self.result(match) is not None:
             return
+        self._advance_ballistic_traces(dt)
         self._advance_weapons(dt)
         for actor_id in tuple(self.entry_remaining):
             remaining = max(0.0, self.entry_remaining[actor_id] - dt)
@@ -562,6 +586,29 @@ class SurvivalMode:
             harvest_context=self.harvest_context,
             resources=self.resources.snapshot(),
             construction_result=self.construction_result,
+            ballistic_traces=self.ballistic_traces,
+            recovering_enemies=sum(
+                seconds >= STUCK_RECOVERY_SECONDS
+                for seconds in self.stuck_seconds.values()
+            ),
+            navigation_cell_size=NAVIGATION_CELL_SIZE,
+            navigation_goal=None if self.navigation is None else self.navigation.goal,
+            navigation_reachable_cells=(
+                0 if self.navigation is None else len(self.navigation._directions)
+            ),
+            navigation_route_requests=(
+                0 if self.route_planner is None else self.route_planner.requests
+            ),
+            navigation_route_cache_hits=(
+                0 if self.route_planner is None else self.route_planner.cache_hits
+            ),
+            stuck_enemy_ids=tuple(
+                sorted(
+                    enemy_id
+                    for enemy_id, seconds in self.stuck_seconds.items()
+                    if seconds >= STUCK_RECOVERY_SECONDS
+                )
+            ),
         )
 
     def result(self, match):
@@ -595,6 +642,10 @@ class SurvivalMode:
             for enemy_id in self.enemy_ids
             if enemy_id in match.combat and match.combat.get(enemy_id).alive
         )
+        positions = {
+            enemy_id: match.spatial.get(enemy_id).transform for enemy_id in living
+        }
+        occupants = nearby_occupants(match, living)
         separate_overlapping_actors(
             match,
             living,
@@ -610,10 +661,88 @@ class SurvivalMode:
                 enemy_id,
                 self.player_id,
                 dt,
-                avoid_ids=(other for other in living if other != enemy_id),
+                avoid_ids=occupants[enemy_id],
                 obstacles=self.construction.collision_obstacles(self.barricades),
+                direction=self._route_direction(match, enemy_id),
             )
+        # Pursuit treats the horde as soft bodies; separate afterwards with the
+        # spatially bucketed pass so they cannot collapse into one collider.
+        separate_overlapping_actors(
+            match,
+            living,
+            self.construction.collision_obstacles(self.barricades),
+        )
+        self._track_enemy_progress(match, living, positions, dt)
         self._apply_barricade_damage(match, dt)
+
+    def _track_enemy_progress(self, match, living, positions, dt):
+        player = match.spatial.get(self.player_id).transform
+        for enemy_id in living:
+            before = positions[enemy_id]
+            after = match.spatial.get(enemy_id).transform
+            close_to_player = math.dist((after.x, after.y), (player.x, player.y)) < 56
+            expected = match.entities.get(enemy_id).movement_speed * dt
+            progress = math.dist((before.x, before.y), (after.x, after.y))
+            if expected and progress < expected * 0.1 and not close_to_player:
+                self.stuck_seconds[enemy_id] = self.stuck_seconds.get(enemy_id, 0) + dt
+            else:
+                self.stuck_seconds.pop(enemy_id, None)
+        self.stuck_seconds = {
+            enemy_id: seconds
+            for enemy_id, seconds in self.stuck_seconds.items()
+            if enemy_id in living
+        }
+
+    def _route_direction(self, match, enemy_id):
+        position = match.spatial.get(enemy_id).transform
+        player = match.spatial.get(self.player_id).transform
+        navigation = self._navigation_for(match)
+        goal_cell = navigation.cell_at((player.x, player.y))
+        progress = self.route_progress.get(enemy_id)
+        if progress is None or progress.route.cells[-1] != goal_cell:
+            route = self.route_planner.route_for(
+                (position.x, position.y),
+                (player.x, player.y),
+                variant=enemy_id,
+            )
+            if route.status != ROUTE_FOUND:
+                self.route_progress.pop(enemy_id, None)
+                return self._enemy_direction(match, enemy_id)
+            # The first cell is the actor's current cell, not a destination.
+            progress = RouteProgress(route, waypoint_index=1)
+        progress, direction = self.route_follower.advance(
+            progress, (position.x, position.y)
+        )
+        self.route_progress[enemy_id] = progress
+        return None if progress.complete else direction
+
+    def _enemy_direction(self, match, enemy_id):
+        if self.stuck_seconds.get(enemy_id, 0.0) < STUCK_RECOVERY_SECONDS:
+            return None
+        position = match.spatial.get(enemy_id).transform
+        navigation = self._navigation_for(match)
+        preferred = navigation.direction_at((position.x, position.y))
+        return navigation.recovery_direction_at(
+            (position.x, position.y), enemy_id, preferred
+        )
+
+    def _navigation_for(self, match):
+        player = match.spatial.get(self.player_id).transform
+        goal = (player.x, player.y)
+        if self.navigation is None:
+            self.navigation = FlowField(
+                match.map_definition.size,
+                NAVIGATION_CELL_SIZE,
+                self.walker.collision_size,
+                match.map_definition.collision,
+                match.map_definition.playable_areas,
+            )
+            self.route_planner = NavigationRoutePlanner(self.navigation)
+        goal_cell = self.navigation.cell_at(goal)
+        if self.navigation_goal != goal_cell:
+            self.navigation.rebuild(goal)
+            self.navigation_goal = goal_cell
+        return self.navigation
 
     def _selected_weapon(self):
         return self.loadouts[self.player_id].selected
@@ -681,6 +810,7 @@ class SurvivalMode:
             match.random_stream("survival-weapon-attacks"),
         )
         for attack in attacks:
+            self._record_ballistic_trace(attack, weapon.definition.max_range)
             target_id = first_box_target_on_ray(
                 match,
                 attack.origin,
@@ -718,6 +848,26 @@ class SurvivalMode:
             self._award_kill(result)
         if fired.status == NO_AMMO:
             self._select_fallback_equipment()
+
+    def _record_ballistic_trace(self, attack, maximum_range):
+        length = math.hypot(*attack.direction)
+        if length == 0:
+            return
+        direction = (attack.direction[0] / length, attack.direction[1] / length)
+        lifetime = (maximum_range or config.BULLET_RANGE) / TRACE_SPEED
+        trace = BallisticTrace(attack.origin, direction, TRACE_SPEED, 0.0, lifetime)
+        self.ballistic_traces = (*self.ballistic_traces[-95:], trace)
+
+    def _advance_ballistic_traces(self, dt):
+        self.ballistic_traces = tuple(
+            replace(
+                trace,
+                elapsed=trace.elapsed + dt,
+                remaining=trace.remaining - dt,
+            )
+            for trace in self.ballistic_traces
+            if trace.remaining > dt
+        )
 
     def _use_tool(self, match, aim):
         if self.player_id is None or math.hypot(*aim) == 0:
