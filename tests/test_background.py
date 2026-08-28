@@ -68,9 +68,29 @@ def test_tiled_background_uses_the_camera_offset(monkeypatch):
     ground, _ = background(monkeypatch)
     screen = RecordingScreen()
 
-    ground.draw(screen, -400, -250)
+    ground.draw(screen, -40, -25)
 
-    assert screen.blits[0][1] == (-388, -232)
+    assert screen.blits[0][1] == (-28, -7)
+
+
+def test_tiled_background_skips_image_layers_outside_the_camera_view(monkeypatch):
+    visible = pygame.Surface((100, 80))
+    distant = pygame.Surface((100, 80))
+    tiled_map = SimpleNamespace(
+        visible_layers=[ImageLayer(visible), ImageLayer(distant, 1000, 1000)],
+        width=10,
+        height=8,
+        tilewidth=10,
+        tileheight=10,
+    )
+    monkeypatch.setattr("shooter.background.TiledImageLayer", ImageLayer)
+    monkeypatch.setattr("shooter.background.load_tiled_map", lambda _: tiled_map)
+    ground = TiledBackground("Maps/world_1/world_1.tmx")
+    screen = RecordingScreen()
+
+    ground.draw(screen, 0, 0)
+
+    assert screen.blits == [(visible, (0, 0))]
 
 
 def test_world_size_comes_from_the_tiled_map(monkeypatch):

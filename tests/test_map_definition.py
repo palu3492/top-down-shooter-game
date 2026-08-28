@@ -100,7 +100,7 @@ def test_production_map_has_first_survival_semantics_without_visual_map_changes(
         "health_pack_station",
         "armor_station",
     }
-    assert len(definition.harvestables) == 120
+    assert len(definition.harvestables) == 122
     assert {item.kind for item in definition.harvestables} == {"tree", "vehicle"}
     assert all("environment" in item.tags for item in definition.harvestables)
     assert definition.construction_anchors[0].anchor_id == "camp-gate"

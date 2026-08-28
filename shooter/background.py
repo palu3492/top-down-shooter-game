@@ -36,13 +36,13 @@ class TiledBackground:
     def draw(self, screen, camera_x, camera_y):
         for layer in self.map.visible_layers:
             if isinstance(layer, TiledImageLayer):
-                screen.blit(
-                    self.images[id(layer)],
-                    (
-                        camera_x + getattr(layer, "offsetx", 0),
-                        camera_y + getattr(layer, "offsety", 0),
-                    ),
+                image = self.images[id(layer)]
+                position = (
+                    camera_x + getattr(layer, "offsetx", 0),
+                    camera_y + getattr(layer, "offsety", 0),
                 )
+                if screen.get_rect().colliderect((*position, *image.get_size())):
+                    screen.blit(image, position)
             elif isinstance(layer, TiledObjectGroup):
                 offset_x = getattr(layer, "offsetx", 0)
                 offset_y = getattr(layer, "offsety", 0)

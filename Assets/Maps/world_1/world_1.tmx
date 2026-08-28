@@ -1,283 +1,362 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="24" nextobjectid="331">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="10" height="10" tilewidth="1000" tileheight="1000" infinite="0" nextlayerid="116" nextobjectid="333">
  <properties>
   <property name="display_name" value="World 1"/>
   <property name="map_id" value="world_1"/>
   <property name="schema_version" type="int" value="2"/>
   <property name="supported_modes" value="zombie_survival,sandbox"/>
  </properties>
- <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="547" tilecount="25" columns="0" objectalignment="topleft">
+ <tileset firstgid="1" name="vehicles" tilewidth="594" tileheight="464" tilecount="5" columns="0" objectalignment="topleft">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_47.png" width="248" height="211"/>
+   <image source="../../Props/vehicles/cartoon_blue_compact_angled_tiled_v2.png" width="594" height="464"/>
    <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.14,105.64 159.279,0.676 247.99,94.1278 65.827,210.604"/>
+    <object id="1" x="0" y="0">
+     <polygon points="34,295 238,43 530,110 579,306 355,450 82,404"/>
     </object>
    </objectgroup>
   </tile>
   <tile id="1" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_48.png" width="364" height="281"/>
+   <image source="../../Props/vehicles/cartoon_rusted_pickup_angled_tiled_v2.png" width="594" height="464"/>
    <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.6,158.16 112.839,280.325 363.278,111.584 230.424,0.872"/>
+    <object id="1" x="0" y="0">
+     <polygon points="30,292 231,38 533,105 581,305 358,451 78,406"/>
     </object>
    </objectgroup>
   </tile>
   <tile id="2" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_49.png" width="594" height="547"/>
+   <image source="../../Props/vehicles/cartoon_red_station_wagon_angled_tiled_v1.png" width="594" height="464"/>
    <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="23.54,187.19 388.509,546.051 593.9,420.068 138.07,0.888 0.634,120.763"/>
+    <object id="1" x="0" y="0">
+     <polygon points="30,292 231,38 533,105 581,305 358,451 78,406"/>
     </object>
    </objectgroup>
   </tile>
   <tile id="3" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_50.png" width="500" height="396"/>
+   <image source="../../Props/vehicles/cartoon_ambulance_angled_tiled_v1.png" width="594" height="464"/>
    <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="10.13,258.31 125.424,395.746 297.219,327.792 499.555,143.016 287.293,0.999 0.20406,229.296"/>
+    <object id="1" x="0" y="0">
+     <polygon points="25,287 218,33 539,98 585,310 365,454 72,410"/>
     </object>
    </objectgroup>
   </tile>
   <tile id="4" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_51.png" width="289" height="189"/>
+   <image source="../../Props/vehicles/cartoon_wheel_loader_angled_tiled_v1.png" width="594" height="464"/>
    <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.98,92.29 53.1569,188.527 288.533,98.0874 217.804,0.6905"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="5" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_52.png" width="133" height="112"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="30.46,0.44 0.2177,62.4367 93.5908,111.959 132.528,40.5111"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="6" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_53.png" width="158" height="249"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.83,40.26 5.70045,248.715 155.71,243.845 157.658,7.141 5.70045,0.3223"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="7" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_54.png" width="135" height="217"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.57,200.17 133.046,216.73 134.02,2.43 19.0777,0.482"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="8" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_55.png" width="226" height="216"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.41,53.52 90.0262,215.219 225.425,190.867 110.482,0.9192"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="9" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_56.png" width="262" height="219"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="48.66,0.05 0.9296,125.708 213.281,218.246 261.011,107.2"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="10" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_57.png" width="239" height="203"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.28,118.82 81.125,202.025 238.094,64.5299 141.906,0.208"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="11" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_58.png" width="200" height="173"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.16,104.38 77.4644,172.243 199.027,61.302 114.051,0.521"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="12" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_59.png" width="371" height="208"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="16.86,30.91 30.3835,200.568 370.929,207.945 363.553,0.1748 0.8777,3.863"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="13" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_60.png" width="138" height="342"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.66,26.69 8.95375,341.099 137.13,327.527 113.003,0.3008"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="14" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_61.png" width="202" height="200"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.71,76.32 80.9032,199.991 201.676,114.001 97.3284,0.9577"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="15" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_62.png" width="205" height="135"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="5.37,22.28 0.40525,134.483 204.953,132.497 202.967,0.4351"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="16" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_63.png" width="156" height="252"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.81,33.71 12.7254,251.166 155.71,233.293 113.013,0.9426"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="17" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_64.png" width="222" height="152"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.24,53.79 35.9862,151.099 221.668,80.5997 159.112,0.1707"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="18" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_65.png" width="155" height="173"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="14.32,15.95 0.4187,172.836 154.326,172.836 130.495,0.0628"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="19" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_66.png" width="138" height="226"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="27.1,0.85 0.2903,218.306 88.6629,225.257 137.317,10.7795"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="20" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_67.png" width="134" height="353"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.58,32.7 3.55885,348.458 133.635,352.43 91.9314,0.9256"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="21" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_68.png" width="112" height="188"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="9.51,13.82 0.57345,187.586 97.8826,185.6 111.784,0.9116"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="22" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_69.png" width="132" height="175"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="34.8,0.5 0.5566,153.207 87.5534,174.494 131.052,19.9354"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="23" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_70.png" width="149" height="109"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.1,22.41 0.981446,106.147 148.183,108.792 134.08,0.3739"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="24" type="vehicle">
-   <image source="../../Props/vehicles/vehicle_71.png" width="175" height="128"/>
-   <objectgroup>
-    <object id="0" x="0" y="0">
-     <polygon points="0.45,36.06 1.34214,127.95 174.417,122.598 157.467,0.3744"/>
+    <object id="1" x="0" y="0">
+     <polygon points="24,307 204,53 513,65 586,270 391,445 91,423"/>
     </object>
    </objectgroup>
   </tile>
  </tileset>
- <tileset firstgid="26" name="trees" tilewidth="1293" tileheight="1536" tilecount="8" columns="0" objectalignment="topleft">
+ <tileset firstgid="6" name="trees" tilewidth="481" tileheight="741" tilecount="1" columns="0" objectalignment="topleft">
   <grid orientation="orthogonal" width="1" height="1"/>
   <tile id="0" type="tree">
-   <image source="../../Props/trees/tree_01.png" width="1024" height="1536"/>
+   <image source="../../Props/trees/cartoon_pine_tiled_v2.png" width="481" height="741"/>
    <objectgroup draworder="index" id="2">
-    <object id="1" x="508.796" y="13.191">
-     <polygon points="0,0 -412.69,691.586 -376.886,1217.34 1.88443,1503.78 286.434,1402.02 437.188,1028.9 408.922,597.365"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="1" type="tree">
-   <image source="../../Props/trees/tree_02.png" width="1024" height="1536"/>
-   <objectgroup draworder="index" id="2">
-    <object id="1" x="518.219" y="20.7287">
-     <polygon points="0,0 -184.674,182.79 -335.429,425.881 -435.304,704.777 -457.917,1117.47 -303.393,1336.06 0,1479.28 229.901,1430.28 397.615,1249.38 440.957,1106.16 435.304,878.145 403.268,589.827"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="2" type="tree">
-   <image source="../../Props/trees/tree_03.png" width="1293" height="1217"/>
-   <objectgroup draworder="index" id="2">
-    <object id="2" x="614.177" y="32.3251">
-     <polygon points="0,0 -334.796,147.772 -454.86,300.162 -554.145,584.161 -581.852,743.477 -237.82,1057.49 69.2681,1145.23 267.837,1136 535.673,955.899 653.429,766.567 653.429,547.218 272.454,120.065"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="3" type="tree">
-   <image source="../../Props/trees/tree_04.png" width="1292" height="1218"/>
-   <objectgroup draworder="index" id="2">
-    <object id="1" x="683.445" y="20.7804">
-     <polygon points="0,0 -332.487,78.5038 -572.616,346.34 -630.339,660.356 -528.746,854.306 -203.186,1154.47 122.374,1159.09 383.283,962.826 517.202,789.656 542.6,424.844 436.389,203.186 193.951,39.2519"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="4" type="tree">
-   <image source="../../Props/trees/tree_05.png" width="1254" height="1254"/>
-   <objectgroup draworder="index" id="2">
-    <object id="1" x="639.575" y="41.5608">
-     <polygon points="0,0 -182.406,191.642 -325.56,387.901 -390.21,641.884 -383.283,796.583 -251.674,1027.48 -85.4306,1089.82 191.642,1029.79 327.869,909.721 364.812,771.184 304.779,471.023 154.699,193.951"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="5" type="tree">
-   <image source="../../Props/trees/tree_06.png" width="1254" height="1254"/>
-   <objectgroup draworder="index" id="2">
-    <object id="1" x="614.177" y="94.6664">
-     <polygon points="0,0 -133.918,173.17 -230.894,443.316 -272.454,748.095 -233.202,895.867 -73.8859,1011.31 18.4715,1057.49 228.585,937.428 293.235,773.493 270.145,540.291 214.731,327.869 103.902,182.406"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="6" type="tree">
-   <image source="../../Props/trees/tree_07.png" width="1274" height="1234"/>
-   <objectgroup draworder="index" id="2">
-    <object id="1" x="614.177" y="4.61787">
-     <polygon points="0,0 -424.844,320.942 -556.453,498.73 -581.852,683.445 -318.633,1043.64 27.7072,1202.96 226.276,1154.47 420.226,1059.8 632.648,722.697 614.177,447.934 387.901,166.243 219.349,48.4876"/>
-    </object>
-   </objectgroup>
-  </tile>
-  <tile id="7" type="tree">
-   <image source="../../Props/trees/tree_08.png" width="1024" height="1536"/>
-   <objectgroup draworder="index" id="2">
-    <object id="1" x="521.819" y="23.0894">
-     <polygon points="0,0 -277.072,297.853 -334.796,450.242 -484.876,840.453 -475.641,995.151 -198.568,1369.2 -9.23574,1473.1 217.04,1389.98 357.885,1258.37 464.096,921.265 281.69,512.584 161.625,187.024"/>
-    </object>
+    <object id="1" x="170" y="590" width="141" height="130"/>
    </objectgroup>
   </tile>
  </tileset>
- <imagelayer id="3" name="Background">
-  <image source="../../map_10000_high_detail/map_master_10000_high_detail_merged.png" width="10000" height="10000"/>
+ <imagelayer id="3" name="Background r01 c01">
+  <image source="background_chunks/map_r01_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="1" name="Background r01 c02" offsetx="1000" offsety="0">
+  <image source="background_chunks/map_r01_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="2" name="Background r01 c03" offsetx="2000" offsety="0">
+  <image source="background_chunks/map_r01_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="4" name="Background r01 c04" offsetx="3000" offsety="0">
+  <image source="background_chunks/map_r01_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="5" name="Background r01 c05" offsetx="4000" offsety="0">
+  <image source="background_chunks/map_r01_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="7" name="Background r01 c06" offsetx="5000" offsety="0">
+  <image source="background_chunks/map_r01_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="9" name="Background r01 c07" offsetx="6000" offsety="0">
+  <image source="background_chunks/map_r01_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="23" name="Background r01 c08" offsetx="7000" offsety="0">
+  <image source="background_chunks/map_r01_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="24" name="Background r01 c09" offsetx="8000" offsety="0">
+  <image source="background_chunks/map_r01_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="25" name="Background r01 c10" offsetx="9000" offsety="0">
+  <image source="background_chunks/map_r01_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="26" name="Background r02 c01" offsetx="0" offsety="1000">
+  <image source="background_chunks/map_r02_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="27" name="Background r02 c02" offsetx="1000" offsety="1000">
+  <image source="background_chunks/map_r02_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="28" name="Background r02 c03" offsetx="2000" offsety="1000">
+  <image source="background_chunks/map_r02_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="29" name="Background r02 c04" offsetx="3000" offsety="1000">
+  <image source="background_chunks/map_r02_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="30" name="Background r02 c05" offsetx="4000" offsety="1000">
+  <image source="background_chunks/map_r02_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="31" name="Background r02 c06" offsetx="5000" offsety="1000">
+  <image source="background_chunks/map_r02_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="32" name="Background r02 c07" offsetx="6000" offsety="1000">
+  <image source="background_chunks/map_r02_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="33" name="Background r02 c08" offsetx="7000" offsety="1000">
+  <image source="background_chunks/map_r02_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="34" name="Background r02 c09" offsetx="8000" offsety="1000">
+  <image source="background_chunks/map_r02_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="35" name="Background r02 c10" offsetx="9000" offsety="1000">
+  <image source="background_chunks/map_r02_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="36" name="Background r03 c01" offsetx="0" offsety="2000">
+  <image source="background_chunks/map_r03_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="37" name="Background r03 c02" offsetx="1000" offsety="2000">
+  <image source="background_chunks/map_r03_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="38" name="Background r03 c03" offsetx="2000" offsety="2000">
+  <image source="background_chunks/map_r03_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="39" name="Background r03 c04" offsetx="3000" offsety="2000">
+  <image source="background_chunks/map_r03_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="40" name="Background r03 c05" offsetx="4000" offsety="2000">
+  <image source="background_chunks/map_r03_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="41" name="Background r03 c06" offsetx="5000" offsety="2000">
+  <image source="background_chunks/map_r03_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="42" name="Background r03 c07" offsetx="6000" offsety="2000">
+  <image source="background_chunks/map_r03_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="43" name="Background r03 c08" offsetx="7000" offsety="2000">
+  <image source="background_chunks/map_r03_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="44" name="Background r03 c09" offsetx="8000" offsety="2000">
+  <image source="background_chunks/map_r03_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="45" name="Background r03 c10" offsetx="9000" offsety="2000">
+  <image source="background_chunks/map_r03_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="46" name="Background r04 c01" offsetx="0" offsety="3000">
+  <image source="background_chunks/map_r04_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="47" name="Background r04 c02" offsetx="1000" offsety="3000">
+  <image source="background_chunks/map_r04_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="48" name="Background r04 c03" offsetx="2000" offsety="3000">
+  <image source="background_chunks/map_r04_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="49" name="Background r04 c04" offsetx="3000" offsety="3000">
+  <image source="background_chunks/map_r04_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="50" name="Background r04 c05" offsetx="4000" offsety="3000">
+  <image source="background_chunks/map_r04_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="51" name="Background r04 c06" offsetx="5000" offsety="3000">
+  <image source="background_chunks/map_r04_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="52" name="Background r04 c07" offsetx="6000" offsety="3000">
+  <image source="background_chunks/map_r04_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="53" name="Background r04 c08" offsetx="7000" offsety="3000">
+  <image source="background_chunks/map_r04_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="54" name="Background r04 c09" offsetx="8000" offsety="3000">
+  <image source="background_chunks/map_r04_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="55" name="Background r04 c10" offsetx="9000" offsety="3000">
+  <image source="background_chunks/map_r04_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="56" name="Background r05 c01" offsetx="0" offsety="4000">
+  <image source="background_chunks/map_r05_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="57" name="Background r05 c02" offsetx="1000" offsety="4000">
+  <image source="background_chunks/map_r05_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="58" name="Background r05 c03" offsetx="2000" offsety="4000">
+  <image source="background_chunks/map_r05_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="59" name="Background r05 c04" offsetx="3000" offsety="4000">
+  <image source="background_chunks/map_r05_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="60" name="Background r05 c05" offsetx="4000" offsety="4000">
+  <image source="background_chunks/map_r05_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="61" name="Background r05 c06" offsetx="5000" offsety="4000">
+  <image source="background_chunks/map_r05_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="62" name="Background r05 c07" offsetx="6000" offsety="4000">
+  <image source="background_chunks/map_r05_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="63" name="Background r05 c08" offsetx="7000" offsety="4000">
+  <image source="background_chunks/map_r05_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="64" name="Background r05 c09" offsetx="8000" offsety="4000">
+  <image source="background_chunks/map_r05_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="65" name="Background r05 c10" offsetx="9000" offsety="4000">
+  <image source="background_chunks/map_r05_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="66" name="Background r06 c01" offsetx="0" offsety="5000">
+  <image source="background_chunks/map_r06_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="67" name="Background r06 c02" offsetx="1000" offsety="5000">
+  <image source="background_chunks/map_r06_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="68" name="Background r06 c03" offsetx="2000" offsety="5000">
+  <image source="background_chunks/map_r06_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="69" name="Background r06 c04" offsetx="3000" offsety="5000">
+  <image source="background_chunks/map_r06_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="70" name="Background r06 c05" offsetx="4000" offsety="5000">
+  <image source="background_chunks/map_r06_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="71" name="Background r06 c06" offsetx="5000" offsety="5000">
+  <image source="background_chunks/map_r06_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="72" name="Background r06 c07" offsetx="6000" offsety="5000">
+  <image source="background_chunks/map_r06_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="73" name="Background r06 c08" offsetx="7000" offsety="5000">
+  <image source="background_chunks/map_r06_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="74" name="Background r06 c09" offsetx="8000" offsety="5000">
+  <image source="background_chunks/map_r06_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="75" name="Background r06 c10" offsetx="9000" offsety="5000">
+  <image source="background_chunks/map_r06_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="76" name="Background r07 c01" offsetx="0" offsety="6000">
+  <image source="background_chunks/map_r07_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="77" name="Background r07 c02" offsetx="1000" offsety="6000">
+  <image source="background_chunks/map_r07_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="78" name="Background r07 c03" offsetx="2000" offsety="6000">
+  <image source="background_chunks/map_r07_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="79" name="Background r07 c04" offsetx="3000" offsety="6000">
+  <image source="background_chunks/map_r07_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="80" name="Background r07 c05" offsetx="4000" offsety="6000">
+  <image source="background_chunks/map_r07_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="81" name="Background r07 c06" offsetx="5000" offsety="6000">
+  <image source="background_chunks/map_r07_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="82" name="Background r07 c07" offsetx="6000" offsety="6000">
+  <image source="background_chunks/map_r07_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="83" name="Background r07 c08" offsetx="7000" offsety="6000">
+  <image source="background_chunks/map_r07_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="84" name="Background r07 c09" offsetx="8000" offsety="6000">
+  <image source="background_chunks/map_r07_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="85" name="Background r07 c10" offsetx="9000" offsety="6000">
+  <image source="background_chunks/map_r07_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="86" name="Background r08 c01" offsetx="0" offsety="7000">
+  <image source="background_chunks/map_r08_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="87" name="Background r08 c02" offsetx="1000" offsety="7000">
+  <image source="background_chunks/map_r08_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="88" name="Background r08 c03" offsetx="2000" offsety="7000">
+  <image source="background_chunks/map_r08_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="89" name="Background r08 c04" offsetx="3000" offsety="7000">
+  <image source="background_chunks/map_r08_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="90" name="Background r08 c05" offsetx="4000" offsety="7000">
+  <image source="background_chunks/map_r08_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="91" name="Background r08 c06" offsetx="5000" offsety="7000">
+  <image source="background_chunks/map_r08_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="92" name="Background r08 c07" offsetx="6000" offsety="7000">
+  <image source="background_chunks/map_r08_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="93" name="Background r08 c08" offsetx="7000" offsety="7000">
+  <image source="background_chunks/map_r08_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="94" name="Background r08 c09" offsetx="8000" offsety="7000">
+  <image source="background_chunks/map_r08_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="95" name="Background r08 c10" offsetx="9000" offsety="7000">
+  <image source="background_chunks/map_r08_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="96" name="Background r09 c01" offsetx="0" offsety="8000">
+  <image source="background_chunks/map_r09_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="97" name="Background r09 c02" offsetx="1000" offsety="8000">
+  <image source="background_chunks/map_r09_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="98" name="Background r09 c03" offsetx="2000" offsety="8000">
+  <image source="background_chunks/map_r09_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="99" name="Background r09 c04" offsetx="3000" offsety="8000">
+  <image source="background_chunks/map_r09_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="100" name="Background r09 c05" offsetx="4000" offsety="8000">
+  <image source="background_chunks/map_r09_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="101" name="Background r09 c06" offsetx="5000" offsety="8000">
+  <image source="background_chunks/map_r09_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="102" name="Background r09 c07" offsetx="6000" offsety="8000">
+  <image source="background_chunks/map_r09_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="103" name="Background r09 c08" offsetx="7000" offsety="8000">
+  <image source="background_chunks/map_r09_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="104" name="Background r09 c09" offsetx="8000" offsety="8000">
+  <image source="background_chunks/map_r09_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="105" name="Background r09 c10" offsetx="9000" offsety="8000">
+  <image source="background_chunks/map_r09_c10.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="106" name="Background r10 c01" offsetx="0" offsety="9000">
+  <image source="background_chunks/map_r10_c01.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="107" name="Background r10 c02" offsetx="1000" offsety="9000">
+  <image source="background_chunks/map_r10_c02.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="108" name="Background r10 c03" offsetx="2000" offsety="9000">
+  <image source="background_chunks/map_r10_c03.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="109" name="Background r10 c04" offsetx="3000" offsety="9000">
+  <image source="background_chunks/map_r10_c04.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="110" name="Background r10 c05" offsetx="4000" offsety="9000">
+  <image source="background_chunks/map_r10_c05.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="111" name="Background r10 c06" offsetx="5000" offsety="9000">
+  <image source="background_chunks/map_r10_c06.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="112" name="Background r10 c07" offsetx="6000" offsety="9000">
+  <image source="background_chunks/map_r10_c07.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="113" name="Background r10 c08" offsetx="7000" offsety="9000">
+  <image source="background_chunks/map_r10_c08.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="114" name="Background r10 c09" offsetx="8000" offsety="9000">
+  <image source="background_chunks/map_r10_c09.png" width="1000" height="1000"/>
+ </imagelayer>
+ <imagelayer id="115" name="Background r10 c10" offsetx="9000" offsety="9000">
+  <image source="background_chunks/map_r10_c10.png" width="1000" height="1000"/>
  </imagelayer>
  <objectgroup id="17" name="Placed Trees">
   <properties>
@@ -291,101 +370,101 @@
    <property name="semantic" value="harvestable"/>
    <property name="tags" value="environment"/>
   </properties>
-  <object id="194" name="tree_01" type="tree" gid="26" x="423.26" y="1303.35" width="220" height="330"/>
-  <object id="281" name="tree_02" type="tree" gid="27" x="502.682" y="1614.26" width="220" height="330"/>
-  <object id="282" name="tree_08" type="tree" gid="33" x="456.582" y="1916.87" width="220" height="330"/>
-  <object id="195" name="tree_03" type="tree" gid="28" x="1306.68" y="348.291" width="150" height="141"/>
-  <object id="196" name="tree_04" type="tree" gid="29" x="1496.72" y="432.334" width="135" height="127"/>
-  <object id="197" name="tree_07" type="tree" gid="32" x="1740.8" y="387.413" width="155" height="150"/>
-  <object id="199" name="tree_08" type="tree" gid="33" x="2505" y="323" width="240" height="360"/>
-  <object id="200" name="tree_03" type="tree" gid="28" x="2390" y="500" width="120" height="113"/>
-  <object id="201" name="tree_07" type="tree" gid="32" x="2725" y="455" width="125" height="121"/>
-  <object id="205" name="tree_02" type="tree" gid="27" x="2866" y="504" width="200" height="300"/>
-  <object id="206" name="tree_03" type="tree" gid="28" x="2905" y="405" width="125" height="118"/>
-  <object id="207" name="tree_04" type="tree" gid="29" x="3072" y="463" width="105" height="99"/>
-  <object id="208" name="tree_07" type="tree" gid="32" x="3250" y="390" width="145" height="140"/>
-  <object id="209" name="tree_03" type="tree" gid="28" x="3430" y="412" width="120" height="113"/>
-  <object id="210" name="tree_02" type="tree" gid="27" x="4007" y="190" width="240" height="360"/>
-  <object id="211" name="tree_04" type="tree" gid="29" x="3890" y="408" width="115" height="108"/>
-  <object id="212" name="tree_07" type="tree" gid="32" x="4250" y="365" width="130" height="126"/>
-  <object id="213" name="tree_03" type="tree" gid="28" x="4358.1" y="799.4" width="110.6" height="104.1"/>
-  <object id="214" name="tree_02" type="tree" gid="27" x="4350" y="480" width="200" height="300"/>
-  <object id="283" name="tree_08" type="tree" gid="33" x="4563.69" y="710.427" width="200" height="300"/>
-  <object id="215" name="tree_04" type="tree" gid="29" x="4324.5" y="889.1" width="111.4" height="105"/>
-  <object id="216" name="tree_07" type="tree" gid="32" x="4688.67" y="940.073" width="129" height="125"/>
-  <object id="217" name="tree_08" type="tree" gid="33" x="6782.5" y="2052.9" width="220.8" height="331.2"/>
-  <object id="218" name="tree_07" type="tree" gid="32" x="6698.9" y="2323.1" width="108.4" height="105"/>
-  <object id="219" name="tree_03" type="tree" gid="28" x="6794.37" y="2376.92" width="132.8" height="125"/>
-  <object id="220" name="tree_03" type="tree" gid="28" x="6886.6" y="2946" width="111.5" height="105"/>
-  <object id="221" name="tree_04" type="tree" gid="29" x="7005.8" y="2970.9" width="137.9" height="130"/>
-  <object id="222" name="tree_07" type="tree" gid="32" x="7147.8" y="2941" width="118.7" height="115"/>
-  <object id="223" name="tree_02" type="tree" gid="27" x="4311.7" y="2182" width="244.7" height="367"/>
-  <object id="224" name="tree_08" type="tree" gid="33" x="4326.9" y="2630.2" width="147.2" height="220.8"/>
-  <object id="225" name="tree_07" type="tree" gid="32" x="4244.26" y="2836.45" width="108.4" height="105"/>
-  <object id="226" name="tree_03" type="tree" gid="28" x="4376.24" y="2868.83" width="132.8" height="125"/>
-  <object id="227" name="tree_03" type="tree" gid="28" x="3841.3" y="3244.2" width="111.5" height="105"/>
-  <object id="228" name="tree_04" type="tree" gid="29" x="3978.5" y="3323" width="137.9" height="130"/>
-  <object id="229" name="tree_07" type="tree" gid="32" x="4138.4" y="3239.2" width="118.7" height="115"/>
-  <object id="230" name="tree_03" type="tree" gid="28" x="4271.1" y="3315.5" width="154" height="145"/>
-  <object id="231" name="tree_04" type="tree" gid="29" x="4448" y="3249.2" width="100.8" height="95"/>
-  <object id="232" name="tree_02" type="tree" gid="27" x="3450" y="3490" width="187" height="280"/>
-  <object id="284" name="tree_01" type="tree" gid="26" x="3450.73" y="3744.48" width="187" height="280"/>
-  <object id="233" name="tree_08" type="tree" gid="33" x="3300" y="4300" width="200" height="300"/>
-  <object id="285" name="tree_01" type="tree" gid="26" x="3311.47" y="4569.48" width="200" height="300"/>
-  <object id="286" name="tree_02" type="tree" gid="27" x="3320" y="4890" width="200" height="300"/>
-  <object id="234" name="tree_07" type="tree" gid="32" x="3311.32" y="4842.3" width="103.2" height="100"/>
-  <object id="235" name="tree_03" type="tree" gid="28" x="3686.16" y="4807.67" width="122.1" height="115"/>
-  <object id="236" name="tree_01" type="tree" gid="26" x="3844" y="3858.02" width="173" height="260"/>
-  <object id="287" name="tree_08" type="tree" gid="33" x="3724.91" y="4097.09" width="173" height="260"/>
-  <object id="237" name="tree_03" type="tree" gid="28" x="3670" y="4284.3" width="111.5" height="105"/>
-  <object id="238" name="tree_04" type="tree" gid="29" x="3815.3" y="4081.97" width="132.6" height="125"/>
-  <object id="239" name="tree_02" type="tree" gid="27" x="3650" y="4580" width="167" height="250"/>
-  <object id="288" name="tree_01" type="tree" gid="26" x="3809.95" y="4740.68" width="167" height="250"/>
-  <object id="240" name="tree_04" type="tree" gid="29" x="3750.76" y="4945.92" width="106.1" height="100"/>
-  <object id="241" name="tree_07" type="tree" gid="32" x="3798.34" y="4696.2" width="118.7" height="115"/>
-  <object id="242" name="tree_07" type="tree" gid="32" x="4204.8" y="3615.8" width="108.4" height="105"/>
-  <object id="243" name="tree_03" type="tree" gid="28" x="4331.5" y="3669.2" width="138.1" height="130"/>
-  <object id="244" name="tree_04" type="tree" gid="29" x="4481" y="3610.8" width="122" height="115"/>
-  <object id="245" name="tree_03" type="tree" gid="28" x="4978.4" y="3658.5" width="111.5" height="105"/>
-  <object id="246" name="tree_04" type="tree" gid="29" x="5120.8" y="3717.5" width="137.9" height="130"/>
-  <object id="247" name="tree_07" type="tree" gid="32" x="5286" y="3653.5" width="118.7" height="115"/>
-  <object id="248" name="tree_02" type="tree" gid="27" x="5627.01" y="4742.24" width="167" height="250"/>
-  <object id="289" name="tree_08" type="tree" gid="33" x="5581.25" y="5013.28" width="167" height="250"/>
-  <object id="249" name="tree_04" type="tree" gid="29" x="5502.93" y="5070.93" width="106.1" height="100"/>
-  <object id="250" name="tree_07" type="tree" gid="32" x="5694.18" y="4945.46" width="118.7" height="115"/>
-  <object id="251" name="tree_07" type="tree" gid="32" x="4875.81" y="5404" width="108.4" height="105"/>
-  <object id="252" name="tree_03" type="tree" gid="28" x="4983.73" y="5475.5" width="138.1" height="130"/>
-  <object id="253" name="tree_04" type="tree" gid="29" x="5146.79" y="5342.09" width="122" height="115"/>
-  <object id="254" name="tree_07" type="tree" gid="32" x="5277.7" y="5389.1" width="149.6" height="145"/>
-  <object id="255" name="tree_03" type="tree" gid="28" x="4039.78" y="5319.28" width="111.5" height="105"/>
-  <object id="256" name="tree_04" type="tree" gid="29" x="4265.86" y="5335.12" width="137.9" height="130"/>
-  <object id="257" name="tree_07" type="tree" gid="32" x="4124" y="5219.86" width="118.7" height="115"/>
-  <object id="258" name="tree_03" type="tree" gid="28" x="4434.83" y="5359.95" width="154" height="145"/>
-  <object id="259" name="tree_02" type="tree" gid="27" x="4280" y="5730" width="147" height="220"/>
-  <object id="290" name="tree_01" type="tree" gid="26" x="4470" y="5940" width="160" height="240"/>
-  <object id="260" name="tree_04" type="tree" gid="29" x="4300.47" y="6048.07" width="106.1" height="100"/>
-  <object id="261" name="tree_07" type="tree" gid="32" x="4458.57" y="6181.3" width="118.7" height="115"/>
-  <object id="262" name="tree_08" type="tree" gid="33" x="4880" y="5800" width="200" height="300"/>
-  <object id="291" name="tree_02" type="tree" gid="27" x="5099.15" y="5936.67" width="200" height="300"/>
-  <object id="263" name="tree_07" type="tree" gid="32" x="4898.78" y="6175.83" width="103.2" height="100"/>
-  <object id="264" name="tree_03" type="tree" gid="28" x="5128.5" y="6240.5" width="122.1" height="115"/>
-  <object id="265" name="tree_01" type="tree" gid="26" x="5678.9" y="5591.5" width="216.4" height="324.6"/>
-  <object id="266" name="tree_03" type="tree" gid="28" x="5603.1" y="5856.4" width="111.5" height="105"/>
-  <object id="267" name="tree_04" type="tree" gid="29" x="5874.7" y="5856.4" width="132.6" height="125"/>
-  <object id="268" name="tree_04" type="tree" gid="29" x="4562.2" y="6551" width="123.1" height="116"/>
-  <object id="269" name="tree_07" type="tree" gid="32" x="8074.9" y="2963.8" width="108.4" height="105"/>
-  <object id="270" name="tree_03" type="tree" gid="28" x="8216" y="3013" width="138.1" height="130"/>
-  <object id="271" name="tree_04" type="tree" gid="29" x="8379.9" y="2958.8" width="122" height="115"/>
-  <object id="272" name="tree_03" type="tree" gid="28" x="7640.29" y="3237.42" width="108.3" height="102"/>
-  <object id="273" name="tree_04" type="tree" gid="29" x="1865" y="2712.1" width="111.4" height="105"/>
-  <object id="274" name="tree_07" type="tree" gid="32" x="2067.9" y="2807.9" width="134.2" height="130"/>
-  <object id="275" name="tree_03" type="tree" gid="28" x="2288.2" y="2707.1" width="122.1" height="115"/>
-  <object id="276" name="tree_04" type="tree" gid="29" x="2486.7" y="2800.4" width="153.8" height="145"/>
-  <object id="277" name="tree_07" type="tree" gid="32" x="2726.07" y="2870.12" width="98" height="95"/>
-  <object id="278" name="tree_08" type="tree" gid="33" x="3714.2" y="7162.61" width="187" height="280"/>
-  <object id="292" name="tree_01" type="tree" gid="26" x="3902.54" y="7240.23" width="187" height="280"/>
-  <object id="279" name="tree_07" type="tree" gid="32" x="3671.9" y="7499.4" width="108.4" height="105"/>
-  <object id="280" name="tree_03" type="tree" gid="28" x="3830.42" y="7570.41" width="132.8" height="125"/>
+  <object id="194" name="tree" type="tree" gid="6" x="423.26" y="1303.35" width="200" height="300"/>
+  <object id="281" name="tree" type="tree" gid="6" x="502.682" y="1614.26" width="200" height="300"/>
+  <object id="282" name="tree" type="tree" gid="6" x="456.582" y="1916.87" width="200" height="300"/>
+  <object id="195" name="tree" type="tree" gid="6" x="1306.68" y="348.291" width="200" height="300"/>
+  <object id="196" name="tree" type="tree" gid="6" x="1496.72" y="432.334" width="200" height="300"/>
+  <object id="197" name="tree" type="tree" gid="6" x="1740.8" y="387.413" width="200" height="300"/>
+  <object id="199" name="tree" type="tree" gid="6" x="2505" y="323" width="200" height="300"/>
+  <object id="200" name="tree" type="tree" gid="6" x="2390" y="500" width="200" height="300"/>
+  <object id="201" name="tree" type="tree" gid="6" x="2725" y="455" width="200" height="300"/>
+  <object id="205" name="tree" type="tree" gid="6" x="2866" y="504" width="200" height="300"/>
+  <object id="206" name="tree" type="tree" gid="6" x="2905" y="405" width="200" height="300"/>
+  <object id="207" name="tree" type="tree" gid="6" x="3072" y="463" width="200" height="300"/>
+  <object id="208" name="tree" type="tree" gid="6" x="3250" y="390" width="200" height="300"/>
+  <object id="209" name="tree" type="tree" gid="6" x="3430" y="412" width="200" height="300"/>
+  <object id="210" name="tree" type="tree" gid="6" x="4007" y="190" width="200" height="300"/>
+  <object id="211" name="tree" type="tree" gid="6" x="3890" y="408" width="200" height="300"/>
+  <object id="212" name="tree" type="tree" gid="6" x="4250" y="365" width="200" height="300"/>
+  <object id="213" name="tree" type="tree" gid="6" x="4358.1" y="799.4" width="200" height="300"/>
+  <object id="214" name="tree" type="tree" gid="6" x="4350" y="480" width="200" height="300"/>
+  <object id="283" name="tree" type="tree" gid="6" x="4563.69" y="710.427" width="200" height="300"/>
+  <object id="215" name="tree" type="tree" gid="6" x="4324.5" y="889.1" width="200" height="300"/>
+  <object id="216" name="tree" type="tree" gid="6" x="4688.67" y="940.073" width="200" height="300"/>
+  <object id="217" name="tree" type="tree" gid="6" x="6782.5" y="2052.9" width="200" height="300"/>
+  <object id="218" name="tree" type="tree" gid="6" x="6698.9" y="2323.1" width="200" height="300"/>
+  <object id="219" name="tree" type="tree" gid="6" x="6794.37" y="2376.92" width="200" height="300"/>
+  <object id="220" name="tree" type="tree" gid="6" x="6886.6" y="2946" width="200" height="300"/>
+  <object id="221" name="tree" type="tree" gid="6" x="7005.8" y="2970.9" width="200" height="300"/>
+  <object id="222" name="tree" type="tree" gid="6" x="7147.8" y="2941" width="200" height="300"/>
+  <object id="223" name="tree" type="tree" gid="6" x="4311.7" y="2182" width="200" height="300"/>
+  <object id="224" name="tree" type="tree" gid="6" x="4326.9" y="2630.2" width="200" height="300"/>
+  <object id="225" name="tree" type="tree" gid="6" x="4244.26" y="2836.45" width="200" height="300"/>
+  <object id="226" name="tree" type="tree" gid="6" x="4376.24" y="2868.83" width="200" height="300"/>
+  <object id="227" name="tree" type="tree" gid="6" x="3841.3" y="3244.2" width="200" height="300"/>
+  <object id="228" name="tree" type="tree" gid="6" x="3978.5" y="3323" width="200" height="300"/>
+  <object id="229" name="tree" type="tree" gid="6" x="4138.4" y="3239.2" width="200" height="300"/>
+  <object id="230" name="tree" type="tree" gid="6" x="4271.1" y="3315.5" width="200" height="300"/>
+  <object id="231" name="tree" type="tree" gid="6" x="4448" y="3249.2" width="200" height="300"/>
+  <object id="232" name="tree" type="tree" gid="6" x="3450" y="3490" width="200" height="300"/>
+  <object id="284" name="tree" type="tree" gid="6" x="3450.73" y="3744.48" width="200" height="300"/>
+  <object id="233" name="tree" type="tree" gid="6" x="3300" y="4300" width="200" height="300"/>
+  <object id="285" name="tree" type="tree" gid="6" x="3311.47" y="4569.48" width="200" height="300"/>
+  <object id="286" name="tree" type="tree" gid="6" x="3320" y="4890" width="200" height="300"/>
+  <object id="234" name="tree" type="tree" gid="6" x="3311.32" y="4842.3" width="200" height="300"/>
+  <object id="235" name="tree" type="tree" gid="6" x="3686.16" y="4807.67" width="200" height="300"/>
+  <object id="236" name="tree" type="tree" gid="6" x="3844" y="3858.02" width="200" height="300"/>
+  <object id="287" name="tree" type="tree" gid="6" x="3724.91" y="4097.09" width="200" height="300"/>
+  <object id="237" name="tree" type="tree" gid="6" x="3670" y="4284.3" width="200" height="300"/>
+  <object id="238" name="tree" type="tree" gid="6" x="3815.3" y="4081.97" width="200" height="300"/>
+  <object id="239" name="tree" type="tree" gid="6" x="3650" y="4580" width="200" height="300"/>
+  <object id="288" name="tree" type="tree" gid="6" x="3809.95" y="4740.68" width="200" height="300"/>
+  <object id="240" name="tree" type="tree" gid="6" x="3750.76" y="4945.92" width="200" height="300"/>
+  <object id="241" name="tree" type="tree" gid="6" x="3798.34" y="4696.2" width="200" height="300"/>
+  <object id="242" name="tree" type="tree" gid="6" x="4204.8" y="3615.8" width="200" height="300"/>
+  <object id="243" name="tree" type="tree" gid="6" x="4331.5" y="3669.2" width="200" height="300"/>
+  <object id="244" name="tree" type="tree" gid="6" x="4481" y="3610.8" width="200" height="300"/>
+  <object id="245" name="tree" type="tree" gid="6" x="4978.4" y="3658.5" width="200" height="300"/>
+  <object id="246" name="tree" type="tree" gid="6" x="5120.8" y="3717.5" width="200" height="300"/>
+  <object id="247" name="tree" type="tree" gid="6" x="5286" y="3653.5" width="200" height="300"/>
+  <object id="248" name="tree" type="tree" gid="6" x="5627.01" y="4742.24" width="200" height="300"/>
+  <object id="289" name="tree" type="tree" gid="6" x="5581.25" y="5013.28" width="200" height="300"/>
+  <object id="249" name="tree" type="tree" gid="6" x="5502.93" y="5070.93" width="200" height="300"/>
+  <object id="250" name="tree" type="tree" gid="6" x="5694.18" y="4945.46" width="200" height="300"/>
+  <object id="251" name="tree" type="tree" gid="6" x="4875.81" y="5404" width="200" height="300"/>
+  <object id="252" name="tree" type="tree" gid="6" x="4983.73" y="5475.5" width="200" height="300"/>
+  <object id="253" name="tree" type="tree" gid="6" x="5146.79" y="5342.09" width="200" height="300"/>
+  <object id="254" name="tree" type="tree" gid="6" x="5277.7" y="5389.1" width="200" height="300"/>
+  <object id="255" name="tree" type="tree" gid="6" x="4039.78" y="5319.28" width="200" height="300"/>
+  <object id="256" name="tree" type="tree" gid="6" x="4265.86" y="5335.12" width="200" height="300"/>
+  <object id="257" name="tree" type="tree" gid="6" x="4124" y="5219.86" width="200" height="300"/>
+  <object id="258" name="tree" type="tree" gid="6" x="4434.83" y="5359.95" width="200" height="300"/>
+  <object id="259" name="tree" type="tree" gid="6" x="4280" y="5730" width="200" height="300"/>
+  <object id="290" name="tree" type="tree" gid="6" x="4470" y="5940" width="200" height="300"/>
+  <object id="260" name="tree" type="tree" gid="6" x="4300.47" y="6048.07" width="200" height="300"/>
+  <object id="261" name="tree" type="tree" gid="6" x="4458.57" y="6181.3" width="200" height="300"/>
+  <object id="262" name="tree" type="tree" gid="6" x="4880" y="5800" width="200" height="300"/>
+  <object id="291" name="tree" type="tree" gid="6" x="5099.15" y="5936.67" width="200" height="300"/>
+  <object id="263" name="tree" type="tree" gid="6" x="4898.78" y="6175.83" width="200" height="300"/>
+  <object id="264" name="tree" type="tree" gid="6" x="5128.5" y="6240.5" width="200" height="300"/>
+  <object id="265" name="tree" type="tree" gid="6" x="5678.9" y="5591.5" width="200" height="300"/>
+  <object id="266" name="tree" type="tree" gid="6" x="5603.1" y="5856.4" width="200" height="300"/>
+  <object id="267" name="tree" type="tree" gid="6" x="5874.7" y="5856.4" width="200" height="300"/>
+  <object id="268" name="tree" type="tree" gid="6" x="4562.2" y="6551" width="200" height="300"/>
+  <object id="269" name="tree" type="tree" gid="6" x="8074.9" y="2963.8" width="200" height="300"/>
+  <object id="270" name="tree" type="tree" gid="6" x="8216" y="3013" width="200" height="300"/>
+  <object id="271" name="tree" type="tree" gid="6" x="8379.9" y="2958.8" width="200" height="300"/>
+  <object id="272" name="tree" type="tree" gid="6" x="7640.29" y="3237.42" width="200" height="300"/>
+  <object id="273" name="tree" type="tree" gid="6" x="1865" y="2712.1" width="200" height="300"/>
+  <object id="274" name="tree" type="tree" gid="6" x="2067.9" y="2807.9" width="200" height="300"/>
+  <object id="275" name="tree" type="tree" gid="6" x="2288.2" y="2707.1" width="200" height="300"/>
+  <object id="276" name="tree" type="tree" gid="6" x="2486.7" y="2800.4" width="200" height="300"/>
+  <object id="277" name="tree" type="tree" gid="6" x="2726.07" y="2870.12" width="200" height="300"/>
+  <object id="278" name="tree" type="tree" gid="6" x="3714.2" y="7162.61" width="200" height="300"/>
+  <object id="292" name="tree" type="tree" gid="6" x="3902.54" y="7240.23" width="200" height="300"/>
+  <object id="279" name="tree" type="tree" gid="6" x="3671.9" y="7499.4" width="200" height="300"/>
+  <object id="280" name="tree" type="tree" gid="6" x="3830.42" y="7570.41" width="200" height="300"/>
  </objectgroup>
  <objectgroup id="8" name="Swamp" visible="0">
   <object id="45" x="645.995" y="6779.72">
@@ -404,31 +483,33 @@
    <property name="semantic" value="harvestable"/>
    <property name="tags" value="environment"/>
   </properties>
-  <object id="47" name="vehicle_47" type="vehicle" gid="1" x="2305" y="1674" width="248" height="211"/>
-  <object id="48" name="vehicle_48" type="vehicle" gid="2" x="7579" y="1078" width="364" height="281"/>
-  <object id="49" name="vehicle_49" type="vehicle" gid="3" x="7059" y="1375" width="594" height="547"/>
-  <object id="50" name="vehicle_50" type="vehicle" gid="4" x="6725" y="1071" width="500" height="396"/>
-  <object id="51" name="vehicle_51" type="vehicle" gid="5" x="8105" y="2378" width="289" height="189"/>
-  <object id="52" name="vehicle_52" type="vehicle" gid="6" x="7718" y="2597" width="133" height="112"/>
-  <object id="53" name="vehicle_53" type="vehicle" gid="7" x="6171" y="2619" width="158" height="249"/>
-  <object id="54" name="vehicle_54" type="vehicle" gid="8" x="5993" y="2350" width="135" height="217"/>
-  <object id="55" name="vehicle_55" type="vehicle" gid="9" x="5736" y="3160" width="226" height="216"/>
-  <object id="56" name="vehicle_56" type="vehicle" gid="10" x="5077" y="2780" width="262" height="219"/>
-  <object id="57" name="vehicle_57" type="vehicle" gid="11" x="1367" y="5787" width="239" height="203"/>
-  <object id="58" name="vehicle_58" type="vehicle" gid="12" x="1625" y="5589" width="200" height="173"/>
-  <object id="59" name="vehicle_59" type="vehicle" gid="13" x="6081" y="6646" width="371" height="208"/>
-  <object id="60" name="vehicle_60" type="vehicle" gid="14" x="7233" y="5981" width="138" height="342"/>
-  <object id="61" name="vehicle_61" type="vehicle" gid="15" x="4122" y="2343" width="202" height="200"/>
-  <object id="62" name="vehicle_62" type="vehicle" gid="16" x="8393" y="3882" width="205" height="135"/>
-  <object id="63" name="vehicle_63" type="vehicle" gid="17" x="7631" y="3669" width="156" height="252"/>
-  <object id="64" name="vehicle_64" type="vehicle" gid="18" x="7712" y="3215" width="222" height="152"/>
-  <object id="65" name="vehicle_65" type="vehicle" gid="19" x="7265" y="3935" width="155" height="173"/>
-  <object id="66" name="vehicle_66" type="vehicle" gid="20" x="7283" y="4527" width="138" height="226"/>
-  <object id="67" name="vehicle_67" type="vehicle" gid="21" x="7664" y="4376" width="134" height="353"/>
-  <object id="68" name="vehicle_68" type="vehicle" gid="22" x="7102" y="4659" width="112" height="188"/>
-  <object id="69" name="vehicle_69" type="vehicle" gid="23" x="7272" y="4925" width="132" height="175"/>
-  <object id="70" name="vehicle_70" type="vehicle" gid="24" x="8356" y="5469" width="149" height="109"/>
-  <object id="71" name="vehicle_71" type="vehicle" gid="25" x="6282" y="5621" width="175" height="128"/>
+  <object id="47" name="vehicle" type="vehicle" gid="1" x="1802.96" y="1850.39" width="260" height="203"/>
+  <object id="48" name="vehicle" type="vehicle" gid="2" x="8225.77" y="1322.23" width="260" height="203"/>
+  <object id="49" name="vehicle" type="vehicle" gid="3" x="7977.14" y="2293.14" width="260" height="203"/>
+  <object id="50" name="vehicle" type="vehicle" gid="2" x="6725" y="1071" width="260" height="203"/>
+  <object id="51" name="vehicle" type="vehicle" gid="1" x="8091.43" y="2378" width="260" height="203"/>
+  <object id="52" name="vehicle" type="vehicle" gid="3" x="2218.23" y="6929.88" width="260" height="203"/>
+  <object id="53" name="vehicle" type="vehicle" gid="1" x="6107.68" y="2338.58" width="260" height="203"/>
+  <object id="54" name="vehicle" type="vehicle" gid="2" x="6056.32" y="2236.93" width="260" height="203"/>
+  <object id="55" name="vehicle" type="vehicle" gid="3" x="5821.93" y="2784.6" width="260" height="203"/>
+  <object id="56" name="vehicle" type="vehicle" gid="2" x="5208.16" y="2766.43" width="260" height="203"/>
+  <object id="57" name="vehicle" type="vehicle" gid="1" x="3393.23" y="6076.46" width="260" height="203"/>
+  <object id="58" name="vehicle" type="vehicle" gid="3" x="3284.88" y="6000.58" width="260" height="203"/>
+  <object id="59" name="vehicle" type="vehicle" gid="1" x="7315.74" y="6067.08" width="260" height="203"/>
+  <object id="60" name="vehicle" type="vehicle" gid="2" x="7233" y="5981" width="260" height="203"/>
+  <object id="61" name="vehicle" type="vehicle" gid="3" x="3371.21" y="1470.09" width="260" height="203"/>
+  <object id="62" name="vehicle" type="vehicle" gid="2" x="8393" y="3882" width="260" height="203"/>
+  <object id="63" name="vehicle" type="vehicle" gid="1" x="7631" y="3669" width="260" height="203"/>
+  <object id="64" name="vehicle" type="vehicle" gid="3" x="7567.27" y="2798.9" width="260" height="203"/>
+  <object id="65" name="vehicle" type="vehicle" gid="1" x="7265" y="3935" width="260" height="203"/>
+  <object id="66" name="vehicle" type="vehicle" gid="2" x="5243.2" y="8280.96" width="260" height="203"/>
+  <object id="67" name="vehicle" type="vehicle" gid="3" x="2747.67" y="4158.9" width="260" height="203"/>
+  <object id="68" name="vehicle" type="vehicle" gid="2" x="6088.88" y="4541.41" width="260" height="203"/>
+  <object id="69" name="vehicle" type="vehicle" gid="1" x="7701.67" y="4694.34" width="260" height="203"/>
+  <object id="70" name="vehicle" type="vehicle" gid="3" x="7795.17" y="5279.04" width="260" height="203"/>
+  <object id="71" name="vehicle" type="vehicle" gid="1" x="7001.13" y="5308.92" width="260" height="203"/>
+  <object id="331" name="ambulance" type="vehicle" gid="4" x="6282.99" y="6748.85" width="260" height="203"/>
+  <object id="332" name="wheel_loader" type="vehicle" gid="5" x="7247.85" y="1674.22" width="260" height="203"/>
  </objectgroup>
  <objectgroup id="11" name="Playable Area" visible="0">
   <properties>
@@ -764,7 +845,7 @@
    <ellipse/>
   </object>
  </objectgroup>
- <objectgroup id="6" name="Spawn" visible="0">
+ <objectgroup id="6" name="Spawn">
   <object id="17" x="4729.42" y="5325.15">
    <properties>
     <property name="spawn" type="bool" value="true"/>
@@ -966,7 +1047,6 @@
    </properties>
   </object>
  </objectgroup>
- <objectgroup id="21" name="Harvestables" visible="0"/>
  <objectgroup id="22" name="ConstructionAnchors">
   <properties>
    <property name="semantic" value="construction_anchor"/>
